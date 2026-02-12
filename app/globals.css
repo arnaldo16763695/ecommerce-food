@@ -1,26 +1,50 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@custom-variant dark (&:where(.dark, .dark *));
+/* Utilities for your local fonts (next/font/local variables) */
+@layer utilities {
+  .font-lexend {
+    font-family: var(--font-lexend);
+  }
+  .font-cunia {
+    font-family: var(--font-cunia);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  /* Default font for the whole app */
+  body {
+    font-family: var(--font-lexend);
+  }
+
+  /* Buttons */
+  button {
+    @apply cursor-pointer;
+  }
+
+  /* Headings use Cunia */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-cunia);
+    @apply font-bold leading-[1.1];
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+}
+
+@layer utilities {
+  .container {
+    @apply mx-auto max-w-7xl px-4 sm:px-8 md:px-12 lg:px-16;
+  }
+
+  .btn-primary {
+    @apply rounded-lg bg-amber-600 px-6 py-2.5 font-medium text-white transition-colors hover:bg-amber-700 focus:bg-amber-700;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold lg:text-4xl;
+  }
 }
