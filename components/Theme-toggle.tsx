@@ -14,8 +14,11 @@ export function ThemeToggle() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <button onClick={() => setTheme(isDark ? "light" : "dark")}>
-      {isDark ? <RiMoonFill size={24} /> : <RiSunFill />}
+    <button
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+    >
+      {isDark ? <RiMoonFill size={24} /> : <RiSunFill size={24} />}
     </button>
   );
 }
