@@ -1,14 +1,18 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { describe, expect, it } from "vitest";
 
-import { getMenuButtonLabel, getMobileMenuVisibilityClass } from "../lib/header-utils.ts";
+import {
+  getMenuButtonLabel,
+  getMobileMenuVisibilityClass,
+} from "../lib/header-utils";
 
-test("getMenuButtonLabel returns the right accessible label", () => {
-  assert.equal(getMenuButtonLabel(true), "Close menu");
-  assert.equal(getMenuButtonLabel(false), "Open menu");
-});
+describe("header utils", () => {
+  it("returns the right accessible label", () => {
+    expect(getMenuButtonLabel(true)).toBe("Close menu");
+    expect(getMenuButtonLabel(false)).toBe("Open menu");
+  });
 
-test("getMobileMenuVisibilityClass returns the expected class combination", () => {
-  assert.equal(getMobileMenuVisibilityClass(true), "visible grid");
-  assert.equal(getMobileMenuVisibilityClass(false), "invisible hidden");
+  it("returns the expected menu visibility class combination", () => {
+    expect(getMobileMenuVisibilityClass(true)).toBe("visible grid");
+    expect(getMobileMenuVisibilityClass(false)).toBe("invisible hidden");
+  });
 });
