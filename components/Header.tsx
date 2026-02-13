@@ -2,28 +2,42 @@
 import Link from "next/link";
 import { navItems } from "@/data/data";
 import { RiCloseLine, RiMenuLine, RiShoppingBag2Line } from "@remixicon/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { ThemeToggle } from "./Theme-toggle";
+import { getMenuButtonLabel, getMobileMenuVisibilityClass } from "@/lib/header-utils";
+
 const Header = () => {
   const [openMenu, setOpenMenu] = useState<boolean>(false);
   const pathName = usePathname();
+
   const handleClick = () => {
-    setOpenMenu(!openMenu);
+    setOpenMenu((prevState) => !prevState);
   };
+
+
+  useEffect(() => {
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenMenu(false);
+      }
+    };
+
+    window.addEventListener("keydown", onEscape);
+    return () => {
+      window.removeEventListener("keydown", onEscape);
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 border-b border-gray-200 w-full py-3 bg-white dark:bg-gray-900 z-50 font-cunia">
       <div className="container flex items-center justify-between ">
-        {/* Logo  */}
         <Link className="text-3xl font-semibold text-amber-600" href="/">
           Logo
         </Link>
 
-        {/* Desktop menu  */}
-
-        <nav className="hidden lg:flex items-center justify-between w-full">
+        <nav className="hidden lg:flex items-center justify-between w-full" aria-label="Primary navigation">
           <ul className="mx-auto flex items-center gap-9 justify-center">
             {navItems.map((item) => (
               <li key={item.id}>
@@ -39,12 +53,11 @@ const Header = () => {
               </li>
             ))}
           </ul>
-          {/* btns  */}
           <div className="flex items-center gap-3.5">
-            {/* Shopping cart icon  */}
             <Link
-              href={"/shopping-cart"}
-              className={`size-10 relative inline-flex items-center justify-center rounded-sm`}
+              href="/shopping-cart"
+              aria-label="Open shopping cart"
+              className="size-10 relative inline-flex items-center justify-center rounded-sm"
             >
               <RiShoppingBag2Line
                 size={26}
@@ -59,20 +72,16 @@ const Header = () => {
                 2
               </span>
             </Link>
-            {/* log in btn  */}
             <button className="btn-primary">Log In</button>
             <ThemeToggle />
           </div>
         </nav>
 
-        {/* Mobile menu  */}
-        <nav className="relative lg:hidden">
-          {/* btns  */}
-
+        <nav className="relative lg:hidden" aria-label="Mobile navigation">
           <div className="flex items-center gap-2">
-            {/* Cart icon  */}
             <Link
-              href={"/shopping-cart"}
+              href="/shopping-cart"
+              aria-label="Open shopping cart"
               className="size-10 inline-flex items-center justify-center rounded-sm relative"
             >
               <RiShoppingBag2Line
@@ -88,15 +97,19 @@ const Header = () => {
                 2
               </span>
             </Link>
-            {/* Manu btn */}
-            <button className="" onClick={handleClick}>
+            <button
+              aria-label={getMenuButtonLabel(openMenu)}
+              aria-expanded={openMenu}
+              aria-controls="mobile-menu"
+              onClick={handleClick}
+            >
               {openMenu ? <RiCloseLine size={28} /> : <RiMenuLine size={28} />}
             </button>
           </div>
           <div
-            className={`absolute top-full right-0 bg-white p-3 min-w-52 w-full shadow mt-2.5 rounded-lg space-y-2.5 ${openMenu ? "visible grid" : "invisible hidden"} transition`}
+            id="mobile-menu"
+            className={`absolute top-full right-0 bg-white p-3 min-w-52 w-full shadow mt-2.5 rounded-lg space-y-2.5 ${getMobileMenuVisibilityClass(openMenu)} transition`}
           >
-            {/* List  */}
             <ul>
               {navItems.map((item) => (
                 <li key={item.id}>
@@ -115,7 +128,6 @@ const Header = () => {
                 </li>
               ))}
             </ul>
-            {/* Log in btn  */}
             <button className="btn-primary w-full" onClick={handleClick}>
               Log In
             </button>
