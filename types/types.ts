@@ -7,7 +7,7 @@ export type productCardProps = {
   name: string;
   price: number;
   img: string;
-  star: any;
+  star: number;
 };
 
 export type CartItem = {
