@@ -131,6 +131,7 @@ const Header = () => {
             <button className="btn-primary w-full" onClick={handleClick}>
               Log In
             </button>
+            <ThemeToggle />
           </div>
         </nav>
       </div>
