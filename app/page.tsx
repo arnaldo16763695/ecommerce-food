@@ -1,7 +1,8 @@
-import { allProducts, categoryItems } from "@/data/data";
+import { allProducts, categoryItems, testimonials } from "@/data/data";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
+import { RiDoubleQuotesL } from "@remixicon/react";
 
 export default function Home() {
   return (
@@ -58,9 +59,45 @@ export default function Home() {
               <ProductCard key={product.id} {...product} />
             ))}
           </div>
-          <Link href="/shop" className="btn-primary block mt-14 mx-auto max-w-max">
+          <Link
+            href="/shop"
+            className="btn-primary block mt-14 mx-auto max-w-max"
+          >
             View all products
           </Link>
+        </div>
+      </section>
+
+      {/* Testimonials  */}
+      <section className="py-28">
+        <div className="container">
+          <h2 className="section-title text-center">What our Clients say</h2>
+          <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-11 lg:mt-14">
+            {testimonials.map((testimonial) => (
+              // Card 
+              <div key={testimonial.id} className="bg-white dark:bg-gray-900 p-8 rounded-xl flex flex-col items-center">
+                <span className="text-amber-600 mb-3">
+                  <RiDoubleQuotesL />
+                </span>
+                <p className="text-gray-600 mb-6">&ldquo;{testimonial.quote}&rdquo;</p>
+                <div className="flex flex-col items-center mt-auto">
+                  <div className="size-16">
+                    <Image
+                      src={testimonial.img}
+                      alt={testimonial.name}
+                      width={150}
+                      height={150}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </div>
+                  <div className="mt-3 text-center">
+                      <h3>{testimonial.name}</h3>
+                      <p className="text-sm text-gray-600">{testimonial.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </>
