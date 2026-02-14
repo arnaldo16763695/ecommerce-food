@@ -9,7 +9,7 @@ export default function Home() {
     <>
       {/* hero section  */}
       <section className="lg:mt-4 lg:px-4">
-        <div className="container bg-[url('/images/hero-img.png')] bg-center bg-cover bg-no-repeat min-h-[75svh] flex items-center justify-center flex-col text-white lg:rounded-2xl text-center">
+        <div className="page-container bg-[url('/images/hero-img.png')] bg-center bg-cover bg-no-repeat min-h-[75svh] flex items-center justify-center flex-col text-white lg:rounded-2xl text-center">
           <p className="text-amber-400 font-light tracking-wide uppercase">
             Delicious food, fast delivery
           </p>
@@ -20,7 +20,7 @@ export default function Home() {
       </section>
       {/* Category section  */}
       <section className="mt-16 relative z-10 lg:-mt-36">
-        <div className="container grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="page-container grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
           {categoryItems.map((category) => (
             // Card
             <div
@@ -50,7 +50,7 @@ export default function Home() {
       </section>
       {/* Products section */}
       <section className="pt-28">
-        <div className="container">
+        <div className="page-container">
           {/* Title  */}
           <h2 className="section-title text-center">Explore all products</h2>
           {/* Card wrapper */}
@@ -70,7 +70,7 @@ export default function Home() {
 
       {/* Testimonials  */}
       <section className="py-28">
-        <div className="container">
+        <div className="page-container">
           <h2 className="section-title text-center">What our Clients say</h2>
           <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-11 lg:mt-14">
             {testimonials.map((testimonial) => (

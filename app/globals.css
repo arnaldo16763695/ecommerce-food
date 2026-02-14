@@ -18,7 +18,7 @@
 
   /* Buttons */
   button {
-    @apply cursor-pointer;
+    cursor: pointer;
   }
 
   /* Headings use Cunia */
@@ -27,7 +27,8 @@
   h3,
   h4 {
     font-family: var(--font-cunia);
-    @apply font-bold leading-[1.1];
+    font-weight: bold;
+    line-height: 1.1;
   }
 
   p {
@@ -36,7 +37,7 @@
 }
 
 @layer utilities {
-  .container {
+  .page-container {
     @apply mx-auto max-w-7xl px-4 sm:px-8 md:px-12 lg:px-16;
   }
 
@@ -48,3 +49,4 @@
     @apply text-2xl font-bold lg:text-4xl;
   }
 }
+

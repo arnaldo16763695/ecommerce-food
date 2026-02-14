@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${lexend.className}  antialiased bg-slate-50 dark:bg-slate-900 text-gray-900 dark:text-slate-200`}
+        className={`${lexend.className} ${cunia.variable}  antialiased bg-slate-50 dark:bg-slate-900 text-gray-900 dark:text-slate-200`}
       >
         <ThemeProvider
           attribute="class"

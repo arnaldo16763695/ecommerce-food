@@ -32,7 +32,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 border-b border-gray-200 w-full py-3 bg-white dark:bg-gray-900 z-50 font-cunia">
-      <div className="container flex items-center justify-between ">
+      <div className="page-container flex items-center justify-between ">
         <Link className="text-3xl font-semibold text-amber-600" href="/">
           Logo
         </Link>
