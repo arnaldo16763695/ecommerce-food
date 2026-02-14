@@ -1,5 +1,7 @@
-import { categoryItems } from "@/data/data";
+import { allProducts, categoryItems } from "@/data/data";
 import Image from "next/image";
+import ProductCard from "@/components/ProductCard";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -43,6 +45,22 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+      {/* Products section */}
+      <section className="pt-28">
+        <div className="container">
+          {/* Title  */}
+          <h2 className="section-title text-center">Explore all products</h2>
+          {/* Card wrapper */}
+          <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+            {allProducts.slice(4, 12).map((product) => (
+              <ProductCard key={product.id} {...product} />
+            ))}
+          </div>
+          <Link href="/shop" className="btn-primary block mt-14 mx-auto max-w-max">
+            View all products
+          </Link>
         </div>
       </section>
     </>
