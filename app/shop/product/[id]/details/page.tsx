@@ -28,10 +28,13 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
 
   const fullStars = Math.floor(product.star);
   const hasHalfStar = product.star % 1 >= 0.5;
+  const relatedProducts = allProducts
+    .filter((item) => item.category === product.category && item.id !== product.id)
+    .slice(0, 3);
 
   return (
     <>
-      <div className="bg-amber-50 text-center flex flex-col gap-2 items-center justify-center min-h-52 px-5">
+      <div className="bg-amber-50 text-center flex flex-col gap-2 items-center justify-center min-h-52 px-5 border-b border-amber-100">
         <span className="rounded-full bg-white px-4 py-1 text-sm font-medium text-amber-700 border border-amber-100">
           Curated for your space
         </span>
@@ -42,9 +45,12 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
         </p>
       </div>
 
-      <section className="py-14 md:py-20">
+      <section className="py-14 md:py-20 bg-gradient-to-b from-white to-amber-50/40">
         <div className="page-container">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-6">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-6"
+          >
             <Link
               href="/"
               className="hover:text-amber-600 focus:text-amber-600 transition"
@@ -59,8 +65,10 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
               Shop
             </Link>
             <span>/</span>
-            <p className="text-gray-800 truncate max-w-56 md:max-w-full">{product.name}</p>
-          </div>
+            <p className="text-gray-800 truncate max-w-56 md:max-w-full">
+              {product.name}
+            </p>
+          </nav>
 
           <Link
             href="/shop"
@@ -82,7 +90,7 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
               />
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-6 lg:sticky lg:top-24 bg-white border border-amber-100 rounded-3xl p-6 md:p-8 shadow-sm">
               <p className="text-sm text-amber-700 font-semibold tracking-wide uppercase">
                 {product.category}
               </p>
@@ -134,7 +142,10 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
                     aria-label="Product quantity"
                   />
                 </label>
-                <button className="btn-primary flex items-center gap-2 justify-center">
+                <button
+                  className="btn-primary flex items-center gap-2 justify-center"
+                  aria-label={`Add ${product.name} to basket`}
+                >
                   <RiShoppingBag2Line size={20} aria-hidden="true" />
                   Add to basket
                 </button>
@@ -189,6 +200,34 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
               </div>
             </div>
           </div>
+
+          {relatedProducts.length > 0 && (
+            <div className="mt-14">
+              <h2 className="text-2xl text-gray-900 mb-5">You may also like</h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {relatedProducts.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/shop/product/${item.id}/details`}
+                    className="rounded-2xl border border-gray-200 bg-white p-4 hover:border-amber-300 hover:shadow-sm transition"
+                  >
+                    <div className="bg-amber-50 rounded-xl p-3 mb-3 flex items-center justify-center">
+                      <Image
+                        src={item.img}
+                        alt={item.name}
+                        width={180}
+                        height={180}
+                        className="h-28 w-28 object-contain"
+                      />
+                    </div>
+                    <p className="text-sm text-amber-700 font-medium mb-1">{item.category}</p>
+                    <h3 className="text-lg text-gray-900 mb-1">{item.name}</h3>
+                    <p className="text-amber-600 font-semibold">${item.price}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </>
