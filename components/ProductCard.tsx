@@ -16,7 +16,7 @@ function ProductCard({ id, img, price, name, star }: productCardProps) {
     <div className="bg-white p-8 rounded-md flex flex-col relative group gap-2.5 hover:translate-y-[-4px] hover:shadow-lg dark:hover:shadow-slate-600">
       <div className="py-10 relative flex items-center justify-center bg-amber-50 h-full rounded-xl">
         <Image src={img} alt={name} width={200} height={200} />
-        <Link href={`/shop/${id}`} className="absolute top-0 right-0 bg-white gap-2 border border-amber-200 p-2 rounded-xs  opacity-0 group-hover:opacity-100 transition-all hover:text-amber-600 focus:text-amber-600" title="view product details">
+        <Link href={`/shop/product/${id}/details`} className="absolute top-0 right-0 bg-white gap-2 border border-amber-200 p-2 rounded-xs  opacity-0 group-hover:opacity-100 transition-all hover:text-amber-600 focus:text-amber-600" title="view product details">
           <RiEyeLine />
         </Link>
       </div>
