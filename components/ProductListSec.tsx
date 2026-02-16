@@ -9,9 +9,9 @@ function ProductListSec() {
       <div className="page-container space-y-10">
         {/* Filter bar  */}
 
-        <div className="bg-white border border-gray-200 grid sm:flex gap-1.5 items-center justify-between mt-7 p-4 rounded-lg">
+        <div className="bg-slate-100 dark:bg-slate-900 border border-gray-200 grid sm:flex gap-1.5 items-center justify-between mt-7 p-4 rounded-lg">
           {/* Serach bar */}
-          <div className="border border-gray-200 flex focus-within:border-amber-600 rounded-md">
+          <div className="border dark:bg-white border-gray-200 flex focus-within:border-amber-600 rounded-md">
             <input
               type="text"
               placeholder="Search"
@@ -30,7 +30,7 @@ function ProductListSec() {
                 "Price: Low to High",
                 "Name: A to Z",
               ].map((item, index) => (
-                <option key={index} value={item}>
+                <option key={index} value={item} className="dark:text-slate-900">
                   {item}
                 </option>
               ))}

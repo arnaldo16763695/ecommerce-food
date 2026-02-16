@@ -45,7 +45,7 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
         </p>
       </div>
 
-      <section className="py-14 md:py-20 bg-gradient-to-b from-white to-amber-50/40">
+      <section className="py-14 md:py-20 bg-linear-to-b from-slate-50 to-amber-50/40">
         <div className="page-container">
           <nav
             aria-label="Breadcrumb"
@@ -79,7 +79,7 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
           </Link>
 
           <div className="grid lg:grid-cols-2 gap-8 xl:gap-14 items-start">
-            <div className="bg-gradient-to-b from-amber-100 to-amber-50 rounded-3xl overflow-hidden p-8 border border-amber-200/60">
+            <div className="bg-linear-to-b from-amber-100 to-amber-50 rounded-3xl overflow-hidden p-8 border border-amber-200/60">
               <Image
                 src={product.img}
                 alt={product.name}
