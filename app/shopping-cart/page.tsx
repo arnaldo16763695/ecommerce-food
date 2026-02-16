@@ -1,9 +1,14 @@
-import React from 'react'
+import CartItems from "@/components/CartItems";
+import PageTitle from "@/components/PageTitle";
+import React from "react";
 
 const ShoppingCartPage = () => {
   return (
-    <div>Shopping Cart</div>
-  )
-}
+    <>
+      <PageTitle />
+      <CartItems />
+    </>
+  );
+};
 
-export default ShoppingCartPage
+export default ShoppingCartPage;
