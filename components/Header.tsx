@@ -72,7 +72,7 @@ const Header = () => {
                 2
               </span>
             </Link>
-            <button className="btn-primary">Log In</button>
+            <Link href='/login' className="btn-primary">Log In</Link>
             <ThemeToggle />
           </div>
         </nav>
@@ -128,9 +128,9 @@ const Header = () => {
                 </li>
               ))}
             </ul>
-            <button className="btn-primary w-full" onClick={handleClick}>
+            <Link href='/login' className="btn-primary w-full text-center" onClick={handleClick}>
               Log In
-            </button>
+            </Link>
             <ThemeToggle />
           </div>
         </nav>
