@@ -17,8 +17,9 @@ export function ThemeToggle() {
     <button
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="inline-flex size-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-100 focus:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
     >
-      {isDark ? <RiMoonFill size={24} /> : <RiSunFill size={24} />}
+      {isDark ? <RiMoonFill size={20} /> : <RiSunFill size={20} />}
     </button>
   );
 }
