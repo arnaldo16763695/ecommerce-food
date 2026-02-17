@@ -34,67 +34,61 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
 
   return (
     <>
-      <div className="bg-amber-50 text-center flex flex-col gap-2 items-center justify-center min-h-52 px-5 border-b border-amber-100">
-        <span className="rounded-full bg-white px-4 py-1 text-sm font-medium text-amber-700 border border-amber-100">
+      <div className="flex min-h-52 flex-col items-center justify-center gap-2 border-b border-amber-100 bg-amber-50 px-5 text-center dark:border-slate-700 dark:bg-slate-900">
+        <span className="rounded-full border border-amber-100 bg-white px-4 py-1 text-sm font-medium text-amber-700 dark:border-amber-300/30 dark:bg-slate-800 dark:text-amber-300">
           Curated for your space
         </span>
-        <h2 className="text-3xl text-neutral-800 px-5">Product details</h2>
-        <p className="text-gray-600 max-w-lg mx-auto">
+        <h2 className="px-5 text-3xl text-neutral-800 dark:text-slate-100">Product details</h2>
+        <p className="mx-auto max-w-lg text-gray-600 dark:text-slate-300">
           Compare finishes, check delivery perks, and review every detail before
           adding this piece to your home.
         </p>
       </div>
 
-      <section className="py-14 md:py-20 bg-linear-to-b from-slate-50 to-amber-50/40">
+      <section className="bg-linear-to-b from-slate-50 to-amber-50/40 py-14 dark:from-slate-900 dark:to-slate-800/50 md:py-20">
         <div className="page-container">
           <nav
             aria-label="Breadcrumb"
-            className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-6"
+            className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-slate-300"
           >
-            <Link
-              href="/"
-              className="hover:text-amber-600 focus:text-amber-600 transition"
-            >
+            <Link href="/" className="transition hover:text-amber-600 focus:text-amber-600">
               Home
             </Link>
             <span>/</span>
-            <Link
-              href="/shop"
-              className="hover:text-amber-600 focus:text-amber-600 transition"
-            >
+            <Link href="/shop" className="transition hover:text-amber-600 focus:text-amber-600">
               Shop
             </Link>
             <span>/</span>
-            <p className="text-gray-800 truncate max-w-56 md:max-w-full">
+            <p className="max-w-56 truncate text-gray-800 dark:text-slate-100 md:max-w-full">
               {product.name}
             </p>
           </nav>
 
           <Link
             href="/shop"
-            className="inline-flex items-center mb-8 font-medium focus:text-amber-700 text-amber-600 gap-2 hover:text-amber-700 transition-colors"
+            className="mb-8 inline-flex items-center gap-2 font-medium text-amber-600 transition-colors hover:text-amber-700 focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
           >
             <RiArrowLeftLine />
             Back to shop
           </Link>
 
-          <div className="grid lg:grid-cols-2 gap-8 xl:gap-14 items-start">
-            <div className="bg-linear-to-b from-amber-100 to-amber-50 rounded-3xl overflow-hidden p-8 border border-amber-200/60">
+          <div className="grid items-start gap-8 lg:grid-cols-2 xl:gap-14">
+            <div className="overflow-hidden rounded-3xl border border-amber-200/60 bg-linear-to-b from-amber-100 to-amber-50 p-8 dark:border-slate-700 dark:from-slate-800 dark:to-slate-700">
               <Image
                 src={product.img}
                 alt={product.name}
                 width={700}
                 height={700}
-                className="mx-auto w-full max-w-lg h-auto object-contain"
+                className="mx-auto h-auto w-full max-w-lg object-contain"
                 priority
               />
             </div>
 
-            <div className="space-y-6 lg:sticky lg:top-24 bg-white border border-amber-100 rounded-3xl p-6 md:p-8 shadow-sm">
-              <p className="text-sm text-amber-700 font-semibold tracking-wide uppercase">
+            <div className="space-y-6 rounded-3xl border border-amber-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:sticky lg:top-24 md:p-8">
+              <p className="text-sm font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                 {product.category}
               </p>
-              <h1 className="text-3xl md:text-4xl text-gray-900">{product.name}</h1>
+              <h1 className="text-3xl text-gray-900 dark:text-slate-100 md:text-4xl">{product.name}</h1>
 
               <div className="flex flex-wrap items-center gap-4">
                 <div
@@ -116,41 +110,41 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
                       <RiStarFill
                         key={index}
                         aria-hidden="true"
-                        className="text-amber-200"
+                        className="text-amber-200 dark:text-amber-300/40"
                         size={19}
                       />
                     );
                   })}
                 </div>
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-gray-600 dark:text-slate-300">
                   {product.star.toFixed(1)} · 126 reviews
                 </span>
               </div>
 
-              <p className="text-3xl font-cunia text-amber-600">${product.price}</p>
+              <p className="font-cunia text-3xl text-amber-600">${product.price}</p>
 
-              <p className="text-gray-700">{product.desc}</p>
+              <p className="text-gray-700 dark:text-slate-300">{product.desc}</p>
 
               <div className="grid gap-3 sm:grid-cols-[140px_1fr_52px]">
-                <label className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white">
-                  <span className="text-sm text-gray-600">Qty</span>
+                <label className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-900">
+                  <span className="text-sm text-gray-600 dark:text-slate-300">Qty</span>
                   <input
                     type="number"
                     min={1}
                     defaultValue={1}
-                    className="w-16 bg-transparent outline-none text-gray-800"
+                    className="w-16 bg-transparent text-gray-800 outline-none dark:text-slate-100"
                     aria-label="Product quantity"
                   />
                 </label>
                 <button
-                  className="btn-primary flex items-center gap-2 justify-center"
+                  className="btn-primary flex items-center justify-center gap-2"
                   aria-label={`Add ${product.name} to basket`}
                 >
                   <RiShoppingBag2Line size={20} aria-hidden="true" />
                   Add to basket
                 </button>
                 <button
-                  className="border border-gray-200 rounded-lg flex items-center justify-center hover:border-amber-400 hover:text-amber-700 transition-colors"
+                  className="flex items-center justify-center rounded-lg border border-gray-200 transition-colors hover:border-amber-400 hover:text-amber-700 dark:border-slate-600 dark:text-slate-200 dark:hover:border-amber-400 dark:hover:text-amber-300"
                   aria-label="Save to wishlist"
                 >
                   <RiHeart3Line size={20} aria-hidden="true" />
@@ -158,41 +152,41 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-gray-200 p-4 bg-white">
-                  <p className="text-sm text-gray-500">Availability</p>
-                  <p className="font-semibold text-emerald-700">In stock · Ships today</p>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Availability</p>
+                  <p className="font-semibold text-emerald-700 dark:text-emerald-400">In stock · Ships today</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 p-4 bg-white">
-                  <p className="text-sm text-gray-500">Estimated delivery</p>
-                  <p className="font-semibold text-gray-800">2 - 4 business days</p>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Estimated delivery</p>
+                  <p className="font-semibold text-gray-800 dark:text-slate-100">2 - 4 business days</p>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-200 p-5 bg-white">
-                <h2 className="text-lg text-gray-800 mb-4">Why shoppers love it</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-600 dark:bg-slate-900">
+                <h2 className="mb-4 text-lg text-gray-800 dark:text-slate-100">Why shoppers love it</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {productFeatures.map((feature) => (
                     <div key={feature.id} className="flex items-start gap-3">
-                      <span className="shrink-0 rounded-full bg-amber-100 p-2 text-amber-700">
+                      <span className="shrink-0 rounded-full bg-amber-100 p-2 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300">
                         <feature.icon aria-hidden="true" />
                       </span>
                       <div>
-                        <p className="font-cunia text-gray-900">{feature.title}</p>
-                        <p className="text-sm text-gray-600">{feature.text}</p>
+                        <p className="font-cunia text-gray-900 dark:text-slate-100">{feature.title}</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">{feature.text}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-5 text-sm text-gray-600 pt-1">
+              <div className="flex flex-wrap gap-5 pt-1 text-sm text-gray-600 dark:text-slate-300">
                 <p className="inline-flex items-center gap-2">
-                  <RiTruckLine className="text-amber-600" aria-hidden="true" /> Free
+                  <RiTruckLine className="text-amber-600 dark:text-amber-400" aria-hidden="true" /> Free
                   shipping over $100
                 </p>
                 <p className="inline-flex items-center gap-2">
                   <RiShieldCheckLine
-                    className="text-amber-600"
+                    className="text-amber-600 dark:text-amber-400"
                     aria-hidden="true"
                   />
                   30-day hassle-free returns
@@ -203,15 +197,15 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
 
           {relatedProducts.length > 0 && (
             <div className="mt-14">
-              <h2 className="text-2xl text-gray-900 mb-5">You may also like</h2>
+              <h2 className="mb-5 text-2xl text-gray-900 dark:text-slate-100">You may also like</h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {relatedProducts.map((item) => (
                   <Link
                     key={item.id}
                     href={`/shop/product/${item.id}/details`}
-                    className="rounded-2xl border border-gray-200 bg-white p-4 hover:border-amber-300 hover:shadow-sm transition"
+                    className="rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-amber-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-400"
                   >
-                    <div className="bg-amber-50 rounded-xl p-3 mb-3 flex items-center justify-center">
+                    <div className="mb-3 flex items-center justify-center rounded-xl bg-amber-50 p-3 dark:bg-slate-700/70">
                       <Image
                         src={item.img}
                         alt={item.name}
@@ -220,9 +214,9 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
                         className="h-28 w-28 object-contain"
                       />
                     </div>
-                    <p className="text-sm text-amber-700 font-medium mb-1">{item.category}</p>
-                    <h3 className="text-lg text-gray-900 mb-1">{item.name}</h3>
-                    <p className="text-amber-600 font-semibold">${item.price}</p>
+                    <p className="mb-1 text-sm font-medium text-amber-700 dark:text-amber-300">{item.category}</p>
+                    <h3 className="mb-1 text-lg text-gray-900 dark:text-slate-100">{item.name}</h3>
+                    <p className="font-semibold text-amber-600">${item.price}</p>
                   </Link>
                 ))}
               </div>
