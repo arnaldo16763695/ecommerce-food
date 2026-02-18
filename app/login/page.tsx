@@ -5,7 +5,7 @@ import Link from "next/link";
 function LoginPage() {
   return (
     <>
-      <section className="min-h-svh flex items-center justify-center bg-gradient-to-b from-amber-50/60 to-transparent px-4 py-12 dark:from-slate-800/40 dark:to-slate-900 sm:px-6 lg:px-8">
+      <section className="min-h-svh flex items-center justify-center bg-linear-to-b from-amber-50/60 to-transparent px-4 py-12 dark:from-slate-800/40 dark:to-slate-900 sm:px-6 lg:px-8">
         <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/50 sm:p-10 dark:border-slate-700 dark:bg-slate-800 dark:shadow-black/30">
           {/* Logo   */}
           <span className="font-cunia block text-center text-2xl font-semibold text-amber-600">
