@@ -2,12 +2,15 @@
 import Link from "next/link";
 import { navItems } from "@/data/data";
 import { RiCloseLine, RiMenuLine, RiShoppingBag2Line } from "@remixicon/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { ThemeToggle } from "./Theme-toggle";
-import { getMenuButtonLabel, getMobileMenuVisibilityClass } from "@/lib/header-utils";
-
+import {
+  getMenuButtonLabel,
+  getMobileMenuVisibilityClass,
+} from "@/lib/header-utils";
+import { useCartStore } from "../store/cartStore";
 const Header = () => {
   const [openMenu, setOpenMenu] = useState<boolean>(false);
   const pathName = usePathname();
@@ -29,6 +32,10 @@ const Header = () => {
     };
   }, []);
 
+  const items = useCartStore((state) => state.items);
+  const totalItems = useMemo(() => {
+    return items.reduce((total, item) => total + item.quantity, 0);
+  }, [items]);
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 py-3 font-cunia backdrop-blur dark:border-slate-700 dark:bg-gray-900/95">
       <div className="page-container flex items-center justify-between">
@@ -36,15 +43,21 @@ const Header = () => {
           Logo
         </Link>
 
-        <nav className="hidden w-full items-center justify-between lg:flex" aria-label="Primary navigation">
+        <nav
+          className="hidden w-full items-center justify-between lg:flex"
+          aria-label="Primary navigation"
+        >
           <ul className="mx-auto flex items-center justify-center gap-9 text-slate-800 dark:text-slate-100">
             {navItems.map((item) => (
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className={clsx("transition-colors hover:text-amber-600 focus:text-amber-600", {
-                    "text-amber-600": pathName === item.href,
-                  })}
+                  className={clsx(
+                    "transition-colors hover:text-amber-600 focus:text-amber-600",
+                    {
+                      "text-amber-600": pathName === item.href,
+                    },
+                  )}
                 >
                   {item.label}
                 </Link>
@@ -63,9 +76,11 @@ const Header = () => {
                   "text-amber-600": pathName === "/shopping-cart",
                 })}
               />
-              <span className="absolute right-0 top-0 flex size-5 items-center justify-center rounded-full bg-amber-600 text-xs text-white">
-                2
-              </span>
+              {totalItems > 0 && (
+                <span className="absolute right-0 top-0 flex size-5 items-center justify-center rounded-full bg-amber-600 text-xs text-white">
+                  {totalItems}
+                </span>
+              )}
             </Link>
             <Link href="/login" className="btn-primary">
               Log In
@@ -87,9 +102,12 @@ const Header = () => {
                   "text-amber-600": pathName === "/shopping-cart",
                 })}
               />
-              <span className="absolute right-0 top-0 flex size-5 items-center justify-center rounded-full bg-amber-600 text-xs text-white">
-                2
-              </span>
+
+              {totalItems > 0 && (
+                <span className="absolute right-0 top-0 flex size-5 items-center justify-center rounded-full bg-amber-600 text-xs text-white">
+                  {totalItems}
+                </span>
+              )}
             </Link>
             <button
               aria-label={getMenuButtonLabel(openMenu)}
@@ -110,9 +128,12 @@ const Header = () => {
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className={clsx("block rounded px-2 py-1 transition-colors hover:text-amber-600 focus:text-amber-600", {
-                      "text-amber-600": pathName === item.href,
-                    })}
+                    className={clsx(
+                      "block rounded px-2 py-1 transition-colors hover:text-amber-600 focus:text-amber-600",
+                      {
+                        "text-amber-600": pathName === item.href,
+                      },
+                    )}
                     onClick={handleClick}
                   >
                     {item.label}
@@ -120,7 +141,11 @@ const Header = () => {
                 </li>
               ))}
             </ul>
-            <Link href="/login" className="btn-primary block w-full text-center" onClick={handleClick}>
+            <Link
+              href="/login"
+              className="btn-primary block w-full text-center"
+              onClick={handleClick}
+            >
               Log In
             </Link>
             <ThemeToggle />

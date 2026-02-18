@@ -1,3 +1,4 @@
+"use client";
 import {
   RiArrowLeftLine,
   RiHeart3Line,
@@ -9,36 +10,40 @@ import {
 } from "@remixicon/react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { allProducts, productFeatures } from "@/data/data";
+import { useCartStore } from "@/store/cartStore";
 
-type ProductDetailsPageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
-  const { id } = await params;
-  const product = allProducts.find((item) => item.id === Number(id));
-
+function ProductDetailsPage() {
+  const params = useParams();
+  const productId = parseInt(params.id as string);
+  const product = allProducts.find((item) => item.id === Number(productId));
+  const addToCart = useCartStore((state) => state.addItem);
   if (!product) {
     notFound();
   }
+  const handleAddToCart = () => {
+    if (!product) return;
+    addToCart(product.id, 1);
+  };
 
   const fullStars = Math.floor(product.star);
   const hasHalfStar = product.star % 1 >= 0.5;
   const relatedProducts = allProducts
-    .filter((item) => item.category === product.category && item.id !== product.id)
+    .filter(
+      (item) => item.category === product.category && item.id !== product.id,
+    )
     .slice(0, 3);
 
   return (
     <>
       <div className="flex min-h-52 flex-col items-center justify-center gap-2 border-b border-amber-100 bg-amber-50 px-5 text-center dark:border-slate-700 dark:bg-slate-900">
-        <span className="rounded-full border border-amber-100 bg-white px-4 py-1 text-sm font-medium text-amber-700 dark:border-amber-300/30 dark:bg-slate-800 dark:text-amber-300">
+        {/* <span className="rounded-full border border-amber-100 bg-white px-4 py-1 text-sm font-medium text-amber-700 dark:border-amber-300/30 dark:bg-slate-800 dark:text-amber-300">
           Curated for your space
-        </span>
-        <h2 className="px-5 text-3xl text-neutral-800 dark:text-slate-100">Product details</h2>
+        </span> */}
+        <h2 className="px-5 text-3xl text-neutral-800 dark:text-slate-100">
+          Product details
+        </h2>
         <p className="mx-auto max-w-lg text-gray-600 dark:text-slate-300">
           Compare finishes, check delivery perks, and review every detail before
           adding this piece to your home.
@@ -51,11 +56,17 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
             aria-label="Breadcrumb"
             className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-slate-300"
           >
-            <Link href="/" className="transition hover:text-amber-600 focus:text-amber-600">
+            <Link
+              href="/"
+              className="transition hover:text-amber-600 focus:text-amber-600"
+            >
               Home
             </Link>
             <span>/</span>
-            <Link href="/shop" className="transition hover:text-amber-600 focus:text-amber-600">
+            <Link
+              href="/shop"
+              className="transition hover:text-amber-600 focus:text-amber-600"
+            >
               Shop
             </Link>
             <span>/</span>
@@ -88,7 +99,9 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
               <p className="text-sm font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                 {product.category}
               </p>
-              <h1 className="text-3xl text-gray-900 dark:text-slate-100 md:text-4xl">{product.name}</h1>
+              <h1 className="text-3xl text-gray-900 dark:text-slate-100 md:text-4xl">
+                {product.name}
+              </h1>
 
               <div className="flex flex-wrap items-center gap-4">
                 <div
@@ -97,12 +110,18 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
                 >
                   {[...Array(5)].map((_, index) => {
                     if (index < fullStars) {
-                      return <RiStarFill key={index} aria-hidden="true" size={19} />;
+                      return (
+                        <RiStarFill key={index} aria-hidden="true" size={19} />
+                      );
                     }
 
                     if (index === fullStars && hasHalfStar) {
                       return (
-                        <RiStarHalfFill key={index} aria-hidden="true" size={19} />
+                        <RiStarHalfFill
+                          key={index}
+                          aria-hidden="true"
+                          size={19}
+                        />
                       );
                     }
 
@@ -121,13 +140,19 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
                 </span>
               </div>
 
-              <p className="font-cunia text-3xl text-amber-600">${product.price}</p>
+              <p className="font-cunia text-3xl text-amber-600">
+                ${product.price}
+              </p>
 
-              <p className="text-gray-700 dark:text-slate-300">{product.desc}</p>
+              <p className="text-gray-700 dark:text-slate-300">
+                {product.desc}
+              </p>
 
               <div className="grid gap-3 sm:grid-cols-[140px_1fr_52px]">
                 <label className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-900">
-                  <span className="text-sm text-gray-600 dark:text-slate-300">Qty</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-300">
+                    Qty
+                  </span>
                   <input
                     type="number"
                     min={1}
@@ -139,6 +164,7 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
                 <button
                   className="btn-primary flex items-center justify-center gap-2"
                   aria-label={`Add ${product.name} to basket`}
+                  onClick={handleAddToCart}
                 >
                   <RiShoppingBag2Line size={20} aria-hidden="true" />
                   Add to basket
@@ -153,17 +179,27 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Availability</p>
-                  <p className="font-semibold text-emerald-700 dark:text-emerald-400">In stock · Ships today</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Availability
+                  </p>
+                  <p className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    In stock · Ships today
+                  </p>
                 </div>
                 <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Estimated delivery</p>
-                  <p className="font-semibold text-gray-800 dark:text-slate-100">2 - 4 business days</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Estimated delivery
+                  </p>
+                  <p className="font-semibold text-gray-800 dark:text-slate-100">
+                    2 - 4 business days
+                  </p>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-600 dark:bg-slate-900">
-                <h2 className="mb-4 text-lg text-gray-800 dark:text-slate-100">Why shoppers love it</h2>
+                <h2 className="mb-4 text-lg text-gray-800 dark:text-slate-100">
+                  Why shoppers love it
+                </h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {productFeatures.map((feature) => (
                     <div key={feature.id} className="flex items-start gap-3">
@@ -171,8 +207,12 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
                         <feature.icon aria-hidden="true" />
                       </span>
                       <div>
-                        <p className="font-cunia text-gray-900 dark:text-slate-100">{feature.title}</p>
-                        <p className="text-sm text-gray-600 dark:text-slate-300">{feature.text}</p>
+                        <p className="font-cunia text-gray-900 dark:text-slate-100">
+                          {feature.title}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">
+                          {feature.text}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -181,8 +221,11 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
 
               <div className="flex flex-wrap gap-5 pt-1 text-sm text-gray-600 dark:text-slate-300">
                 <p className="inline-flex items-center gap-2">
-                  <RiTruckLine className="text-amber-600 dark:text-amber-400" aria-hidden="true" /> Free
-                  shipping over $100
+                  <RiTruckLine
+                    className="text-amber-600 dark:text-amber-400"
+                    aria-hidden="true"
+                  />{" "}
+                  Free shipping over $100
                 </p>
                 <p className="inline-flex items-center gap-2">
                   <RiShieldCheckLine
@@ -197,7 +240,9 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
 
           {relatedProducts.length > 0 && (
             <div className="mt-14">
-              <h2 className="mb-5 text-2xl text-gray-900 dark:text-slate-100">You may also like</h2>
+              <h2 className="mb-5 text-2xl text-gray-900 dark:text-slate-100">
+                You may also like
+              </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {relatedProducts.map((item) => (
                   <Link
@@ -214,9 +259,15 @@ async function ProductDetailsPage({ params }: ProductDetailsPageProps) {
                         className="h-28 w-28 object-contain"
                       />
                     </div>
-                    <p className="mb-1 text-sm font-medium text-amber-700 dark:text-amber-300">{item.category}</p>
-                    <h3 className="mb-1 text-lg text-gray-900 dark:text-slate-100">{item.name}</h3>
-                    <p className="font-semibold text-amber-600">${item.price}</p>
+                    <p className="mb-1 text-sm font-medium text-amber-700 dark:text-amber-300">
+                      {item.category}
+                    </p>
+                    <h3 className="mb-1 text-lg text-gray-900 dark:text-slate-100">
+                      {item.name}
+                    </h3>
+                    <p className="font-semibold text-amber-600">
+                      ${item.price}
+                    </p>
                   </Link>
                 ))}
               </div>

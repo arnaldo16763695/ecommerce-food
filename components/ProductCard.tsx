@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { productCardProps } from "../types/types";
 import Image from "next/image";
@@ -8,10 +9,17 @@ import {
   RiStarFill,
   RiStarHalfFill,
 } from "@remixicon/react";
+import { useCartStore } from "../store/cartStore";
 
 function ProductCard({ id, img, price, name, star }: productCardProps) {
+  const addToCart = useCartStore((state) => state.addItem);
+
   const fullStars = Math.floor(star);
   const hasHalfStar = star % 1 >= 0.5;
+
+  const handleAddToCart = () => {
+    addToCart(id, 1);
+  };
 
   return (
     <div className="group relative flex flex-col gap-2.5 rounded-md border border-slate-200 bg-white p-8 transition-all hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:hover:shadow-black/30">
@@ -35,6 +43,7 @@ function ProductCard({ id, img, price, name, star }: productCardProps) {
         <button
           className="btn-primary flex w-full items-center justify-center gap-1"
           aria-label={`Add ${name} to basket`}
+          onClick={handleAddToCart}
         >
           <span>
             <RiShoppingBag2Line size={22} />
