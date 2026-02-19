@@ -5,12 +5,17 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { LoginFormSchema } from "@/lib/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 function LoginPage() {
+  const router = useRouter();
+  const [authError, setAuthError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }, 
+    formState: { errors, isSubmitting },
   } = useForm<z.infer<typeof LoginFormSchema>>({
     resolver: zodResolver(LoginFormSchema),
     defaultValues: {
@@ -21,10 +26,23 @@ function LoginPage() {
 
   async function onSubmit(data: z.infer<typeof LoginFormSchema>) {
     try {
-      // Simular una petición
-      // await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log(data);
-      // Aquí iría tu lógica de autenticación
+      setAuthError(null);
+      const res = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false, // para manejarlo tú (tu UI)
+        callbackUrl: "/", // a dónde quieres ir al loguearte
+      });
+
+      if (res?.error === "CredentialsSignin") {
+        // Aquí muestras tu error en tu UI (toast, alert, setError de RHF, etc.)
+        setAuthError("Wrong email or password.");
+        return;
+      }
+
+      // Login OK
+      router.push(res?.url ?? "/");
+      //console.log("Login OK", res?.url);
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
     }
@@ -134,6 +152,11 @@ function LoginPage() {
               </div>
 
               {/* Btn  */}
+              {authError && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {authError}
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -182,13 +205,13 @@ function LoginPage() {
 
             {/* Social login buttons   */}
             <div className="grid gap-4 grid-cols-2 font-cunia">
-              <button className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+              <button onClick={() => signIn("google", { callbackUrl: "/" })} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
                 <span className="">
                   <RiGoogleFill />
                 </span>
                 Google
               </button>
-              <button className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+              <button onClick={() => signIn("facebook", { callbackUrl: "/" })} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
                 <span>
                   <RiFacebookFill />
                 </span>
@@ -201,7 +224,7 @@ function LoginPage() {
                 Don&apos;t have an account?
               </span>
               <Link
-                href="#"
+                href="/signup"
                 className="font-medium transition-colors hover:text-amber-600 hover:underline focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
               >
                 Sign up
