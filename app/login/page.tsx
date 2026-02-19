@@ -1,8 +1,35 @@
+"use client";
 import { RiFacebookFill, RiGoogleFill } from "@remixicon/react";
-import React from "react";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { LoginFormSchema } from "@/lib/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 function LoginPage() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting }, 
+  } = useForm<z.infer<typeof LoginFormSchema>>({
+    resolver: zodResolver(LoginFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  async function onSubmit(data: z.infer<typeof LoginFormSchema>) {
+    try {
+      // Simular una petición
+      // await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log(data);
+      // Aquí iría tu lógica de autenticación
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+    }
+  }
+
   return (
     <>
       <section className="min-h-svh flex items-center justify-center bg-linear-to-b from-amber-50/60 to-transparent px-4 py-12 dark:from-slate-800/40 dark:to-slate-900 sm:px-6 lg:px-8">
@@ -21,7 +48,11 @@ function LoginPage() {
               </p>
             </div>
             {/* Form   */}
-            <form action="" className="space-y-6" noValidate>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-6"
+              noValidate
+            >
               {/* Wrapper  */}
               <div className="space-y-5">
                 {/* Email field  */}
@@ -34,14 +65,23 @@ function LoginPage() {
                   </label>
                   <input
                     type="email"
-                    name="email"
                     id="email"
                     placeholder="Enter your email"
                     autoComplete="email"
-                    required
-                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-amber-400 dark:focus:ring-amber-400/30"
+                    className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
+                      errors.email
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500/30 dark:border-red-500"
+                        : "border-gray-300 focus:border-amber-500 focus:ring-amber-500/30 dark:border-slate-600 dark:focus:border-amber-400 dark:focus:ring-amber-400/30"
+                    } bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400`}
+                    {...register("email")}
                   />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
+
                 {/* Password field  */}
                 <div>
                   <label
@@ -52,22 +92,30 @@ function LoginPage() {
                   </label>
                   <input
                     type="password"
-                    name="password"
                     id="password"
                     placeholder="Enter your password"
                     autoComplete="current-password"
-                    required
-                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-amber-400 dark:focus:ring-amber-400/30"
+                    className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
+                      errors.password
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500/30 dark:border-red-500"
+                        : "border-gray-300 focus:border-amber-500 focus:ring-amber-500/30 dark:border-slate-600 dark:focus:border-amber-400 dark:focus:ring-amber-400/30"
+                    } bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400`}
+                    {...register("password")}
                   />
+                  {errors.password && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {errors.password.message}
+                    </p>
+                  )}
                 </div>
               </div>
+
               {/* Wrapper  */}
               <div className="flex items-center justify-between flex-wrap gap-5">
                 <div className="flex items-center gap-2">
                   <input
                     className="size-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600 dark:border-slate-600 dark:bg-slate-900"
                     type="checkbox"
-                    name="remember"
                     id="remember"
                   />
                   <label
@@ -86,10 +134,40 @@ function LoginPage() {
               </div>
 
               {/* Btn  */}
-              <button className="btn-primary w-full py-3 text-lg">
-                Sign in
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn-primary w-full py-3 text-lg disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="h-5 w-5 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Signing in...
+                  </span>
+                ) : (
+                  "Sign in"
+                )}
               </button>
             </form>
+
             {/* Divider  */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -101,13 +179,14 @@ function LoginPage() {
                 </span>
               </div>
             </div>
+
             {/* Social login buttons   */}
             <div className="grid gap-4 grid-cols-2 font-cunia">
               <button className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
                 <span className="">
                   <RiGoogleFill />
                 </span>
-                  Google
+                Google
               </button>
               <button className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
                 <span>
@@ -118,7 +197,9 @@ function LoginPage() {
             </div>
 
             <div className="text-center text-sm gap-2 flex justify-center flex-wrap">
-              <span className="block text-gray-600 dark:text-slate-300">Don&apos;t have an account?</span>
+              <span className="block text-gray-600 dark:text-slate-300">
+                Don&apos;t have an account?
+              </span>
               <Link
                 href="#"
                 className="font-medium transition-colors hover:text-amber-600 hover:underline focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
