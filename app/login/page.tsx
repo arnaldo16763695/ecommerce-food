@@ -6,15 +6,30 @@ import { z } from "zod";
 import { LoginFormSchema } from "@/lib/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+
+// Type definition for NextAuth signIn response with additional properties
+interface SignInResponse {
+  error?: string | null;
+  url?: string | null;
+  code?: string | null;
+}
 
 function LoginPage() {
   const router = useRouter();
   const [authError, setAuthError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
+
+  const sp = useSearchParams();
+  const verify = sp.get("verify");
+  const email = sp.get("email");
+  const verified = sp.get("verified"); // from /verify-email redirect
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<z.infer<typeof LoginFormSchema>>({
     resolver: zodResolver(LoginFormSchema),
@@ -27,24 +42,61 @@ function LoginPage() {
   async function onSubmit(data: z.infer<typeof LoginFormSchema>) {
     try {
       setAuthError(null);
+      setNeedsVerification(false); // ✅ reset every submit
+      setResendMsg(null); // ✅ reset every submit
+
       const res = await signIn("credentials", {
         email: data.email,
         password: data.password,
-        redirect: false, // para manejarlo tú (tu UI)
-        callbackUrl: "/", // a dónde quieres ir al loguearte
+        redirect: false, // We'll handle redirects ourselves (custom UI)
+        callbackUrl: "/", // Where to go after a successful login
       });
 
-      if (res?.error === "CredentialsSignin") {
-        // Aquí muestras tu error en tu UI (toast, alert, setError de RHF, etc.)
+      let error: string | null = null;
+      let code: string | null = null;
+
+      if (typeof res === "string") {
+        // Sometimes signIn returns a URL string
+        const u = new URL(res, window.location.origin);
+        error = u.searchParams.get("error");
+        code = u.searchParams.get("code");
+      } else {
+        error = (res as SignInResponse | undefined)?.error ?? null;
+
+        // Some builds expose `code`, others put it inside the returned URL
+        const maybeCode = (res as SignInResponse | undefined)?.code ?? null;
+        if (maybeCode) code = maybeCode;
+        else if ((res as SignInResponse | undefined)?.url) {
+          const u = new URL(
+            (res as SignInResponse).url!,
+            window.location.origin,
+          );
+          code = u.searchParams.get("code");
+        }
+      }
+
+      // Email not verified
+      if (error === "CredentialsSignin" && code === "EmailNotVerified") {
+        setAuthError("You must verify your email before signing in.");
+        setNeedsVerification(true);
+        return;
+      }
+
+      // Wrong email/password
+      if (error === "CredentialsSignin") {
         setAuthError("Wrong email or password.");
         return;
       }
 
       // Login OK
-      router.push(res?.url ?? "/");
-      //console.log("Login OK", res?.url);
-    } catch (error) {
-      console.error("Error al iniciar sesión:", error);
+      router.push(
+        (typeof res === "string"
+          ? res
+          : (res as SignInResponse | undefined)?.url) ?? "/",
+      );
+    } catch (err) {
+      console.error("Sign-in error:", err);
+      setAuthError("Something went wrong. Please try again.");
     }
   }
 
@@ -65,6 +117,27 @@ function LoginPage() {
                 Sign in to continue ordering your favorite meals.
               </p>
             </div>
+
+            {verify === "sent" && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
+                We sent you a verification link{email ? ` to ${email}` : ""}.
+                Please check your inbox.
+              </div>
+            )}
+
+            {verified === "1" && (
+              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 dark:border-green-400/30 dark:bg-green-400/10 dark:text-green-200">
+                Email verified. You can sign in now.
+              </div>
+            )}
+
+            {verified === "0" && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-400/30 dark:bg-red-400/10 dark:text-red-200">
+                Verification link is invalid or expired. You can request a new
+                one below.
+              </div>
+            )}
+
             {/* Form   */}
             <form
               onSubmit={handleSubmit(onSubmit)}
@@ -153,10 +226,42 @@ function LoginPage() {
 
               {/* Btn  */}
               {authError && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {authError}
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    {authError}
+                  </p>
+
+                  {needsVerification && (
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-amber-600 hover:underline dark:text-amber-400"
+                      onClick={async () => {
+                        setResendMsg(null);
+
+                        const email = getValues("email"); // de react-hook-form
+                        await fetch("/api/auth/resend-verification", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ email }),
+                        });
+
+                        setResendMsg(
+                          "Listo. Si ese correo existe y no está verificado, te reenviamos el enlace.",
+                        );
+                      }}
+                    >
+                      Reenviar verificación
+                    </button>
+                  )}
+
+                  {resendMsg && (
+                    <p className="text-sm text-gray-600 dark:text-slate-300">
+                      {resendMsg}
+                    </p>
+                  )}
+                </div>
               )}
+
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -205,13 +310,21 @@ function LoginPage() {
 
             {/* Social login buttons   */}
             <div className="grid gap-4 grid-cols-2 font-cunia">
-              <button onClick={() => signIn("google", { callbackUrl: "/" })} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+              <button
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+              >
                 <span className="">
                   <RiGoogleFill />
                 </span>
                 Google
               </button>
-              <button onClick={() => signIn("facebook", { callbackUrl: "/" })} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+              <button
+                type="button"
+                onClick={() => signIn("facebook", { callbackUrl: "/" })}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+              >
                 <span>
                   <RiFacebookFill />
                 </span>

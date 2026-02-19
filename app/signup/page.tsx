@@ -72,23 +72,23 @@ export default function SignUpPage() {
         return;
       }
 
-      // 2) Auto-login
-      const login = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-        callbackUrl: "/",
-      });
-
-      if (login?.error) {
-        // Si falla el auto-login, al menos envía al login
-        router.push("/login");
-        return;
-      }
-
-      router.push(login?.url ?? "/");
+      // // 2) Auto-login
+      // const login = await signIn("credentials", {
+      //   email: data.email,
+      //   password: data.password,
+      //   redirect: false,
+      //   callbackUrl: "/",
+      // });     
+      // if (login?.error) {
+        //   // Si falla el auto-login, al menos envía al login
+        //   router.push("/login");
+        //   return;
+        // }        
+        // router.push(login?.url ?? "/");
+        router.push(`/login?verify=sent&email=${encodeURIComponent(data.email)}`);
     } catch (e) {
       setServerError("Server error. Please try again.");
+      console.log(e)
     }
   }
 
