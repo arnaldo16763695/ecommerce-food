@@ -3,7 +3,7 @@ export type LoginCardProps = {
   setOpen: (value: boolean) => void;
 };
 export type productCardProps = {
-  id: number;
+  id: string;
   name: string;
   price: number;
   img: string;
@@ -11,14 +11,14 @@ export type productCardProps = {
 };
 
 export type CartItem = {
-  id: number;
+  id: string;
   quantity: number;
 };
 export type CartStore = {
   items: CartItem[];
-  addItem: (productId: number, quantity?: number) => void;
-  removeItem: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  addItem: (productId: string, quantity?: number) => void;
+  removeItem: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
 };
 

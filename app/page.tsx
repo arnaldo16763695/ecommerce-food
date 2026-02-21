@@ -1,10 +1,16 @@
-import { allProducts, categoryItems, testimonials } from "@/data/data";
+import { categoryItems, testimonials } from "@/data/data";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
 import { RiDoubleQuotesL } from "@remixicon/react";
+import { getAllProducts } from "@/lib/data/productsData";
+import { getAllCategories } from "@/lib/data/productsData";
 
-export default function Home() {
+export default async function Home() {
+  const allProductsDB = await getAllProducts();
+  const allCategoriesDB = await getAllCategories();
+  console.log(allProductsDB);
+  console.log(allCategoriesDB);
   return (
     <>
       {/* hero section  */}
@@ -21,7 +27,7 @@ export default function Home() {
       {/* Category section  */}
       <section className="mt-16 relative z-10 lg:-mt-36">
         <div className="page-container grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {categoryItems.map((category) => (
+          {allCategoriesDB.map((category) => (
             // Card
             <div
               key={category.id}
@@ -30,17 +36,17 @@ export default function Home() {
               {/* Title and Quantity  */}
               <div>
                 <h2 className="text-2xl dark:text-gray-900">
-                  {category.title}
+                  {category.name}
                 </h2>
-                <p className="text-gray-500">{category.quantity} items</p>
+                <p className="text-gray-500">{'10'} items</p>
               </div>
               {/* Product image  */}
               <div className="max-w-max mx-auto mt-12">
                 <Image
-                  src={category.img}
-                  alt={category.title}
-                  width={category.width}
-                  height={category.height}
+                  src={category.imgUrl}
+                  alt={category.name}
+                  width={200}
+                  height={200}
                   // className="w-auto h-auto object-contain"
                 />
               </div>
@@ -55,8 +61,8 @@ export default function Home() {
           <h2 className="section-title text-center">Explore all products</h2>
           {/* Card wrapper */}
           <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
-            {allProducts.slice(4, 12).map((product) => (
-              <ProductCard key={product.id} {...product} />
+            {allProductsDB.slice(0, 12).map((product) => (
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
           <Link
