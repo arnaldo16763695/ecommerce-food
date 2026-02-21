@@ -3,32 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getTenantBySlug } from "@/lib/tenant";
-
-const FRACTION_DIGITS: Record<string, number> = {
-  CLP: 0,
-  USD: 2,
-  VES: 2, // Venezuelan Bolivar (ISO code)
-};
-
-const LOCALE_BY_CURRENCY: Record<string, string> = {
-  CLP: "es-CL",
-  VES: "es-VE",
-  USD: "en-US",
-};
-
-function formatMoney(amountMinor: number, currency: string) {
-  const digits = FRACTION_DIGITS[currency] ?? 2;
-  const locale = LOCALE_BY_CURRENCY[currency] ?? "es-CL";
-
-  const value = amountMinor / 10 ** digits;
-
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(value);
-}
+import { formatMoney } from "@/lib/money";
 
 export default async function TenantStorefrontPage({
   params,
@@ -38,15 +13,9 @@ export default async function TenantStorefrontPage({
   // Support both sync and async params shapes across Next versions.
   const resolvedParams = await Promise.resolve(params);
   const tenantSlug = resolvedParams?.tenantSlug;
-  console.log("[tenant-page] params debug:", { tenantSlug, resolvedParams });
   if (!tenantSlug) notFound();
 
   const tenant = await getTenantBySlug(tenantSlug);
-  console.log("[tenant-page] tenant lookup result:", {
-    tenantSlug,
-    found: Boolean(tenant),
-    tenantId: tenant?.id ?? null,
-  });
   if (!tenant) notFound();
 
   const categories = await prisma.category.findMany({
