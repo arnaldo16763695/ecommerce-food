@@ -1,105 +1,109 @@
-import { allProducts, categoryItems, testimonials } from "@/data/data";
-import Image from "next/image";
-import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
-import { RiDoubleQuotesL } from "@remixicon/react";
 
-export default function Home() {
+import prisma from "@/lib/prisma";
+import { formatMoney } from "@/lib/money";
+
+export default async function Home() {
+  const tenants = await prisma.tenant.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      currency: true,
+      _count: {
+        select: {
+          categories: true,
+          products: true,
+        },
+      },
+      products: {
+        where: { isActive: true },
+        orderBy: [{ isFeatured: "desc" }, { updatedAt: "desc" }],
+        take: 3,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          basePriceCents: true,
+        },
+      },
+    },
+  });
+
   return (
-    <>
-      {/* hero section  */}
-      <section className="lg:mt-4 lg:px-4">
-        <div className="page-container bg-[url('/images/hero-img.png')] opacity-100 bg-center bg-cover bg-no-repeat min-h-[75svh] flex items-center justify-center flex-col text-white lg:rounded-2xl text-center">
-          <p className="bg-white/70 p-2 rounded-lg  text-amber-600 font-light tracking-wide uppercase">
-            Delicious food, fast delivery
-          </p>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl">
-            Order your favorite food
-          </h1>
-        </div>
-      </section>
-      {/* Category section  */}
-      <section className="mt-16 relative z-10 lg:-mt-36">
-        <div className="page-container grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {categoryItems.map((category) => (
-            // Card
-            <div
-              key={category.id}
-              className="bg-white border  border-amber-100 block hover:bg-amber-50 rounded-xl px-10 py-8 transition cursor-pointer hover:translate-y-[-4px] hover:shadow-lg dark:hover:shadow-slate-600"
-            >
-              {/* Title and Quantity  */}
-              <div>
-                <h2 className="text-2xl dark:text-gray-900">
-                  {category.title}
-                </h2>
-                <p className="text-gray-500">{category.quantity} items</p>
-              </div>
-              {/* Product image  */}
-              <div className="max-w-max mx-auto mt-12">
-                <Image
-                  src={category.img}
-                  alt={category.title}
-                  width={category.width}
-                  height={category.height}
-                  // className="w-auto h-auto object-contain"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-      {/* Products section */}
-      <section className="pt-28">
-        <div className="page-container">
-          {/* Title  */}
-          <h2 className="section-title text-center">Explore all products</h2>
-          {/* Card wrapper */}
-          <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
-            {allProducts.slice(4, 12).map((product) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
-          </div>
-          <Link
-            href="/shop"
-            className="btn-primary block mt-14 mx-auto max-w-max"
-          >
-            View all products
-          </Link>
-        </div>
-      </section>
+    <main className="mx-auto max-w-6xl p-6 space-y-12">
+      <header className="rounded-2xl border bg-muted/20 p-8 md:p-10">
+        <p className="text-sm uppercase tracking-wide text-muted-foreground">
+          Ecommerce Multitenant
+        </p>
+        <h1 className="mt-2 text-3xl font-bold md:text-4xl">
+          Elige una tienda para comenzar a comprar
+        </h1>
+        <p className="mt-3 max-w-3xl text-muted-foreground">
+          Cada negocio tiene su propio catálogo, precios y experiencia.
+          Selecciona una tienda activa para ver su menú.
+        </p>
+      </header>
 
-      {/* Testimonials  */}
-      <section className="py-28">
-        <div className="page-container">
-          <h2 className="section-title text-center">What our Clients say</h2>
-          <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-11 lg:mt-14">
-            {testimonials.map((testimonial) => (
-              // Card 
-              <div key={testimonial.id} className="bg-white dark:bg-gray-900 p-8 rounded-xl flex flex-col items-center">
-                <span className="text-amber-600 mb-3">
-                  <RiDoubleQuotesL />
-                </span>
-                <p className="text-gray-600 mb-6">&ldquo;{testimonial.quote}&rdquo;</p>
-                <div className="flex flex-col items-center mt-auto">
-                  <div className="size-16">
-                    <Image
-                      src={testimonial.img}
-                      alt={testimonial.name}
-                      width={150}
-                      height={150}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  </div>
-                  <div className="mt-3 text-center">
-                      <h3>{testimonial.name}</h3>
-                      <p className="text-sm text-gray-600">{testimonial.role}</p>
-                  </div>
+      {tenants.length === 0 ? (
+        <section className="rounded-2xl border p-10 text-center">
+          <h2 className="text-xl font-semibold">No hay tiendas activas</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Crea un tenant y ejecuta el seed para ver tiendas disponibles.
+          </p>
+        </section>
+      ) : (
+        <section className="space-y-5">
+          <h2 className="text-2xl font-semibold">Tiendas disponibles</h2>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {tenants.map((tenant) => (
+              <article key={tenant.id} className="rounded-2xl border p-5 space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-semibold">{tenant.name}</h3>
+                  <p className="text-sm text-muted-foreground">/t/{tenant.slug}</p>
                 </div>
-              </div>
+
+                <div className="flex gap-5 text-sm text-muted-foreground">
+                  <span>{tenant._count.categories} categorías</span>
+                  <span>{tenant._count.products} productos</span>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Productos destacados</p>
+                  {tenant.products.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Esta tienda todavía no tiene productos activos.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1 text-sm">
+                      {tenant.products.map((product) => (
+                        <li key={product.id} className="flex justify-between gap-3">
+                          <span className="truncate">{product.name}</span>
+                          <span className="text-muted-foreground">
+                            {formatMoney(product.basePriceCents, tenant.currency)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <Link
+                    href={`/t/${tenant.slug}`}
+                    className="inline-flex rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+                  >
+                    Ver tienda
+                  </Link>
+                </div>
+              </article>
             ))}
           </div>
-        </div>
-      </section>
-    </>
+        </section>
+      )}
+    </main>
   );
 }
