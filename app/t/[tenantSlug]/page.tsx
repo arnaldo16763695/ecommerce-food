@@ -33,14 +33,21 @@ function formatMoney(amountMinor: number, currency: string) {
 export default async function TenantStorefrontPage({
   params,
 }: {
-  params: { tenantSlug: string };
+  params: { tenantSlug: string } | Promise<{ tenantSlug: string }>;
 }) {
+  // Support both sync and async params shapes across Next versions.
+  const resolvedParams = await Promise.resolve(params);
+  const tenantSlug = resolvedParams?.tenantSlug;
+  console.log("[tenant-page] params debug:", { tenantSlug, resolvedParams });
+  if (!tenantSlug) notFound();
 
-const tenantSlug = params?.tenantSlug;
-if (!tenantSlug) notFound();
-
-const tenant = await getTenantBySlug(tenantSlug);
-if (!tenant) notFound(); 
+  const tenant = await getTenantBySlug(tenantSlug);
+  console.log("[tenant-page] tenant lookup result:", {
+    tenantSlug,
+    found: Boolean(tenant),
+    tenantId: tenant?.id ?? null,
+  });
+  if (!tenant) notFound();
 
   const categories = await prisma.category.findMany({
     where: { tenantId: tenant.id, isActive: true },
@@ -76,7 +83,9 @@ if (!tenant) notFound();
           <h2 className="text-xl font-semibold">{cat.name}</h2>
 
           {cat.products.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No products in this category.</p>
+            <p className="text-sm text-muted-foreground">
+              No products in this category.
+            </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {cat.products.map((p) => (
