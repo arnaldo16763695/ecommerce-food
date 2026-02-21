@@ -9,8 +9,8 @@ export default function Home() {
     <>
       {/* hero section  */}
       <section className="lg:mt-4 lg:px-4">
-        <div className="page-container bg-[url('/images/hero-img.png')] bg-center bg-cover bg-no-repeat min-h-[75svh] flex items-center justify-center flex-col text-white lg:rounded-2xl text-center">
-          <p className="text-amber-400 font-light tracking-wide uppercase">
+        <div className="page-container bg-[url('/images/hero-img.png')] opacity-100 bg-center bg-cover bg-no-repeat min-h-[75svh] flex items-center justify-center flex-col text-white lg:rounded-2xl text-center">
+          <p className="bg-white/70 p-2 rounded-lg  text-amber-600 font-light tracking-wide uppercase">
             Delicious food, fast delivery
           </p>
           <h1 className="text-4xl md:text-5xl lg:text-6xl">
