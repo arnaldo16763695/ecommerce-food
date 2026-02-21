@@ -13,6 +13,9 @@ datasource db {
   provider = "postgresql"
 }
 
+// =========================
+// AUTH (NextAuth-style)
+// =========================
 model Account {
   id                String  @id @default(cuid())
   userId            String  @map("user_id")
@@ -51,11 +54,14 @@ model User {
   emailVerified DateTime? @map("email_verified")
   image         String?
 
-  // Para Credentials (NO guardes la contraseña en texto plano)
+  // For Credentials (never store the password in plain text)
   passwordHash String? @map("password_hash")
 
   accounts Account[]
   sessions Session[]
+
+  tenantUsers TenantUser[]
+  orders      Order[]
 
   @@map("users")
 }
@@ -67,4 +73,302 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+// =========================
+// ENUMS
+// =========================
+enum TenantUserRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum FulfillmentType {
+  PICKUP
+  DELIVERY
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+// =========================
+// TENANT (Business) + Roles
+// =========================
+model Tenant {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String
+  currency String @default("CLP")
+  timezone String @default("America/Santiago")
+  phone    String?
+  address  String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users        TenantUser[]
+  categories   Category[]
+  products     Product[]
+  optionGroups OptionGroup[]
+  orders       Order[]
+
+  @@unique([slug])
+  @@map("tenants")
+}
+
+model TenantUser {
+  id       String         @id @default(cuid())
+  tenantId String         @map("tenant_id")
+  userId   String         @map("user_id")
+  role     TenantUserRole @default(STAFF)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@index([tenantId])
+  @@map("tenant_users")
+}
+
+// =========================
+// Categories / Products
+// =========================
+model Category {
+  id       String  @id @default(cuid())
+  tenantId String  @map("tenant_id")
+  name     String
+  slug     String
+  sortOrder Int    @default(0) @map("sort_order")
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, sortOrder])
+  @@map("categories")
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  tenantId    String  @map("tenant_id")
+  categoryId  String? @map("category_id")
+
+  name        String
+  slug        String
+  description String?
+  basePriceCents Int  @map("base_price_cents")
+
+  isActive   Boolean @default(true) @map("is_active")
+  isFeatured Boolean @default(false) @map("is_featured")
+  prepTimeMin Int?   @map("prep_time_min")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  images       ProductImage[]
+  optionGroups ProductOptionGroup[]
+
+  orderItems   OrderItem[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, isActive])
+  @@index([categoryId])
+  @@map("products")
+  @@unique([id, tenantId]) // enables composite relations (DB-level tenant safety)
+}
+
+model ProductImage {
+  id        String @id @default(cuid())
+  productId String @map("product_id")
+  url       String
+  alt       String?
+  sortOrder Int    @default(0) @map("sort_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+// =========================
+// MODIFIERS (No lettuce, extra cheese, etc.)
+// =========================
+model OptionGroup {
+  id       String @id @default(cuid())
+  tenantId String @map("tenant_id")
+
+  name      String
+  minSelect Int    @default(0) @map("min_select")
+  maxSelect Int    @default(1) @map("max_select")
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  options  Option[]
+  products ProductOptionGroup[]
+
+  @@index([tenantId, sortOrder])
+  @@map("option_groups")
+  @@unique([id, tenantId]) // enables composite relations (DB-level tenant safety)
+}
+
+model Option {
+  id      String @id @default(cuid())
+  groupId String @map("group_id")
+
+  name            String
+  priceDeltaCents Int    @default(0) @map("price_delta_cents")
+  isActive        Boolean @default(true) @map("is_active")
+  sortOrder       Int     @default(0) @map("sort_order")
+
+  group OptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  orderItemOptions OrderItemOption[]
+
+  @@index([groupId, sortOrder])
+  @@map("options")
+}
+
+// Join table: which option groups apply to each product
+model ProductOptionGroup {
+  id        String @id @default(cuid())
+  tenantId  String @map("tenant_id")
+  productId String @map("product_id")
+  groupId   String @map("group_id")
+  sortOrder Int    @default(0) @map("sort_order")
+
+  product Product     @relation(fields: [productId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  group   OptionGroup @relation(fields: [groupId, tenantId], references: [id, tenantId], onDelete: Cascade)
+
+  @@unique([tenantId, productId, groupId])
+  @@index([tenantId, productId, sortOrder])
+  @@map("product_option_groups")
+}
+
+// =========================
+// Orders
+// =========================
+model Order {
+  id       String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  userId   String? @map("user_id")
+
+  orderNumber Int? @map("order_number")
+
+  status        OrderStatus      @default(PENDING)
+  fulfillmentType FulfillmentType @map("fulfillment_type")
+  paymentStatus PaymentStatus    @default(UNPAID) @map("payment_status")
+
+  customerName  String @map("customer_name")
+  customerPhone String? @map("customer_phone")
+  customerEmail String? @map("customer_email")
+
+  notes        String?
+  scheduledFor DateTime? @map("scheduled_for")
+
+  subtotalCents    Int @map("subtotal_cents")
+  discountCents    Int @default(0) @map("discount_cents")
+  deliveryFeeCents Int @default(0) @map("delivery_fee_cents")
+  taxCents         Int @default(0) @map("tax_cents")
+  totalCents       Int @map("total_cents")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  address OrderAddress?
+  items   OrderItem[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, createdAt])
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderAddress {
+  id      String @id @default(cuid())
+  orderId String @unique @map("order_id")
+
+  address1 String @map("address_1")
+  address2 String? @map("address_2")
+  city     String?
+  notes    String?
+  lat      Float?
+  lng      Float?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_addresses")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String @map("order_id")
+  productId String? @map("product_id")
+
+  nameSnapshot   String @map("name_snapshot")
+  unitPriceCents Int    @map("unit_price_cents")
+  quantity       Int
+
+  notes String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  options OrderItemOption[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model OrderItemOption {
+  id          String @id @default(cuid())
+  orderItemId String @map("order_item_id")
+  optionId    String? @map("option_id")
+
+  groupNameSnapshot  String @map("group_name_snapshot")
+  optionNameSnapshot String @map("option_name_snapshot")
+  priceDeltaCents    Int    @default(0) @map("price_delta_cents")
+  quantity           Int    @default(1)
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  option    Option?   @relation(fields: [optionId], references: [id], onDelete: SetNull)
+
+  @@index([orderItemId])
+  @@index([optionId])
+  @@map("order_item_options")
 }
