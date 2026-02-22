@@ -11,16 +11,38 @@ export type productCardProps = {
 };
 
 export type CartItem = {
+  // Unique key per cart line (product + selected options + notes)
   id: string;
+  // Base product id. For legacy local data this may be missing.
+  productId?: string;
   quantity: number;
+  unitPriceCents?: number;
+  notes?: string;
+  options?: CartItemOption[];
+};
+
+export type CartItemOption = {
+  optionId: string;
+  groupName: string;
+  optionName: string;
+  priceDeltaCents: number;
+};
+
+export type AddCartItemInput = {
+  productId: string;
+  quantity?: number;
+  lineKey?: string;
+  unitPriceCents?: number;
+  notes?: string;
+  options?: CartItemOption[];
 };
 
 export type CartStore = {
   items: CartItem[];
   isHydratedFromServer: boolean;
-  addItem: (productId: string, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addItem: (item: string | AddCartItemInput, quantity?: number) => void;
+  removeItem: (lineKey: string) => void;
+  updateQuantity: (lineKey: string, quantity: number) => void;
   clearCart: () => void;
   hydrateFromServer: () => Promise<void>;
   syncToServer: () => Promise<void>;

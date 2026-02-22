@@ -57,10 +57,41 @@ export async function getProductById(id: string) {
         isFeatured: true,
         prepTimeMin: true,
         categoryId: true,
+        category: {
+          select: {
+            name: true,
+          },
+        },
         images: {
           orderBy: { sortOrder: "asc" },
-          take: 1,
           select: { url: true, alt: true },
+        },
+        optionGroups: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            sortOrder: true,
+            group: {
+              select: {
+                id: true,
+                name: true,
+                minSelect: true,
+                maxSelect: true,
+                isActive: true,
+                sortOrder: true,
+                options: {
+                  where: { isActive: true },
+                  orderBy: { sortOrder: "asc" },
+                  select: {
+                    id: true,
+                    name: true,
+                    priceDeltaCents: true,
+                    sortOrder: true,
+                  },
+                },
+              },
+            },
+          },
         },
       },
     });

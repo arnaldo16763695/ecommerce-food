@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CartStore, type CartItem } from "../types/types";
+import {
+  CartStore,
+  type AddCartItemInput,
+  type CartItem,
+} from "../types/types";
 
 const SYNC_DEBOUNCE_MS = 400;
 let syncTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -17,50 +21,95 @@ function scheduleSync(sync: () => Promise<void>) {
   }, SYNC_DEBOUNCE_MS);
 }
 
+function normalizeCartItemInput(
+  input: string | AddCartItemInput,
+  quantityArg?: number,
+): CartItem {
+  if (typeof input === "string") {
+    const quantity = Math.max(1, Math.floor(quantityArg ?? 1));
+    return {
+      id: input,
+      productId: input,
+      quantity,
+    };
+  }
+
+  const quantity = Math.max(1, Math.floor(input.quantity ?? quantityArg ?? 1));
+  const lineKey = input.lineKey?.trim() || input.productId;
+
+  return {
+    id: lineKey,
+    productId: input.productId,
+    quantity,
+    unitPriceCents: input.unitPriceCents,
+    notes: input.notes?.trim() || undefined,
+    options: input.options ?? [],
+  };
+}
+
+function normalizeHydratedItems(items: CartItem[] | undefined): CartItem[] {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item) => {
+      const productId = item.productId ?? item.id;
+      const lineKey = item.id || productId;
+      const quantity = Math.max(1, Math.floor(item.quantity || 1));
+
+      return {
+        ...item,
+        id: lineKey,
+        productId,
+        quantity,
+      };
+    })
+    .filter((item) => Boolean(item.id) && Boolean(item.productId));
+}
+
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
       isHydratedFromServer: false,
-      addItem: (productId: string, quantity: number = 1) => {
+      addItem: (input: string | AddCartItemInput, quantityArg?: number) => {
+        const nextItem = normalizeCartItemInput(input, quantityArg);
+
         set((state) => {
-          const existingItem = state.items.find(
-            (item) => item.id === productId,
-          );
+          const existingItem = state.items.find((item) => item.id === nextItem.id);
 
           if (existingItem) {
             return {
               items: state.items.map((item) =>
-                item.id === productId
-                  ? { ...item, quantity: item.quantity + quantity }
+                item.id === nextItem.id
+                  ? { ...item, quantity: item.quantity + nextItem.quantity }
                   : item,
               ),
             };
           }
 
           return {
-            items: [...state.items, { id: productId, quantity }],
+            items: [...state.items, nextItem],
           };
         });
 
         scheduleSync(get().syncToServer);
       },
-      removeItem: (productId: string) => {
+      removeItem: (lineKey: string) => {
         set((state) => ({
-          items: state.items.filter((item) => item.id !== productId),
+          items: state.items.filter((item) => item.id !== lineKey),
         }));
 
         scheduleSync(get().syncToServer);
       },
-      updateQuantity: (productId: string, quantity: number) => {
+      updateQuantity: (lineKey: string, quantity: number) => {
         if (quantity <= 0) {
-          get().removeItem(productId);
+          get().removeItem(lineKey);
           return;
         }
 
         set((state) => ({
           items: state.items.map((item) =>
-            item.id === productId ? { ...item, quantity } : item,
+            item.id === lineKey ? { ...item, quantity } : item,
           ),
         }));
 
@@ -88,7 +137,7 @@ export const useCartStore = create<CartStore>()(
           const data = (await response.json()) as { items?: CartItem[] };
 
           set({
-            items: data.items ?? [],
+            items: normalizeHydratedItems(data.items),
             isHydratedFromServer: true,
           });
         } catch {

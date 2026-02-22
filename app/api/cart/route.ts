@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import type { CartItem } from "@/types/types";
+import type { CartItem, CartItemOption } from "@/types/types";
 
 const GUEST_CART_COOKIE = "guest_cart_token";
 const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
@@ -13,36 +13,84 @@ type ActiveCart = {
   guestToken: string | null;
 };
 
-function normalizeIncomingItems(items: unknown): CartItem[] {
+type NormalizedCartItemInput = {
+  lineKey: string;
+  productId: string;
+  quantity: number;
+  notes?: string;
+  options: Array<{ optionId: string }>;
+};
+
+function normalizeIncomingItems(items: unknown): NormalizedCartItemInput[] {
   if (!Array.isArray(items)) return [];
 
-  const quantityByProduct = new Map<string, number>();
+  const map = new Map<string, NormalizedCartItemInput>();
 
   for (const rawItem of items) {
     if (!rawItem || typeof rawItem !== "object") continue;
 
     const maybeId = (rawItem as { id?: unknown }).id;
+    const maybeLineKey = (rawItem as { lineKey?: unknown }).lineKey;
+    const maybeProductId = (rawItem as { productId?: unknown }).productId;
     const maybeQuantity = (rawItem as { quantity?: unknown }).quantity;
+    const maybeNotes = (rawItem as { notes?: unknown }).notes;
+    const maybeOptions = (rawItem as { options?: unknown }).options;
 
-    if (typeof maybeId !== "string" || maybeId.length === 0) continue;
+    const productId =
+      typeof maybeProductId === "string" && maybeProductId.length > 0
+        ? maybeProductId
+        : typeof maybeId === "string"
+          ? maybeId
+          : "";
+
+    if (!productId) continue;
 
     const numericQuantity = Number(maybeQuantity);
-    const parsedQuantity = Number.isFinite(numericQuantity)
+    const quantity = Number.isFinite(numericQuantity)
       ? Math.max(0, Math.floor(numericQuantity))
       : 0;
 
-    if (parsedQuantity <= 0) continue;
+    if (quantity <= 0) continue;
 
-    quantityByProduct.set(
-      maybeId,
-      (quantityByProduct.get(maybeId) ?? 0) + parsedQuantity,
-    );
+    const lineKey =
+      typeof maybeLineKey === "string" && maybeLineKey.length > 0
+        ? maybeLineKey
+        : typeof maybeId === "string" && maybeId.length > 0
+          ? maybeId
+          : productId;
+
+    const parsedOptions = Array.isArray(maybeOptions)
+      ? maybeOptions
+          .map((option) => {
+            if (!option || typeof option !== "object") return null;
+            const optionId = (option as { optionId?: unknown }).optionId;
+            if (typeof optionId !== "string" || optionId.length === 0) return null;
+            return { optionId };
+          })
+          .filter(
+            (option): option is { optionId: string } => option !== null,
+          )
+      : [];
+
+    const existing = map.get(lineKey);
+    if (existing) {
+      existing.quantity += quantity;
+      continue;
+    }
+
+    map.set(lineKey, {
+      lineKey,
+      productId,
+      quantity,
+      notes:
+        typeof maybeNotes === "string" && maybeNotes.trim().length > 0
+          ? maybeNotes.trim()
+          : undefined,
+      options: parsedOptions,
+    });
   }
 
-  return Array.from(quantityByProduct.entries()).map(([id, quantity]) => ({
-    id,
-    quantity,
-  }));
+  return Array.from(map.values());
 }
 
 async function getOrCreateActiveCart(): Promise<{
@@ -126,17 +174,42 @@ async function getOrCreateActiveCart(): Promise<{
 async function readCartItems(cartId: string): Promise<CartItem[]> {
   const dbItems = await prisma.cartItem.findMany({
     where: { cartId },
+    orderBy: { createdAt: "asc" },
     select: {
+      lineKey: true,
       productId: true,
       quantity: true,
+      unitPriceCents: true,
+      notes: true,
+      options: {
+        select: {
+          optionId: true,
+          groupNameSnapshot: true,
+          optionNameSnapshot: true,
+          priceDeltaCents: true,
+        },
+      },
     },
   });
 
   return dbItems
     .filter((item) => item.productId)
     .map((item) => ({
-      id: item.productId as string,
+      id: item.lineKey,
+      productId: item.productId as string,
       quantity: item.quantity,
+      unitPriceCents: item.unitPriceCents,
+      notes: item.notes ?? undefined,
+      options: item.options
+        .filter((option) => option.optionId)
+        .map(
+          (option): CartItemOption => ({
+            optionId: option.optionId as string,
+            groupName: option.groupNameSnapshot,
+            optionName: option.optionNameSnapshot,
+            priceDeltaCents: option.priceDeltaCents,
+          }),
+        ),
     }));
 }
 
@@ -177,16 +250,21 @@ export async function PUT(req: Request) {
 
     const { cart, tokenToSet } = await getOrCreateActiveCart();
 
-    await prisma.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
+    const productIds = Array.from(
+      new Set(incomingItems.map((item) => item.productId)),
+    );
+    const optionIds = Array.from(
+      new Set(
+        incomingItems.flatMap((item) =>
+          item.options.map((option) => option.optionId),
+        ),
+      ),
+    );
 
-    if (incomingItems.length > 0) {
-      const products = await prisma.product.findMany({
+    const [products, options] = await Promise.all([
+      prisma.product.findMany({
         where: {
-          id: {
-            in: incomingItems.map((item) => item.id),
-          },
+          id: { in: productIds },
           isActive: true,
         },
         select: {
@@ -194,32 +272,69 @@ export async function PUT(req: Request) {
           name: true,
           basePriceCents: true,
         },
+      }),
+      optionIds.length > 0
+        ? prisma.option.findMany({
+            where: {
+              id: { in: optionIds },
+              isActive: true,
+            },
+            select: {
+              id: true,
+              name: true,
+              priceDeltaCents: true,
+              group: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const productById = new Map(products.map((product) => [product.id, product]));
+    const optionById = new Map(options.map((option) => [option.id, option]));
+
+    await prisma.$transaction(async (tx) => {
+      await tx.cartItem.deleteMany({
+        where: { cartId: cart.id },
       });
 
-      const productById = new Map(products.map((product) => [product.id, product]));
+      for (const incoming of incomingItems) {
+        const product = productById.get(incoming.productId);
+        if (!product) continue;
 
-      const rows = incomingItems
-        .map((item) => {
-          const product = productById.get(item.id);
-          if (!product) return null;
+        const validOptions = incoming.options
+          .map((option) => optionById.get(option.optionId))
+          .filter((option): option is NonNullable<typeof option> => Boolean(option));
 
-          return {
+        const optionDelta = validOptions.reduce(
+          (sum, option) => sum + option.priceDeltaCents,
+          0,
+        );
+
+        await tx.cartItem.create({
+          data: {
             cartId: cart.id,
             productId: product.id,
-            lineKey: product.id,
-            quantity: item.quantity,
-            unitPriceCents: product.basePriceCents,
+            lineKey: incoming.lineKey,
+            quantity: incoming.quantity,
+            unitPriceCents: product.basePriceCents + optionDelta,
             nameSnapshot: product.name,
-          };
-        })
-        .filter((row): row is NonNullable<typeof row> => row !== null);
-
-      if (rows.length > 0) {
-        await prisma.cartItem.createMany({
-          data: rows,
+            notes: incoming.notes,
+            options: {
+              create: validOptions.map((option) => ({
+                optionId: option.id,
+                groupNameSnapshot: option.group.name,
+                optionNameSnapshot: option.name,
+                priceDeltaCents: option.priceDeltaCents,
+              })),
+            },
+          },
         });
       }
-    }
+    });
 
     const items = await readCartItems(cart.id);
     return jsonWithCookie({ items }, tokenToSet);
@@ -227,3 +342,4 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Unable to sync cart." }, { status: 500 });
   }
 }
+

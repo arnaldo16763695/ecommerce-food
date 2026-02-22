@@ -40,7 +40,7 @@ describe("cartStore", () => {
     useCartStore.getState().addItem("product-1", 2);
 
     expect(useCartStore.getState().items).toEqual([
-      { id: "product-1", quantity: 3 },
+      { id: "product-1", productId: "product-1", quantity: 3 },
     ]);
   });
 
@@ -64,7 +64,7 @@ describe("cartStore", () => {
     await useCartStore.getState().hydrateFromServer();
 
     expect(useCartStore.getState().items).toEqual([
-      { id: "product-2", quantity: 4 },
+      { id: "product-2", productId: "product-2", quantity: 4 },
     ]);
     expect(useCartStore.getState().isHydratedFromServer).toBe(true);
   });
@@ -114,6 +114,8 @@ describe("cartStore", () => {
       items: Array<{ id: string; quantity: number }>;
     };
 
-    expect(payload.items).toEqual([{ id: "product-1", quantity: 2 }]);
+    expect(payload.items).toEqual([
+      { id: "product-1", productId: "product-1", quantity: 2 },
+    ]);
   });
 });
