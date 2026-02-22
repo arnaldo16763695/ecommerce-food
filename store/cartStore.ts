@@ -4,6 +4,7 @@ import {
   CartStore,
   type AddCartItemInput,
   type CartItem,
+  type UpdateCartItemConfigurationInput,
 } from "../types/types";
 
 const SYNC_DEBOUNCE_MS = 400;
@@ -112,6 +113,52 @@ export const useCartStore = create<CartStore>()(
             item.id === lineKey ? { ...item, quantity } : item,
           ),
         }));
+
+        scheduleSync(get().syncToServer);
+      },
+      updateItemConfiguration: (
+        currentLineKey: string,
+        input: UpdateCartItemConfigurationInput,
+      ) => {
+        set((state) => {
+          const currentItem = state.items.find((item) => item.id === currentLineKey);
+          if (!currentItem) return state;
+
+          const nextLineKey = input.lineKey.trim();
+          if (!nextLineKey) return state;
+
+          const updatedItem: CartItem = {
+            ...currentItem,
+            id: nextLineKey,
+            unitPriceCents: input.unitPriceCents,
+            notes: input.notes?.trim() || undefined,
+            options: input.options,
+          };
+
+          const withoutCurrent = state.items.filter(
+            (item) => item.id !== currentLineKey,
+          );
+          const existingSameLine = withoutCurrent.find(
+            (item) => item.id === nextLineKey,
+          );
+
+          if (existingSameLine) {
+            return {
+              items: withoutCurrent.map((item) =>
+                item.id === nextLineKey
+                  ? {
+                      ...item,
+                      quantity: item.quantity + currentItem.quantity,
+                    }
+                  : item,
+              ),
+            };
+          }
+
+          return {
+            items: [...withoutCurrent, updatedItem],
+          };
+        });
 
         scheduleSync(get().syncToServer);
       },

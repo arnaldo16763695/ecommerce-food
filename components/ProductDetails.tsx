@@ -17,6 +17,7 @@ import { useCartStore } from "../store/cartStore";
 import { ProductById } from "@/lib/data/productsData";
 import { AllProductsByCategory } from "@/lib/data/productsData";
 import { productFeatures } from "@/data/data";
+import { buildCartLineKey } from "@/lib/cart-line-key";
 
 type Props = {
   product: ProductById;
@@ -139,12 +140,11 @@ function ProductDetails({ product, relatedProducts }: Props) {
     if (!canAddToCart) return;
 
     const normalizedNotes = notes.trim();
-    const optionIdsKey = selectedOptionSnapshots
-      .map((option) => option.optionId)
-      .sort()
-      .join("|");
-    const notesKey = normalizedNotes.toLowerCase();
-    const lineKey = `${product.id}::${optionIdsKey || "base"}::${notesKey || "no-notes"}`;
+    const lineKey = buildCartLineKey({
+      productId: product.id,
+      optionIds: selectedOptionSnapshots.map((option) => option.optionId),
+      notes: normalizedNotes,
+    });
 
     addToCart({
       productId: product.id,

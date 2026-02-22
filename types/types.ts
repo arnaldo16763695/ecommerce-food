@@ -37,12 +37,23 @@ export type AddCartItemInput = {
   options?: CartItemOption[];
 };
 
+export type UpdateCartItemConfigurationInput = {
+  lineKey: string;
+  unitPriceCents: number;
+  notes?: string;
+  options: CartItemOption[];
+};
+
 export type CartStore = {
   items: CartItem[];
   isHydratedFromServer: boolean;
   addItem: (item: string | AddCartItemInput, quantity?: number) => void;
   removeItem: (lineKey: string) => void;
   updateQuantity: (lineKey: string, quantity: number) => void;
+  updateItemConfiguration: (
+    currentLineKey: string,
+    input: UpdateCartItemConfigurationInput,
+  ) => void;
   clearCart: () => void;
   hydrateFromServer: () => Promise<void>;
   syncToServer: () => Promise<void>;

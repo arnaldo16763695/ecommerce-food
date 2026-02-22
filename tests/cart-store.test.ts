@@ -118,4 +118,40 @@ describe("cartStore", () => {
       { id: "product-1", productId: "product-1", quantity: 2 },
     ]);
   });
+
+  it("updates item configuration and merges quantities on same resulting line", async () => {
+    const useCartStore = await loadStore();
+
+    useCartStore.getState().addItem({
+      productId: "product-1",
+      lineKey: "product-1::base::no-notes",
+      quantity: 1,
+      unitPriceCents: 1000,
+    });
+    useCartStore.getState().addItem({
+      productId: "product-1",
+      lineKey: "product-1::with-cheese::no-notes",
+      quantity: 2,
+      unitPriceCents: 1200,
+    });
+
+    useCartStore.getState().updateItemConfiguration("product-1::base::no-notes", {
+      lineKey: "product-1::with-cheese::no-notes",
+      unitPriceCents: 1200,
+      options: [
+        {
+          optionId: "opt-cheese",
+          groupName: "Extras",
+          optionName: "Cheese",
+          priceDeltaCents: 200,
+        },
+      ],
+    });
+
+    expect(useCartStore.getState().items).toHaveLength(1);
+    expect(useCartStore.getState().items[0]).toMatchObject({
+      id: "product-1::with-cheese::no-notes",
+      quantity: 3,
+    });
+  });
 });
