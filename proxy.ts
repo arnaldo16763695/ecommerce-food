@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const AUTH_ROUTES = ["/login", "/signup"];
-const PROTECTED_ROUTES = ["/shopping-cart", "/checkout", "/orders", "/profile"];
+const PROTECTED_ROUTES = ["/checkout", "/orders", "/profile"];
 
 function hasSessionCookie(req: NextRequest) {
   return Boolean(
@@ -39,10 +39,8 @@ export const config = {
   matcher: [
     "/login",
     "/signup",
-    "/shopping-cart/:path*",
     "/checkout/:path*",
     "/orders/:path*",
     "/profile/:path*",
   ],
 };
-
