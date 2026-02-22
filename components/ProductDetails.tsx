@@ -20,7 +20,7 @@ import { productFeatures } from "@/data/data";
 
 function ProductDetails({ product, relatedProducts }: { product: ProductById, relatedProducts: AllProductsByCategory[] }) {
   const addToCart = useCartStore((state) => state.addItem);
-  console.log('mi imagen', product?.images?.[0]?.url);
+  
   if (!product) {
     notFound();
   }

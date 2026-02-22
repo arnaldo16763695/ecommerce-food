@@ -1,12 +1,14 @@
 import CartItems from "@/components/CartItems";
 import PageTitle from "@/components/PageTitle";
 import React from "react";
+import { getAllProducts } from "@/lib/data/productsData";
 
-const ShoppingCartPage = () => {
+const ShoppingCartPage = async () => {
+  const products = await getAllProducts()
   return (
     <>
       <PageTitle />
-      <CartItems />
+      <CartItems products={products} /> 
     </>
   );
 };

@@ -20,7 +20,7 @@ function ProductCard({product}: Props) {
   const hasHalfStar = 5 % 1 >= 0.5;
 
   const handleAddToCart = () => {
-    addToCart('5', 1);
+    addToCart(product.id, 1);
   };
 
   return (

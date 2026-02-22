@@ -7,7 +7,7 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
-      addItem: (productId: number, quantity: number = 1) => {
+      addItem: (productId: string, quantity: number = 1) => {
         set((state) => {
           const existingItem = state.items.find(
             (item) => item.id === productId,
@@ -26,12 +26,12 @@ export const useCartStore = create<CartStore>()(
           };
         });
       },
-      removeItem: (productId: number) => {
+      removeItem: (productId: string) => {
         set((state) => ({
           items: state.items.filter((item) => item.id !== productId),
         }));
       },
-      updateQuantity: (productId: number, quantity: number) => {
+      updateQuantity: (productId: string, quantity: number) => {
         if (quantity <= 0) {
           get().removeItem(productId);
           return;

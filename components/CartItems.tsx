@@ -11,9 +11,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import { useMemo } from "react";
-import { allProducts } from "@/data/data";
+import { AllProducts } from "@/lib/data/productsData";
 
-function CartItems() {
+type Props = {
+    products: AllProducts[]
+}
+
+function CartItems({products}: Props) {
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -21,18 +25,18 @@ function CartItems() {
 
   const cartItems = useMemo(() => {
     return items.map((item) => {
-      const product = allProducts.find((p) => p.id === item.id);
+      const product = products.find((p) => p.id === item.id);
       if (!product) throw new Error("Product not found");
       return {
         id: item.id,
         name: product.name,
-        price: product.price,
+        price: product.basePriceCents,
         quantity: item.quantity,
-        image: product.img,
-        category: product.category,
+        image: `/images/${product.images[0]?.url || 'product-1.png'}`,
+        category: product.categoryId,
       };
     });
-  }, [items]);
+  }, [items, products]);
 
   // total items 
 

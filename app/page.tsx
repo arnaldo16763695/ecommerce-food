@@ -9,8 +9,6 @@ import { getAllCategories } from "@/lib/data/productsData";
 export default async function Home() {
   const allProductsDB = await getAllProducts();
   const allCategoriesDB = await getAllCategories();
-  console.log(allProductsDB);
-  console.log(allCategoriesDB);
   return (
     <>
       {/* hero section  */}
