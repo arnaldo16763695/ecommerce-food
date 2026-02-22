@@ -11,9 +11,12 @@ import {
   getMobileMenuVisibilityClass,
 } from "@/lib/header-utils";
 import { useCartStore } from "../store/cartStore";
+import { signOut, useSession } from "next-auth/react";
+
 const Header = () => {
   const [openMenu, setOpenMenu] = useState<boolean>(false);
   const pathName = usePathname();
+  const { data: session, status } = useSession();
 
   const handleClick = () => {
     setOpenMenu((prevState) => !prevState);
@@ -36,6 +39,10 @@ const Header = () => {
   const totalItems = useMemo(() => {
     return items.reduce((total, item) => total + item.quantity, 0);
   }, [items]);
+
+  const isLoggedIn = Boolean(session?.user?.id);
+  const userLabel = session?.user?.name ?? session?.user?.email ?? "User";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 py-3 font-cunia backdrop-blur dark:border-slate-700 dark:bg-gray-900/95">
       <div className="page-container flex items-center justify-between">
@@ -65,6 +72,25 @@ const Header = () => {
             ))}
           </ul>
           <div className="flex items-center gap-3.5">
+            {status === "loading" ? (
+              <div className="h-9 w-24" aria-hidden="true" />
+            ) : isLoggedIn ? (
+              <div className="hidden items-center gap-2 md:flex">
+                <span className="text-sm text-slate-700 dark:text-slate-200">
+                  Hi, {userLabel}
+                </span>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Log Out
+                </button>
+              </div>
+            ) : (
+              <Link href="/login" className="btn-primary">
+                Log In
+              </Link>
+            )}
             <Link
               href="/shopping-cart"
               aria-label="Open shopping cart"
@@ -81,9 +107,6 @@ const Header = () => {
                   {totalItems}
                 </span>
               )}
-            </Link>
-            <Link href="/login" className="btn-primary">
-              Log In
             </Link>
             <ThemeToggle />
           </div>
@@ -141,13 +164,27 @@ const Header = () => {
                 </li>
               ))}
             </ul>
-            <Link
-              href="/login"
-              className="btn-primary block w-full text-center"
-              onClick={handleClick}
-            >
-              Log In
-            </Link>
+            {status === "loading" ? (
+              <div className="h-10 w-full" aria-hidden="true" />
+            ) : isLoggedIn ? (
+              <button
+                className="btn-primary block w-full text-center"
+                onClick={() => {
+                  setOpenMenu(false);
+                  void signOut({ callbackUrl: "/" });
+                }}
+              >
+                Log Out
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="btn-primary block w-full text-center"
+                onClick={handleClick}
+              >
+                Log In
+              </Link>
+            )}
             <ThemeToggle />
           </div>
         </nav>

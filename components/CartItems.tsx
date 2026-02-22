@@ -10,51 +10,59 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { AllProducts } from "@/lib/data/productsData";
 
 type Props = {
-    products: AllProducts[]
-}
+  products: AllProducts[];
+};
 
-function CartItems({products}: Props) {
+function CartItems({ products }: Props) {
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const clearCart = useCartStore((state) => state.clearCart);
+  const hydrateFromServer = useCartStore((state) => state.hydrateFromServer);
+  const isHydratedFromServer = useCartStore((state) => state.isHydratedFromServer);
+
+  useEffect(() => {
+    if (!isHydratedFromServer) {
+      void hydrateFromServer();
+    }
+  }, [hydrateFromServer, isHydratedFromServer]);
 
   const cartItems = useMemo(() => {
-    return items.map((item) => {
-      const product = products.find((p) => p.id === item.id);
-      if (!product) throw new Error("Product not found");
-      return {
-        id: item.id,
-        name: product.name,
-        price: product.basePriceCents,
-        quantity: item.quantity,
-        image: `/images/${product.images[0]?.url || 'product-1.png'}`,
-        category: product.categoryId,
-      };
-    });
+    return items
+      .map((item) => {
+        const product = products.find((p) => p.id === item.id);
+        if (!product) return null;
+        return {
+          id: item.id,
+          name: product.name,
+          price: product.basePriceCents,
+          quantity: item.quantity,
+          image: `/images/${product.images[0]?.url || "product-1.png"}`,
+          category: product.categoryId,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }, [items, products]);
 
-  // total items 
-
+  // total items
   const totalItems = useMemo(() => {
-    return items.reduce((total, item)=> total + item.quantity, 0)
-  }, [items])
+    return items.reduce((total, item) => total + item.quantity, 0);
+  }, [items]);
 
-  // sub total 
+  // sub total
+  const subTotal = useMemo(() => {
+    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  }, [cartItems]);
 
-   const subTotal = useMemo(() => {
-    return cartItems.reduce((total, item)=> total + item.price * item.quantity, 0)
-  }, [cartItems])
+  const tax = subTotal * 0.1; //10% tax
 
-  const tax = subTotal * 0.1 ; //10% tax
+  const shipping = subTotal === 0 ? 0 : subTotal >= 100 ? 0 : 100; // free over $100, 0 if cart is empty
 
-  const shipping = subTotal === 0 ? 0 : subTotal >=100 ? 0 : 100; // free over $100, 0 if cart is empty
-
-  const total = (subTotal + tax + shipping).toFixed(2); 
+  const total = (subTotal + tax + shipping).toFixed(2);
 
   return (
     <section className="bg-neutral-50 py-10 dark:bg-slate-900 md:py-16">
@@ -65,7 +73,7 @@ function CartItems({products}: Props) {
               Shopping cart
             </h3>
             <p className="text-sm text-neutral-600 dark:text-slate-300">
-              ({totalItems}) {totalItems > 1 ? 'items': 'item'} ready for checkout
+              ({totalItems}) {totalItems > 1 ? "items" : "item"} ready for checkout
             </p>
           </div>
           {/* <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-300/30 dark:bg-amber-400/10 dark:text-amber-300">
@@ -128,9 +136,7 @@ function CartItems({products}: Props) {
                             <button
                               aria-label={`Decrease quantity for ${item.name}`}
                               className="rounded-l-xl p-2 transition hover:bg-neutral-100 focus:bg-neutral-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             >
                               <RiSubtractLine size={18} />
                             </button>
@@ -140,9 +146,7 @@ function CartItems({products}: Props) {
                             <button
                               aria-label={`Increase quantity for ${item.name}`}
                               className="rounded-r-xl p-2 transition hover:bg-neutral-100 focus:bg-neutral-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             >
                               <RiAddLine size={18} />
                             </button>
@@ -166,16 +170,14 @@ function CartItems({products}: Props) {
                   <table className="min-w-full border-collapse text-left">
                     <thead className="border-b border-neutral-200 bg-neutral-50 text-sm dark:border-slate-700 dark:bg-slate-700/60">
                       <tr>
-                        {["Product", "Price", "Quantity", "Total"].map(
-                          (label) => (
-                            <th
-                              className="p-4 font-semibold uppercase tracking-wide text-neutral-500 dark:text-slate-300"
-                              key={label}
-                            >
-                              {label}
-                            </th>
-                          ),
-                        )}
+                        {["Product", "Price", "Quantity", "Total"].map((label) => (
+                          <th
+                            className="p-4 font-semibold uppercase tracking-wide text-neutral-500 dark:text-slate-300"
+                            key={label}
+                          >
+                            {label}
+                          </th>
+                        ))}
                         <th className="p-4"></th>
                       </tr>
                     </thead>
@@ -207,17 +209,13 @@ function CartItems({products}: Props) {
                               </div>
                             </div>
                           </td>
-                          <td className="p-4 text-neutral-700 dark:text-slate-300">
-                            ${item.price}
-                          </td>
+                          <td className="p-4 text-neutral-700 dark:text-slate-300">${item.price}</td>
                           <td className="p-4">
                             <div className="inline-flex items-center rounded-xl border border-neutral-300 bg-white dark:border-slate-600 dark:bg-slate-900">
                               <button
                                 aria-label={`Decrease quantity for ${item.name}`}
                                 className="rounded-l-xl p-2 transition hover:bg-neutral-100 focus:bg-neutral-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-                                onClick={() =>
-                                  updateQuantity(item.id, item.quantity - 1)
-                                }
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               >
                                 <RiSubtractLine size={18} />
                               </button>
@@ -227,9 +225,7 @@ function CartItems({products}: Props) {
                               <button
                                 aria-label={`Increase quantity for ${item.name}`}
                                 className="rounded-r-xl p-2 transition hover:bg-neutral-100 focus:bg-neutral-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-                                onClick={() =>
-                                  updateQuantity(item.id, item.quantity + 1)
-                                }
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               >
                                 <RiAddLine size={18} />
                               </button>
@@ -257,7 +253,10 @@ function CartItems({products}: Props) {
             )}
 
             {cartItems.length > 0 && (
-              <button className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 focus:bg-red-100 dark:border-red-400/30 dark:bg-red-400/10 dark:text-red-300 dark:hover:bg-red-400/20 dark:focus:bg-red-400/20" onClick={clearCart}>
+              <button
+                className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 focus:bg-red-100 dark:border-red-400/30 dark:bg-red-400/10 dark:text-red-300 dark:hover:bg-red-400/20 dark:focus:bg-red-400/20"
+                onClick={clearCart}
+              >
                 <RiDeleteBin6Line size={16} />
                 Clear cart
               </button>
@@ -278,7 +277,7 @@ function CartItems({products}: Props) {
                 <div className="flex justify-between text-neutral-600 dark:text-slate-300">
                   <h4>Shipping</h4>
                   <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                    {shipping === 0 ? 'Free': '$ ' + shipping.toFixed(2)}
+                    {shipping === 0 ? "Free" : "$ " + shipping.toFixed(2)}
                   </p>
                 </div>
                 <div className="flex justify-between text-neutral-600 dark:text-slate-300">
@@ -289,12 +288,8 @@ function CartItems({products}: Props) {
 
               <div className="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-slate-600 dark:bg-slate-700/60">
                 <div className="mb-1 flex items-center justify-between">
-                  <h4 className="font-semibold text-neutral-800 dark:text-slate-100">
-                    Total
-                  </h4>
-                  <p className="text-xl font-semibold text-neutral-900 dark:text-slate-100">
-                    ${total}
-                  </p>
+                  <h4 className="font-semibold text-neutral-800 dark:text-slate-100">Total</h4>
+                  <p className="text-xl font-semibold text-neutral-900 dark:text-slate-100">${total}</p>
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-slate-400">
                   Includes all taxes and fees.
@@ -308,8 +303,7 @@ function CartItems({products}: Props) {
 
               <p className="mt-3 flex items-start gap-2 text-xs text-neutral-500 dark:text-slate-400">
                 <RiInformationLine size={16} className="mt-0.5" />
-                You can still update quantities at checkout before final
-                payment.
+                You can still update quantities at checkout before final payment.
               </p>
 
               <Link

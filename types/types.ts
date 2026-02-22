@@ -14,12 +14,16 @@ export type CartItem = {
   id: string;
   quantity: number;
 };
+
 export type CartStore = {
   items: CartItem[];
+  isHydratedFromServer: boolean;
   addItem: (productId: string, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  hydrateFromServer: () => Promise<void>;
+  syncToServer: () => Promise<void>;
 };
 
 export type SortOption = "Sort By" | "Price:Low to Hight" | "name:A to Z";

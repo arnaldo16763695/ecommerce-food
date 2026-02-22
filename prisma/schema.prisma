@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../app/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql"  
 }
 
 // =========================
@@ -27,6 +27,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
   @@map("accounts")
 }
 
@@ -38,6 +39,7 @@ model Session {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("sessions")
 }
 
@@ -53,8 +55,8 @@ model User {
 
   accounts Account[]
   sessions Session[]
-
-  orders Order[]
+  cart     Cart[]
+  orders   Order[]
 
   @@map("users")
 }
@@ -109,6 +111,7 @@ model Category {
 
   @@unique([slug])
   @@index([sortOrder])
+  @@index([isActive, sortOrder])
   @@map("categories")
 }
 
@@ -120,6 +123,9 @@ model Product {
   slug           String
   description    String?
   basePriceCents Int     @map("base_price_cents")
+
+  // Para evitar que la UI reviente si no hay images[]
+  coverImageUrl String? @map("cover_image_url")
 
   isActive    Boolean @default(true) @map("is_active")
   isFeatured  Boolean @default(false) @map("is_featured")
@@ -134,23 +140,26 @@ model Product {
   optionGroups ProductOptionGroup[]
 
   orderItems OrderItem[]
+  cartItems  CartItem[]
 
   @@unique([slug])
   @@index([isActive])
   @@index([categoryId])
+  @@index([isActive, isFeatured])
   @@map("products")
 }
 
 model ProductImage {
-  id        String  @id @default(cuid())
-  productId String  @map("product_id")
+  id        String @id @default(cuid())
+  productId String @map("product_id")
   url       String
   alt       String?
-  sortOrder Int     @default(0) @map("sort_order")
+  sortOrder Int    @default(0) @map("sort_order")
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, sortOrder])
+  @@unique([productId, sortOrder])
   @@map("product_images")
 }
 
@@ -173,6 +182,7 @@ model OptionGroup {
   products ProductOptionGroup[]
 
   @@index([sortOrder])
+  @@index([isActive, sortOrder])
   @@map("option_groups")
 }
 
@@ -188,8 +198,13 @@ model Option {
   group OptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   orderItemOptions OrderItemOption[]
+  cartItemOptions  CartItemOption[]
+
+  // Evita repetir la misma opción dentro de un mismo grupo
+  @@unique([groupId, name])
 
   @@index([groupId, sortOrder])
+  @@index([groupId, isActive])
   @@map("options")
 }
 
@@ -205,6 +220,7 @@ model ProductOptionGroup {
 
   @@unique([productId, groupId])
   @@index([productId, sortOrder])
+  @@index([groupId])
   @@map("product_option_groups")
 }
 
@@ -215,7 +231,8 @@ model Order {
   id     String  @id @default(cuid())
   userId String? @map("user_id")
 
-  orderNumber Int? @map("order_number")
+  // Secuencial y único, sin nullable para evitar líos de colisiones
+  orderNumber Int @unique @default(autoincrement()) @map("order_number")
 
   status          OrderStatus     @default(PENDING)
   fulfillmentType FulfillmentType @map("fulfillment_type")
@@ -242,9 +259,10 @@ model Order {
   address OrderAddress?
   items   OrderItem[]
 
-  @@unique([orderNumber])
   @@index([createdAt])
   @@index([userId])
+  @@index([status, createdAt])
+  @@index([paymentStatus, createdAt])
   @@map("orders")
 }
 
@@ -300,7 +318,80 @@ model OrderItemOption {
   orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   option    Option?   @relation(fields: [optionId], references: [id], onDelete: SetNull)
 
+  // Evita duplicar la misma opción en el mismo item; usa quantity para “2x extra queso”
+  @@unique([orderItemId, optionId])
+
   @@index([orderItemId])
   @@index([optionId])
   @@map("order_item_options")
+}
+
+// =========================
+// Cart
+// =========================
+
+enum CartStatus {
+  ACTIVE
+  CHECKED_OUT
+  ABANDONED
+}
+
+model Cart {
+  id         String     @id @default(cuid())
+  userId     String?    @map("user_id")
+  guestToken String?    @unique @map("guest_token") // para no logueados
+  status     CartStatus @default(ACTIVE)
+  currency   String     @default("USD")
+  expiresAt  DateTime?  @map("expires_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  user  User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items CartItem[]
+
+  @@index([userId, status])
+  @@index([status, updatedAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id             String   @id @default(cuid())
+  cartId         String   @map("cart_id")
+  productId      String?  @map("product_id")
+  lineKey        String   @map("line_key") // hash de producto+opciones para merge
+  quantity       Int      @default(1)
+  unitPriceCents Int      @map("unit_price_cents")
+  nameSnapshot   String   @map("name_snapshot")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  cart    Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  options CartItemOption[]
+
+  @@unique([cartId, lineKey])
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+model CartItemOption {
+  id                 String  @id @default(cuid())
+  cartItemId         String  @map("cart_item_id")
+  optionId           String? @map("option_id")
+  groupNameSnapshot  String  @map("group_name_snapshot")
+  optionNameSnapshot String  @map("option_name_snapshot")
+  priceDeltaCents    Int     @default(0) @map("price_delta_cents")
+  quantity           Int     @default(1)
+
+  cartItem CartItem @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  option   Option?  @relation(fields: [optionId], references: [id], onDelete: SetNull)
+
+  // Evita duplicar la misma opción en el mismo item; usa quantity para “2x extra queso”
+  @@unique([cartItemId, optionId])
+
+  @@index([cartItemId])
+  @@index([optionId])
+  @@map("cart_item_options")
 }

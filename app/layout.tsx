@@ -5,6 +5,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/theme-provider";
 import NextTopLoader from 'nextjs-toploader';
+import AuthSessionProvider from "@/components/AuthSessionProvider";
+import { auth } from "@/auth";
 
 const lexend = localFont({
   src: "/fonts/Lexend-Regular.ttf",
@@ -24,11 +26,13 @@ export const metadata: Metadata = {
   description: "E-Commerce Food",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -41,9 +45,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
-          <main className="min-h-svh">{children}</main>
-          <Footer />
+          <AuthSessionProvider session={session}>
+            <Header />
+            <main className="min-h-svh">{children}</main>
+            <Footer />
+          </AuthSessionProvider>
         </ThemeProvider>
       </body>
     </html>
