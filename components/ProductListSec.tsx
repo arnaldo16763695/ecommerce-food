@@ -3,9 +3,55 @@ import { RiFilterLine, RiSearch2Line } from "@remixicon/react";
 import React from "react";
 import ProductCard from "./ProductCard";
 import { AllProducts } from "@/lib/data/productsData";
+import { useMemo, useState } from "react";
 
 type Props = { products: AllProducts[] };
+
+type SortOption =
+  | "sort By"
+  | "Price: Low to High"
+  | "Price: High to Low"
+  | "Name: A to Z"
+  | "Name: Z to A";
+
 function ProductListSec({ products }: Props) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<SortOption>("sort By");
+
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((product) => {
+        const description = product.description?.toLowerCase() ?? "";
+        return (
+          product.name.toLowerCase().includes(query) ||
+          description.includes(query)
+        );
+      });
+    }
+
+    switch (sortOption) {
+      case "Price: Low to High":
+        filtered.sort((a, b) => a.basePriceCents - b.basePriceCents);
+        break;
+      case "Price: High to Low":
+        filtered.sort((a, b) => b.basePriceCents - a.basePriceCents);
+        break;
+      case "Name: A to Z":
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "Name: Z to A":
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [products, searchQuery, sortOption]);
+
   return (
     <section>
       <div className="page-container space-y-10">
@@ -18,13 +64,19 @@ function ProductListSec({ products }: Props) {
               type="text"
               placeholder="Search"
               className="w-full h-full py-2 outline-none px-3.5 text-gray-700"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
             <button className="text-gray-700 h-auto w-10 flex items-center justify-center hover:text-amber-700 transition-colors">
               <RiSearch2Line size={20} className="" />
             </button>
           </div>
           <div className="flex border border-gray-300 rounded-md focus-within:border-amber-500">
-            <select className="appearance-auto outline-none px-2.5 py-1.5 flex-1">
+            <select
+              className="appearance-auto outline-none px-2.5 py-1.5 flex-1"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value as SortOption)}
+            >
               {[
                 "sort By",
                 "Price: Low to High",
@@ -47,9 +99,9 @@ function ProductListSec({ products }: Props) {
           </div>
         </div>
         {/* Product List  */}
-        {products.length > 0 ? (
+        {filteredProducts.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-14 sm:mb-28">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
