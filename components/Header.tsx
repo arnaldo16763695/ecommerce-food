@@ -17,6 +17,7 @@ const Header = () => {
   const [openMenu, setOpenMenu] = useState<boolean>(false);
   const pathName = usePathname();
   const { data: session, status } = useSession();
+  const hydrateFromServer = useCartStore((state) => state.hydrateFromServer);
 
   const handleClick = () => {
     setOpenMenu((prevState) => !prevState);
@@ -34,6 +35,11 @@ const Header = () => {
       window.removeEventListener("keydown", onEscape);
     };
   }, []);
+
+  useEffect(() => {
+    if (status === "loading") return;
+    void hydrateFromServer();
+  }, [status, session?.user?.id, hydrateFromServer]);
 
   const items = useCartStore((state) => state.items);
   const totalItems = useMemo(() => {
