@@ -96,44 +96,115 @@ function normalizeIncomingItems(items: unknown): NormalizedCartItemInput[] {
 async function getOrCreateActiveCart(): Promise<{
   cart: ActiveCart;
   tokenToSet?: string;
+  clearGuestToken?: boolean;
 }> {
   const session = await auth();
   const cookieStore = await cookies();
+  const existingGuestToken = cookieStore.get(GUEST_CART_COOKIE)?.value;
 
   if (session?.user?.id) {
-    const existingUserCart = await prisma.cart.findFirst({
-      where: {
-        userId: session.user.id,
-        status: "ACTIVE",
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-      select: {
-        id: true,
-        guestToken: true,
-      },
-    });
+    const userCart =
+      (await prisma.cart.findFirst({
+        where: {
+          userId: session.user.id,
+          status: "ACTIVE",
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+        select: {
+          id: true,
+          guestToken: true,
+        },
+      })) ??
+      (await prisma.cart.create({
+        data: {
+          userId: session.user.id,
+          status: "ACTIVE",
+        },
+        select: {
+          id: true,
+          guestToken: true,
+        },
+      }));
 
-    if (existingUserCart) {
-      return { cart: existingUserCart };
+    if (!existingGuestToken) {
+      return { cart: userCart };
     }
 
-    const createdUserCart = await prisma.cart.create({
-      data: {
-        userId: session.user.id,
+    const guestCart = await prisma.cart.findFirst({
+      where: {
         status: "ACTIVE",
+        guestToken: existingGuestToken,
       },
       select: {
         id: true,
-        guestToken: true,
       },
     });
 
-    return { cart: createdUserCart };
-  }
+    if (!guestCart || guestCart.id === userCart.id) {
+      return { cart: userCart, clearGuestToken: true };
+    }
 
-  const existingGuestToken = cookieStore.get(GUEST_CART_COOKIE)?.value;
+    await prisma.$transaction(async (tx) => {
+      const guestItems = await tx.cartItem.findMany({
+        where: { cartId: guestCart.id },
+        include: {
+          options: true,
+        },
+      });
+
+      for (const guestItem of guestItems) {
+        const existingUserItem = await tx.cartItem.findFirst({
+          where: {
+            cartId: userCart.id,
+            lineKey: guestItem.lineKey,
+          },
+          select: {
+            id: true,
+            quantity: true,
+          },
+        });
+
+        if (existingUserItem) {
+          await tx.cartItem.update({
+            where: { id: existingUserItem.id },
+            data: {
+              quantity: existingUserItem.quantity + guestItem.quantity,
+            },
+          });
+          continue;
+        }
+
+        await tx.cartItem.create({
+          data: {
+            cartId: userCart.id,
+            productId: guestItem.productId,
+            lineKey: guestItem.lineKey,
+            quantity: guestItem.quantity,
+            unitPriceCents: guestItem.unitPriceCents,
+            nameSnapshot: guestItem.nameSnapshot,
+            notes: guestItem.notes,
+            options: {
+              create: guestItem.options.map((option) => ({
+                optionId: option.optionId,
+                groupNameSnapshot: option.groupNameSnapshot,
+                optionNameSnapshot: option.optionNameSnapshot,
+                priceDeltaCents: option.priceDeltaCents,
+                quantity: option.quantity,
+              })),
+            },
+          },
+        });
+      }
+
+      await tx.cart.delete({
+        where: { id: guestCart.id },
+      });
+    });
+
+    return { cart: userCart, clearGuestToken: true };
+  }
 
   if (existingGuestToken) {
     const existingCart = await prisma.cart.findFirst({
@@ -230,12 +301,37 @@ function jsonWithCookie(body: unknown, tokenToSet?: string) {
   return response;
 }
 
+function jsonWithCartCookies(params: {
+  body: unknown;
+  tokenToSet?: string;
+  clearGuestToken?: boolean;
+}) {
+  const response = jsonWithCookie(params.body, params.tokenToSet);
+
+  if (params.clearGuestToken) {
+    response.cookies.set({
+      name: GUEST_CART_COOKIE,
+      value: "",
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+  }
+
+  return response;
+}
+
 export async function GET() {
   try {
-    const { cart, tokenToSet } = await getOrCreateActiveCart();
+    const { cart, tokenToSet, clearGuestToken } = await getOrCreateActiveCart();
     const items = await readCartItems(cart.id);
 
-    return jsonWithCookie({ items }, tokenToSet);
+    return jsonWithCartCookies({
+      body: { items },
+      tokenToSet,
+      clearGuestToken,
+    });
   } catch {
     return NextResponse.json({ error: "Unable to load cart." }, { status: 500 });
   }
@@ -248,7 +344,7 @@ export async function PUT(req: Request) {
       (body as { items?: unknown })?.items,
     );
 
-    const { cart, tokenToSet } = await getOrCreateActiveCart();
+    const { cart, tokenToSet, clearGuestToken } = await getOrCreateActiveCart();
 
     const productIds = Array.from(
       new Set(incomingItems.map((item) => item.productId)),
@@ -337,9 +433,12 @@ export async function PUT(req: Request) {
     });
 
     const items = await readCartItems(cart.id);
-    return jsonWithCookie({ items }, tokenToSet);
+    return jsonWithCartCookies({
+      body: { items },
+      tokenToSet,
+      clearGuestToken,
+    });
   } catch {
     return NextResponse.json({ error: "Unable to sync cart." }, { status: 500 });
   }
 }
-
