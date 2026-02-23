@@ -45,7 +45,7 @@ export default async function Home() {
                   alt={category.name}
                   width={200}
                   height={200}
-                  // className="w-auto h-auto object-contain"
+                  className="w-auto h-auto object-contain"
                 />
               </div>
             </div>
