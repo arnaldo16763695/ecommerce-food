@@ -1,4 +1,4 @@
-import { categoryItems, testimonials } from "@/data/data";
+import { testimonials } from "@/data/data";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
