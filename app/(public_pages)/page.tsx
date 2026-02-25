@@ -13,13 +13,20 @@ export default async function Home() {
     <>
       {/* hero section  */}
       <section className="lg:mt-4 lg:px-4">
-        <div className="page-container bg-[url('/images/hero-img.png')] opacity-100 bg-center bg-cover bg-no-repeat min-h-[75svh] flex items-center justify-center flex-col text-white lg:rounded-2xl text-center">
-          <p className="bg-white/70 p-2 rounded-lg  text-amber-600 font-light tracking-wide uppercase">
-            Delicious food, fast delivery
-          </p>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl">
-            Order your favorite food
-          </h1>
+        <div className="page-container relative min-h-[75svh] overflow-hidden lg:rounded-2xl">
+          <div className="absolute inset-0 bg-[url('/images/hero-img.png')] bg-cover bg-center bg-no-repeat" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-black/25" />
+
+          <div className="relative z-10 flex min-h-[75svh] items-center justify-center px-6 text-center text-white">
+            <div className="max-w-2xl p-6 md:p-10">
+              <p className="inline-block rounded-md bg-white/90 px-3 py-1 text-sm font-medium uppercase tracking-wide text-amber-700">
+                Delicious food, fast delivery
+              </p>
+              <h1 className="mt-4 text-4xl font-semibold leading-tight text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.55)] md:text-5xl lg:text-6xl">
+                Order your favorite food
+              </h1>
+            </div>
+          </div>
         </div>
       </section>
       {/* Category section  */}
