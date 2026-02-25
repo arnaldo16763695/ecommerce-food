@@ -1,28 +1,24 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 const AUTH_ROUTES = ["/login", "/signup"];
-const PROTECTED_ROUTES = ["/checkout", "/orders", "/profile"];
+const USER_PROTECTED_ROUTES = ["/checkout", "/orders", "/profile"];
 
-function hasSessionCookie(req: NextRequest) {
-  return Boolean(
-    req.cookies.get("authjs.session-token")?.value ||
-      req.cookies.get("__Secure-authjs.session-token")?.value ||
-      req.cookies.get("next-auth.session-token")?.value ||
-      req.cookies.get("__Secure-next-auth.session-token")?.value,
-  );
-}
-
-export default function proxy(req: NextRequest) {
-  const { nextUrl } = req;
+export default auth((req) => {
+  const { nextUrl, auth: authData } = req;
   const pathname = nextUrl.pathname;
-  const isLoggedIn = hasSessionCookie(req);
+
+  const isLoggedIn = Boolean(authData?.user);
+  const isAdmin = authData?.user?.role === "ADMIN";
 
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
-  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+  const isUserProtectedRoute = USER_PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route),
   );
+  const isAdminLoginRoute = pathname.startsWith("/admin/login");
+  const isAdminRoute = pathname.startsWith("/admin") && !isAdminLoginRoute;
 
-  if (!isLoggedIn && isProtectedRoute) {
+  if (!isLoggedIn && isUserProtectedRoute) {
     const loginUrl = new URL("/login", nextUrl);
     loginUrl.searchParams.set("callbackUrl", nextUrl.href);
     return NextResponse.redirect(loginUrl);
@@ -32,13 +28,30 @@ export default function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 
+  if (isAdminLoginRoute) {
+    if (!isLoggedIn) return NextResponse.next();
+    if (isAdmin) return NextResponse.redirect(new URL("/admin/dashboard", nextUrl));
+    return NextResponse.redirect(new URL("/", nextUrl));
+  }
+
+  if (isAdminRoute && !isLoggedIn) {
+    const adminLoginUrl = new URL("/admin/login", nextUrl);
+    adminLoginUrl.searchParams.set("callbackUrl", nextUrl.href);
+    return NextResponse.redirect(adminLoginUrl);
+  }
+
+  if (isAdminRoute && !isAdmin) {
+    return NextResponse.redirect(new URL("/", nextUrl));
+  }
+
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
     "/login",
     "/signup",
+    "/admin/:path*",
     "/checkout/:path*",
     "/orders/:path*",
     "/profile/:path*",

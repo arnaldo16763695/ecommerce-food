@@ -12,19 +12,37 @@ class EmailNotVerifiedError extends CredentialsSignin {
   code = "EmailNotVerified";
 }
 
+class NotAdminError extends CredentialsSignin {
+  code = "NotAdmin";
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
+      }
+
+      if (!token.id && token.sub) {
+        token.id = token.sub;
+      }
+
+      if (!token.role && token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: String(token.id) },
+          select: { role: true },
+        });
+        token.role = dbUser?.role ?? "CUSTOMER";
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
         session.user.id = String(token.id ?? "");
+        session.user.role = token.role === "ADMIN" ? "ADMIN" : "CUSTOMER";
       }
       return session;
     },
@@ -46,10 +64,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        portal: { label: "Portal", type: "text" },
       },
       async authorize(credentials) {
         const email = credentials?.email;
         const password = credentials?.password;
+        const portal = credentials?.portal;
 
         if (typeof email !== "string" || typeof password !== "string")
           return null;
@@ -58,6 +78,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email },
           select: {
             id: true,
+            role: true,
             email: true,
             name: true,
             image: true,
@@ -76,8 +97,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new EmailNotVerifiedError();
         }
 
+        if (portal === "admin" && user.role !== "ADMIN") {
+          throw new NotAdminError();
+        }
+
         return {
           id: user.id,
+          role: user.role,
           email: user.email,
           name: user.name,
           image: user.image,
