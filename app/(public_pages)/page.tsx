@@ -31,44 +31,66 @@ export default async function Home() {
       </section>
       {/* Category section  */}
       <section className="mt-16 relative z-10 lg:-mt-36">
-        <div className="page-container grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {allCategoriesDB.map((category) => (
-            <Link
-              key={category.id}
-              href={`/shop/category/${category.slug}`}
-              className="group relative overflow-hidden rounded-2xl border border-amber-100 bg-white px-7 py-6 transition-all hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-400/40 dark:hover:shadow-slate-900/60"
-            >
-              <div className="absolute -right-16 -top-16 size-40 rounded-full bg-amber-100/80 transition-all duration-300 group-hover:scale-110 dark:bg-amber-400/10" />
+        <div className="page-container">
+          <div className="md:hidden">
+            <h2 className="mb-3 text-2xl text-slate-900 dark:text-slate-100">
+              Nuestras categorias
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {allCategoriesDB.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/shop/category/${category.slug}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50 dark:border-amber-300/30 dark:bg-slate-800 dark:text-amber-300 dark:hover:bg-amber-300/10"
+                >
+                  <span>{category.name}</span>
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-300/20 dark:text-amber-200">
+                    {category.productCount}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
 
-              <div className="relative z-10 flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl text-slate-900 dark:text-slate-100">
-                    {category.name}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Browse the full menu for this category.
-                  </p>
+          <div className="hidden gap-7 md:grid md:grid-cols-2 lg:grid-cols-3">
+            {allCategoriesDB.map((category) => (
+              <Link
+                key={category.id}
+                href={`/shop/category/${category.slug}`}
+                className="group relative overflow-hidden rounded-2xl border border-amber-100 bg-white px-7 py-6 transition-all hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-400/40 dark:hover:shadow-slate-900/60"
+              >
+                <div className="absolute -right-16 -top-16 size-40 rounded-full bg-amber-100/80 transition-all duration-300 group-hover:scale-110 dark:bg-amber-400/10" />
+
+                <div className="relative z-10 flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl text-slate-900 dark:text-slate-100">
+                      {category.name}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                      Browse the full menu for this category.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                    {category.productCount} items
+                  </span>
                 </div>
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
-                  {category.productCount} items
-                </span>
-              </div>
 
-              <div className="relative z-10 mx-auto mt-8 max-w-max">
-                <Image
-                  src={category.imgUrl}
-                  alt={category.name}
-                  width={180}
-                  height={180}
-                  className="h-auto w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
+                <div className="relative z-10 mx-auto mt-8 max-w-max">
+                  <Image
+                    src={category.imgUrl}
+                    alt={category.name}
+                    width={180}
+                    height={180}
+                    className="h-auto w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
 
-              <p className="relative z-10 mt-4 text-sm font-medium text-amber-700 transition-colors group-hover:text-amber-800 dark:text-amber-300 dark:group-hover:text-amber-200">
-                View menu
-              </p>
-            </Link>
-          ))}
+                <p className="relative z-10 mt-4 text-sm font-medium text-amber-700 transition-colors group-hover:text-amber-800 dark:text-amber-300 dark:group-hover:text-amber-200">
+                  View menu
+                </p>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
       {/* Products section */}
