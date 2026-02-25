@@ -4,11 +4,11 @@ import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
 import { RiDoubleQuotesL } from "@remixicon/react";
 import { getAllProducts } from "@/lib/data/productsData";
-import { getAllCategories } from "@/lib/data/productsData";
+import { getCategoriesWithProductCounts } from "@/lib/data/productsData";
 
 export default async function Home() {
   const allProductsDB = await getAllProducts();
-  const allCategoriesDB = await getAllCategories();
+  const allCategoriesDB = await getCategoriesWithProductCounts();
   return (
     <>
       {/* hero section  */}
@@ -26,29 +26,41 @@ export default async function Home() {
       <section className="mt-16 relative z-10 lg:-mt-36">
         <div className="page-container grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
           {allCategoriesDB.map((category) => (
-            // Card
-            <div
+            <Link
               key={category.id}
-              className="bg-white border  border-amber-100 block hover:bg-amber-50 rounded-xl px-10 py-8 transition cursor-pointer hover:translate-y-[-4px] hover:shadow-lg dark:hover:shadow-slate-600"
+              href={`/shop/category/${category.slug}`}
+              className="group relative overflow-hidden rounded-2xl border border-amber-100 bg-white px-7 py-6 transition-all hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-400/40 dark:hover:shadow-slate-900/60"
             >
-              {/* Title and Quantity  */}
-              <div>
-                <h2 className="text-2xl dark:text-gray-900">
-                  {category.name}
-                </h2>
-                <p className="text-gray-500">{'10'} items</p>
+              <div className="absolute -right-16 -top-16 size-40 rounded-full bg-amber-100/80 transition-all duration-300 group-hover:scale-110 dark:bg-amber-400/10" />
+
+              <div className="relative z-10 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl text-slate-900 dark:text-slate-100">
+                    {category.name}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    Browse the full menu for this category.
+                  </p>
+                </div>
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                  {category.productCount} items
+                </span>
               </div>
-              {/* Product image  */}
-              <div className="max-w-max mx-auto mt-12">
+
+              <div className="relative z-10 mx-auto mt-8 max-w-max">
                 <Image
                   src={category.imgUrl}
                   alt={category.name}
-                  width={200}
-                  height={200}
-                  className="w-auto h-auto object-contain"
+                  width={180}
+                  height={180}
+                  className="h-auto w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
-            </div>
+
+              <p className="relative z-10 mt-4 text-sm font-medium text-amber-700 transition-colors group-hover:text-amber-800 dark:text-amber-300 dark:group-hover:text-amber-200">
+                View menu
+              </p>
+            </Link>
           ))}
         </div>
       </section>
