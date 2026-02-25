@@ -5,6 +5,7 @@ import { ThemeProvider } from "../components/theme-provider";
 import NextTopLoader from 'nextjs-toploader';
 import AuthSessionProvider from "@/components/AuthSessionProvider";
 import { auth } from "@/auth";
+import { Toaster } from "@/components/ui/toaster";
 
 const lexend = localFont({
   src: "/fonts/Lexend-Regular.ttf",
@@ -45,6 +46,7 @@ export default async function RootLayout({
         >
           <AuthSessionProvider session={session}>
             {children}
+            <Toaster />
           </AuthSessionProvider>
         </ThemeProvider>
       </body>
