@@ -433,7 +433,7 @@ export default function OptionGroupsTable() {
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>
-            <TableHead>Reglas de selección</TableHead>
+            <TableHead>Reglas de selecciÃ³n</TableHead>
             <TableHead>Orden</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Opciones</TableHead>
@@ -459,7 +459,7 @@ export default function OptionGroupsTable() {
               <TableRow key={group.id}>
                 <TableCell>{group.name}</TableCell>
                 <TableCell>
-                  Mín {group.minSelect} / Máx {group.maxSelect}
+                  MÃ­n {group.minSelect} / MÃ¡x {group.maxSelect}
                 </TableCell>
                 <TableCell>{group.sortOrder}</TableCell>
                 <TableCell>

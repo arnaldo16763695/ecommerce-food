@@ -225,14 +225,14 @@ function ProductDetails({ product, relatedProducts }: Props) {
               <div className="flex flex-wrap items-center gap-4">
                 <div
                   className="flex items-center gap-1 text-amber-500"
-                  aria-label="Calificación: 5 de 5"
+                  aria-label="CalificaciÃ³n: 5 de 5"
                 >
                   {[...Array(5)].map((_, index) => (
                     <RiStarFill key={index} aria-hidden="true" size={19} />
                   ))}
                 </div>
                 <span className="text-sm font-medium text-gray-600 dark:text-slate-300">
-                  5.0 · 126 resenas
+                  5.0 Â· 126 resenas
                 </span>
               </div>
 
@@ -261,8 +261,8 @@ function ProductDetails({ product, relatedProducts }: Props) {
                           </h3>
                           <p className="text-xs text-gray-500 dark:text-slate-400">
                             {group.minSelect > 0
-                              ? `Requerido · elige ${group.minSelect}-${group.maxSelect}`
-                              : `Opcional · hasta ${group.maxSelect}`}{" "}
+                              ? `Requerido Â· elige ${group.minSelect}-${group.maxSelect}`
+                              : `Opcional Â· hasta ${group.maxSelect}`}{" "}
                             ({selectedCount}/{group.maxSelect})
                           </p>
                         </div>
