@@ -138,10 +138,10 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader className="px-0 pb-4">
-          <SheetTitle>Agregar al pedido</SheetTitle>
+          <SheetTitle className="pl-3">Agregar al pedido</SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-5 pb-6">
+        <div className="space-y-5 pb-6 px-2">
           <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-4 flex items-center justify-center rounded-lg bg-white p-3 dark:bg-slate-900">
               <Image
