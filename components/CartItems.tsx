@@ -17,6 +17,15 @@ import { AllProducts } from "@/lib/data/productsData";
 import type { CartItemOption } from "@/types/types";
 import { buildCartLineKey } from "@/lib/cart-line-key";
 import { resolveProductImageSrc } from "@/lib/product-image";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   products: AllProducts[];
@@ -58,6 +67,10 @@ function CartItems({ products }: Props) {
     Record<string, string[]>
   >({});
   const [attemptedSave, setAttemptedSave] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [confirmState, setConfirmState] = useState<
+    { type: "remove"; item: DisplayCartItem } | { type: "clear" } | null
+  >(null);
 
   useEffect(() => {
     if (!isHydratedFromServer) {
@@ -230,6 +243,29 @@ function CartItems({ products }: Props) {
     setEditingLineKey(null);
   };
 
+  const openRemoveConfirmation = (item: DisplayCartItem) => {
+    setConfirmState({ type: "remove", item });
+    setConfirmDialogOpen(true);
+  };
+
+  const openClearCartConfirmation = () => {
+    setConfirmState({ type: "clear" });
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmAction = () => {
+    if (!confirmState) return;
+
+    if (confirmState.type === "remove") {
+      removeItem(confirmState.item.lineKey);
+    } else {
+      clearCart();
+    }
+
+    setConfirmDialogOpen(false);
+    setConfirmState(null);
+  };
+
   return (
     <section className="bg-neutral-50 py-10 dark:bg-slate-900 md:py-16">
       <div className="page-container">
@@ -296,7 +332,7 @@ function CartItems({ products }: Props) {
                               </button>
                             </div>
                             <button
-                              onClick={() => removeItem(item.lineKey)}
+                              onClick={() => openRemoveConfirmation(item)}
                               title="Eliminar producto"
                               aria-label={`Eliminar ${item.name}`}
                               className="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 dark:hover:bg-red-400/10 dark:hover:text-red-300 dark:focus:bg-red-400/10 dark:focus:text-red-300"
@@ -440,7 +476,7 @@ function CartItems({ products }: Props) {
                               title="Eliminar producto"
                               aria-label={`Eliminar ${item.name}`}
                               className="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 dark:hover:bg-red-400/10 dark:hover:text-red-300 dark:focus:bg-red-400/10 dark:focus:text-red-300"
-                              onClick={() => removeItem(item.lineKey)}
+                              onClick={() => openRemoveConfirmation(item)}
                             >
                               <RiDeleteBin6Line size={20} />
                             </button>
@@ -456,7 +492,7 @@ function CartItems({ products }: Props) {
             {cartItems.length > 0 && (
               <button
                 className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 focus:bg-red-100 dark:border-red-400/30 dark:bg-red-400/10 dark:text-red-300 dark:hover:bg-red-400/20 dark:focus:bg-red-400/20"
-                onClick={clearCart}
+                onClick={openClearCartConfirmation}
               >
                 <RiDeleteBin6Line size={16} />
                 Vaciar carrito
@@ -646,6 +682,43 @@ function CartItems({ products }: Props) {
           </div>
         </div>
       )}
+
+      <Dialog
+        open={confirmDialogOpen}
+        onOpenChange={(open) => {
+          setConfirmDialogOpen(open);
+          if (!open) {
+            setConfirmState(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {confirmState?.type === "remove"
+                ? "Eliminar producto"
+                : "Vaciar carrito"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmState?.type === "remove"
+                ? `Se eliminara "${confirmState.item.name}" del carrito. Esta accion no se puede deshacer.`
+                : "Se eliminaran todos los productos del carrito. Esta accion no se puede deshacer."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleConfirmAction}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
