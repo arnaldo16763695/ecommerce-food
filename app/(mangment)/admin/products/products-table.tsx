@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -261,17 +262,22 @@ export default function ProductsTable() {
 
   return (
     <section className="space-y-4">
-      <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 sm:flex-row">
-        <Input
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Buscar por producto, slug o categoria"
-          className="sm:max-w-sm"
-        />
-        <Button type="submit" disabled={loading}>
-          Buscar
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Buscar por producto, slug o categoria"
+            className="sm:max-w-sm"
+          />
+          <Button type="submit" disabled={loading}>
+            Buscar
+          </Button>
+        </form>
+        <Button asChild>
+          <Link href="/admin/products/new">Nuevo producto</Link>
         </Button>
-      </form>
+      </div>
 
       {error ? (
         <p className="text-sm text-red-600">{error}</p>
@@ -288,18 +294,19 @@ export default function ProductsTable() {
             <TableHead>Precio</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Destacado</TableHead>
+            <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+              <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
                 Cargando productos...
               </TableCell>
             </TableRow>
           ) : products.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+              <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
                 No hay productos para mostrar
               </TableCell>
             </TableRow>
@@ -390,6 +397,11 @@ export default function ProductsTable() {
                       </SelectContent>
                     </Select>
                   </div>
+                </TableCell>
+                <TableCell>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/products/${product.id}/edit`}>Editar</Link>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))
