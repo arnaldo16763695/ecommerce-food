@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { ChevronRight, type LucideIcon } from "lucide-react"
 
 import {
@@ -18,29 +19,69 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
+const NAV_MAIN_OPEN_STATE_KEY = "admin_nav_main_open_state"
+
+type NavMainItem = {
+  title: string
+  url: string
+  icon?: LucideIcon
+  isActive?: boolean
+  items?: {
+    title: string
+    url: string
+  }[]
+}
+
+function buildNavMainItemKey(item: NavMainItem) {
+  return `${item.title}::${item.url}`
+}
+
 export function NavMain({
   items,
 }: {
-  items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
-  }[]
+  items: NavMainItem[]
 }) {
+  const [openStateByKey, setOpenStateByKey] = React.useState<Record<string, boolean>>({})
+
+  React.useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(NAV_MAIN_OPEN_STATE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as Record<string, boolean>
+      if (parsed && typeof parsed === "object") {
+        setOpenStateByKey(parsed)
+      }
+    } catch {
+      // Ignore malformed localStorage values.
+    }
+  }, [])
+
+  const handleOpenChange = React.useCallback((itemKey: string, nextOpen: boolean) => {
+    setOpenStateByKey((prev) => {
+      const next = { ...prev, [itemKey]: nextOpen }
+      try {
+        window.localStorage.setItem(NAV_MAIN_OPEN_STATE_KEY, JSON.stringify(next))
+      } catch {
+        // Ignore localStorage access errors.
+      }
+      return next
+    })
+  }, [])
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Panel</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
+        {items.map((item) => {
+          const itemKey = buildNavMainItemKey(item)
+          const isOpen = openStateByKey[itemKey] ?? Boolean(item.isActive)
+
+          return (
           <Collapsible
             key={item.title}
             asChild
-            defaultOpen={item.isActive}
+            open={isOpen}
+            onOpenChange={(nextOpen) => handleOpenChange(itemKey, nextOpen)}
             className="group/collapsible"
           >
             <SidebarMenuItem>
@@ -66,7 +107,8 @@ export function NavMain({
               </CollapsibleContent>
             </SidebarMenuItem>
           </Collapsible>
-        ))}
+          )
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )

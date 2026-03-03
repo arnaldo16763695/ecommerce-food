@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { PersistedSidebarProvider } from "@/components/sidebar/persisted-sidebar-provider";
 
 import {
   SidebarInset,
-  SidebarProvider,
-
 } from "@/components/ui/sidebar";
 
 async function layout({
@@ -25,12 +24,12 @@ async function layout({
 
   return (
     <>
-      <SidebarProvider>
+      <PersistedSidebarProvider>
         <AppSidebar />
         <SidebarInset>
           {children}
         </SidebarInset>
-      </SidebarProvider>
+      </PersistedSidebarProvider>
     </>
   );
 }
