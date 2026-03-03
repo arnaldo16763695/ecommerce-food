@@ -47,7 +47,7 @@ const Header = () => {
   }, [items]);
 
   const isLoggedIn = Boolean(session?.user?.id);
-  const userLabel = session?.user?.name ?? session?.user?.email ?? "User";
+  const userLabel = session?.user?.name ?? session?.user?.email ?? "Usuario";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 py-3 font-cunia backdrop-blur dark:border-slate-700 dark:bg-gray-900/95">
@@ -58,7 +58,7 @@ const Header = () => {
 
         <nav
           className="hidden w-full items-center justify-between lg:flex"
-          aria-label="Primary navigation"
+          aria-label="Navegación principal"
         >
           <ul className="mx-auto flex items-center justify-center gap-9 text-slate-800 dark:text-slate-100">
             {navItems.map((item) => (
@@ -82,24 +82,24 @@ const Header = () => {
               <div className="h-9 w-24" aria-hidden="true" />
             ) : isLoggedIn ? (
               <div className="hidden items-center gap-2 md:flex">
-                <span className="text-sm text-slate-700 dark:text-slate-200">
-                  Hi, {userLabel}
+                <span className="text-xs text-slate-700 dark:text-slate-200">
+                  Hola, {userLabel}
                 </span>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
-                  Log Out
+                  Cerrar sesión
                 </button>
               </div>
             ) : (
               <Link href="/login" className="btn-primary">
-                Log In
+                Iniciar sesión
               </Link>
             )}
             <Link
               href="/shopping-cart"
-              aria-label="Open shopping cart"
+              aria-label="Abrir carrito de compras"
               className="relative inline-flex size-10 items-center justify-center rounded-md text-slate-800 transition-colors hover:bg-slate-100 hover:text-amber-600 focus:bg-slate-100 focus:text-amber-600 dark:text-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800"
             >
               <RiShoppingBag2Line
@@ -118,11 +118,11 @@ const Header = () => {
           </div>
         </nav>
 
-        <nav className="relative lg:hidden" aria-label="Mobile navigation">
+        <nav className="relative lg:hidden" aria-label="Navegación móvil">
           <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
             <Link
               href="/shopping-cart"
-              aria-label="Open shopping cart"
+              aria-label="Abrir carrito de compras"
               className="relative inline-flex size-10 items-center justify-center rounded-md transition-colors hover:bg-slate-100 hover:text-amber-600 focus:bg-slate-100 focus:text-amber-600 dark:hover:bg-slate-800 dark:focus:bg-slate-800"
             >
               <RiShoppingBag2Line
@@ -180,7 +180,7 @@ const Header = () => {
                   void signOut({ callbackUrl: "/" });
                 }}
               >
-                Log Out
+                Cerrar sesión
               </button>
             ) : (
               <Link
@@ -188,7 +188,7 @@ const Header = () => {
                 className="btn-primary block w-full text-center"
                 onClick={handleClick}
               >
-                Log In
+                Iniciar sesión
               </Link>
             )}
             <ThemeToggle />

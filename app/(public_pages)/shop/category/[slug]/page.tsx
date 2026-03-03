@@ -19,11 +19,11 @@ async function CategoryShopPage(props: { params: Promise<{ slug: string }> }) {
         <div className="page-container">
           <nav className="mb-3 text-sm text-slate-600 dark:text-slate-300">
             <Link href="/" className="hover:text-amber-600 transition-colors">
-              Home
+              Inicio
             </Link>
             {" / "}
             <Link href="/shop" className="hover:text-amber-600 transition-colors">
-              Shop
+              Tienda
             </Link>
             {" / "}
             <span className="text-slate-800 dark:text-slate-100">{category.name}</span>
@@ -33,7 +33,7 @@ async function CategoryShopPage(props: { params: Promise<{ slug: string }> }) {
             {category.name}
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-300">
-            {products.length} {products.length === 1 ? "item" : "items"} available.
+            {products.length} {products.length === 1 ? "producto" : "productos"} disponibles.
           </p>
         </div>
       </section>
@@ -44,10 +44,10 @@ async function CategoryShopPage(props: { params: Promise<{ slug: string }> }) {
         <section className="py-16">
           <div className="page-container text-center">
             <p className="text-slate-600 dark:text-slate-300">
-              No products available in this category yet.
+              Aún no hay productos disponibles en esta categoría.
             </p>
             <Link href="/shop" className="btn-primary inline-block mt-6">
-              Browse all products
+              Ver todos los productos
             </Link>
           </div>
         </section>

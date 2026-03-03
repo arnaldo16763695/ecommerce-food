@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
     <section className="flex min-h-svh items-center justify-center bg-slate-100 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
         <h1 className="mb-2 text-center text-2xl font-semibold text-slate-900">
-          Admin Login
+          Acceso de administrador
         </h1>
         <p className="mb-8 text-center text-sm text-slate-600">
           Ingresa con una cuenta de administrador.
@@ -94,7 +94,7 @@ export default function AdminLoginPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
           <div>
             <label htmlFor="email" className="mb-2 block text-sm text-slate-700">
-              Email
+              Correo
             </label>
             <input
               id="email"
@@ -109,7 +109,7 @@ export default function AdminLoginPage() {
 
           <div>
             <label htmlFor="password" className="mb-2 block text-sm text-slate-700">
-              Password
+              Contraseña
             </label>
             <input
               id="password"

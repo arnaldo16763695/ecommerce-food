@@ -67,7 +67,7 @@ const data = {
           url: "/admin/categories",
         },
         {
-          title: "Option Groups",
+          title: "Grupos de opciones",
           url: "/admin/option-groups",
         },
       ],

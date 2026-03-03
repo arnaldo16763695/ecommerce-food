@@ -28,7 +28,7 @@ function OptionGroupsPage() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Option Groups</BreadcrumbPage>
+                <BreadcrumbPage>Grupos de opciones</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>

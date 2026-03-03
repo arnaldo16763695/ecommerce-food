@@ -45,10 +45,10 @@ function ProductDetails({ product, relatedProducts }: Props) {
     return (
       <section className="py-20 text-center">
         <p className="text-lg text-slate-700 dark:text-slate-200">
-          Product not found.
+          Producto no encontrado.
         </p>
         <Link href="/shop" className="mt-4 inline-block btn-primary">
-          Back to shop
+          Volver a la tienda
         </Link>
       </section>
     );
@@ -162,10 +162,10 @@ function ProductDetails({ product, relatedProducts }: Props) {
     <>
       <div className="flex min-h-52 flex-col items-center justify-center gap-2 border-b border-amber-100 bg-amber-50 px-5 text-center dark:border-slate-700 dark:bg-slate-900">
         <h2 className="px-5 text-3xl text-neutral-800 dark:text-slate-100">
-          Product details
+          Detalle del producto
         </h2>
         <p className="mx-auto max-w-lg text-gray-600 dark:text-slate-300">
-          Customize your order before adding it to your cart.
+          Personaliza tu pedido antes de agregarlo al carrito.
         </p>
       </div>
 
@@ -179,14 +179,14 @@ function ProductDetails({ product, relatedProducts }: Props) {
               href="/"
               className="transition hover:text-amber-600 focus:text-amber-600"
             >
-              Home
+              Inicio
             </Link>
             <span>/</span>
             <Link
               href="/shop"
               className="transition hover:text-amber-600 focus:text-amber-600"
             >
-              Shop
+              Tienda
             </Link>
             <span>/</span>
             <p className="max-w-56 truncate text-gray-800 dark:text-slate-100 md:max-w-full">
@@ -199,7 +199,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
             className="mb-8 inline-flex items-center gap-2 font-medium text-amber-600 transition-colors hover:text-amber-700 focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
           >
             <RiArrowLeftLine />
-            Back to shop
+            Volver a la tienda
           </Link>
 
           <div className="grid items-start gap-8 lg:grid-cols-2 xl:gap-14">
@@ -216,7 +216,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
 
             <div className="space-y-6 rounded-3xl border border-amber-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:sticky lg:top-24 md:p-8">
               <p className="text-sm font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                {product.category?.name ?? product.categoryId ?? "Menu item"}
+                {product.category?.name ?? product.categoryId ?? "Producto del menu"}
               </p>
               <h1 className="text-3xl text-gray-900 dark:text-slate-100 md:text-4xl">
                 {product.name}
@@ -225,14 +225,14 @@ function ProductDetails({ product, relatedProducts }: Props) {
               <div className="flex flex-wrap items-center gap-4">
                 <div
                   className="flex items-center gap-1 text-amber-500"
-                  aria-label="Rating: 5 out of 5"
+                  aria-label="Calificación: 5 de 5"
                 >
                   {[...Array(5)].map((_, index) => (
                     <RiStarFill key={index} aria-hidden="true" size={19} />
                   ))}
                 </div>
                 <span className="text-sm font-medium text-gray-600 dark:text-slate-300">
-                  5.0 Â· 126 reviews
+                  5.0 · 126 resenas
                 </span>
               </div>
 
@@ -247,7 +247,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
               {customizationGroups.length > 0 ? (
                 <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-                    Customize your item
+                    Personaliza tu producto
                   </h2>
                   {customizationGroups.map((group) => {
                     const selectedCount = selectedOptions[group.id]?.length ?? 0;
@@ -261,8 +261,8 @@ function ProductDetails({ product, relatedProducts }: Props) {
                           </h3>
                           <p className="text-xs text-gray-500 dark:text-slate-400">
                             {group.minSelect > 0
-                              ? `Required Â· pick ${group.minSelect}-${group.maxSelect}`
-                              : `Optional Â· up to ${group.maxSelect}`}{" "}
+                              ? `Requerido · elige ${group.minSelect}-${group.maxSelect}`
+                              : `Opcional · hasta ${group.maxSelect}`}{" "}
                             ({selectedCount}/{group.maxSelect})
                           </p>
                         </div>
@@ -303,7 +303,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                                 <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
                                   {option.priceDeltaCents > 0
                                     ? `+$${formatMoney(option.priceDeltaCents)}`
-                                    : "Included"}
+                                    : "Incluido"}
                                 </span>
                               </label>
                             );
@@ -321,7 +321,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-gray-300 p-3 text-sm text-gray-600 dark:border-slate-600 dark:text-slate-300">
-                  This product has no customization options.
+                  Este producto no tiene opciones de personalizacion.
                 </div>
               )}
 
@@ -330,13 +330,13 @@ function ProductDetails({ product, relatedProducts }: Props) {
                   htmlFor="item-notes"
                   className="text-sm font-medium text-gray-700 dark:text-slate-300"
                 >
-                  Notes (optional)
+                  Notas (opcional)
                 </label>
                 <textarea
                   id="item-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Ex: no onion, extra crispy..."
+                  placeholder="Ej: sin cebolla, extra crujiente..."
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                   rows={3}
                   maxLength={180}
@@ -349,7 +349,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                     type="button"
                     onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
                     className="rounded p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700"
-                    aria-label="Decrease quantity"
+                    aria-label="Disminuir cantidad"
                   >
                     <RiSubtractLine />
                   </button>
@@ -360,7 +360,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                     type="button"
                     onClick={() => setQuantity((prev) => prev + 1)}
                     className="rounded p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700"
-                    aria-label="Increase quantity"
+                    aria-label="Aumentar cantidad"
                   >
                     <RiAddLine />
                   </button>
@@ -372,11 +372,11 @@ function ProductDetails({ product, relatedProducts }: Props) {
                   disabled={!canAddToCart && attemptedAdd}
                 >
                   <RiShoppingBag2Line size={20} aria-hidden="true" />
-                  Add to basket
+                  Agregar al carrito
                 </button>
                 <button
                   className="flex items-center justify-center rounded-lg border border-gray-200 transition-colors hover:border-amber-400 hover:text-amber-700 dark:border-slate-600 dark:text-slate-200 dark:hover:border-amber-400 dark:hover:text-amber-300"
-                  aria-label="Save to wishlist"
+                  aria-label="Guardar en favoritos"
                 >
                   <RiHeart3Line size={20} aria-hidden="true" />
                 </button>
@@ -384,14 +384,14 @@ function ProductDetails({ product, relatedProducts }: Props) {
 
               <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">
                 <p className="text-sm text-gray-500 dark:text-slate-400">
-                  Current total
+                  Total actual
                 </p>
                 <p className="text-2xl font-semibold text-amber-600">
                   ${formatMoney(totalPriceCents)}
                 </p>
                 {selectedOptionsList.length > 0 && (
                   <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-                    Includes ${formatMoney(optionsDeltaCents)} in add-ons.
+                    Includes ${formatMoney(optionsDeltaCents)} en extras.
                   </p>
                 )}
               </div>
@@ -399,25 +399,25 @@ function ProductDetails({ product, relatedProducts }: Props) {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">
                   <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Availability
+                    Disponibilidad
                   </p>
                   <p className="font-semibold text-emerald-700 dark:text-emerald-400">
-                    In stock
+                    Disponible
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">
                   <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Preparation time
+                    Tiempo de preparacion
                   </p>
                   <p className="font-semibold text-gray-800 dark:text-slate-100">
-                    {product.prepTimeMin ? `${product.prepTimeMin} min` : "Fast"}
+                    {product.prepTimeMin ? `${product.prepTimeMin} min` : "Rapido"}
                   </p>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-600 dark:bg-slate-900">
                 <h2 className="mb-4 text-lg text-gray-800 dark:text-slate-100">
-                  Why shoppers love it
+                  Por que les encanta a nuestros clientes
                 </h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {productFeatures.map((feature) => (
@@ -444,14 +444,14 @@ function ProductDetails({ product, relatedProducts }: Props) {
                     className="text-amber-600 dark:text-amber-400"
                     aria-hidden="true"
                   />
-                  Free shipping over $100
+                  Envio gratis en compras mayores a $100
                 </p>
                 <p className="inline-flex items-center gap-2">
                   <RiShieldCheckLine
                     className="text-amber-600 dark:text-amber-400"
                     aria-hidden="true"
                   />
-                  30-day hassle-free returns
+                  Devoluciones faciles durante 30 dias
                 </p>
               </div>
             </div>
@@ -460,7 +460,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
           {minimalRelatedProducts.length > 0 && (
             <div className="mt-14">
               <h2 className="mb-5 text-2xl text-gray-900 dark:text-slate-100">
-                You may also like
+                Tambien te puede gustar
               </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {minimalRelatedProducts.map((item) => (
@@ -499,3 +499,6 @@ function ProductDetails({ product, relatedProducts }: Props) {
 }
 
 export default ProductDetails;
+
+
+

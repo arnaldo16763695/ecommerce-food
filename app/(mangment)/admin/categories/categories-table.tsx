@@ -505,13 +505,13 @@ export default function CategoriesTable() {
 
             <div className="space-y-1">
               <label htmlFor="category-image-url" className="text-sm font-medium">
-                Image URL
+                URL de imagen
               </label>
               <Input
                 id="category-image-url"
                 value={form.imgUrl}
                 onChange={(e) => setForm((prev) => ({ ...prev, imgUrl: e.target.value }))}
-                placeholder="Image URL"
+                placeholder="URL de imagen"
               />
             </div>
 
@@ -519,7 +519,7 @@ export default function CategoriesTable() {
               <div className="bg-muted relative h-16 w-16 overflow-hidden rounded-md">
                 <Image
                   src={normalizeCategoryImage(form.imgUrl)}
-                  alt="Category preview"
+                  alt="Vista previa de categoría"
                   fill
                   className="object-cover"
                   sizes="64px"

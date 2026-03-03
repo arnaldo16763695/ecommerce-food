@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import {
   RiAddLine,
   RiArrowRightLine,
@@ -154,9 +154,9 @@ function CartItems({ products }: Props) {
       (acc, group) => {
         const selectedCount = draftSelectedByGroup[group.id]?.length ?? 0;
         if (selectedCount < group.minSelect) {
-          acc[group.id] = `Choose at least ${group.minSelect}.`;
+          acc[group.id] = `Elige al menos ${group.minSelect}.`;
         } else if (selectedCount > group.maxSelect) {
-          acc[group.id] = `Choose up to ${group.maxSelect}.`;
+          acc[group.id] = `Elige hasta ${group.maxSelect}.`;
         }
         return acc;
       },
@@ -236,10 +236,10 @@ function CartItems({ products }: Props) {
         <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1.5">
             <h3 className="text-3xl font-semibold tracking-tight text-neutral-900 dark:text-slate-100">
-              Shopping cart
+              Carrito de compras
             </h3>
             <p className="text-sm text-neutral-600 dark:text-slate-300">
-              ({totalItems}) {totalItems > 1 ? "items" : "item"} ready for checkout
+              ({totalItems}) {totalItems > 1 ? "articulos" : "articulo"} listos para finalizar compra
             </p>
           </div>
         </div>
@@ -249,10 +249,10 @@ function CartItems({ products }: Props) {
             {cartItems.length === 0 ? (
               <div className="bg-white border border-gray-200 rounded-lg p-12 text-center space-y-3">
                 <p className="text-neutral-600 dark:text-slate-800 font-cunia text-lg">
-                  Your cart is empty
+                  Tu carrito esta vacio
                 </p>
                 <Link href="/shop" className="btn-primary">
-                  Continue shopping
+                  Seguir comprando
                 </Link>
               </div>
             ) : (
@@ -284,7 +284,7 @@ function CartItems({ products }: Props) {
                               )}
                               {item.notes && (
                                 <p className="mt-1 text-xs text-neutral-500 dark:text-slate-400">
-                                  Note: {item.notes}
+                                  Nota: {item.notes}
                                 </p>
                               )}
                               <button
@@ -292,13 +292,13 @@ function CartItems({ products }: Props) {
                                 className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:underline dark:text-amber-300"
                               >
                                 <RiEdit2Line size={14} />
-                                Edit item
+                                Editar producto
                               </button>
                             </div>
                             <button
                               onClick={() => removeItem(item.lineKey)}
-                              title="Delete item"
-                              aria-label={`Delete ${item.name}`}
+                              title="Eliminar producto"
+                              aria-label={`Eliminar ${item.name}`}
                               className="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 dark:hover:bg-red-400/10 dark:hover:text-red-300 dark:focus:bg-red-400/10 dark:focus:text-red-300"
                             >
                               <RiDeleteBin6Line size={18} />
@@ -306,12 +306,12 @@ function CartItems({ products }: Props) {
                           </div>
 
                           <p className="mb-3 text-sm text-neutral-600 dark:text-slate-300">
-                            ${formatMoney(item.price)} each
+                            ${formatMoney(item.price)} cada uno
                           </p>
 
                           <div className="inline-flex items-center rounded-xl border border-neutral-300 bg-white dark:border-slate-600 dark:bg-slate-900">
                             <button
-                              aria-label={`Decrease quantity for ${item.name}`}
+                              aria-label={`Disminuir cantidad de ${item.name}`}
                               className="rounded-l-xl p-2 transition hover:bg-neutral-100 focus:bg-neutral-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
                               onClick={() =>
                                 updateQuantity(item.lineKey, item.quantity - 1)
@@ -323,7 +323,7 @@ function CartItems({ products }: Props) {
                               {item.quantity}
                             </p>
                             <button
-                              aria-label={`Increase quantity for ${item.name}`}
+                              aria-label={`Aumentar cantidad de ${item.name}`}
                               className="rounded-r-xl p-2 transition hover:bg-neutral-100 focus:bg-neutral-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
                               onClick={() =>
                                 updateQuantity(item.lineKey, item.quantity + 1)
@@ -351,7 +351,7 @@ function CartItems({ products }: Props) {
                   <table className="min-w-full border-collapse text-left">
                     <thead className="border-b border-neutral-200 bg-neutral-50 text-sm dark:border-slate-700 dark:bg-slate-700/60">
                       <tr>
-                        {["Product", "Price", "Quantity", "Total"].map((label) => (
+                        {["Producto", "Precio", "Cantidad", "Total"].map((label) => (
                           <th
                             className="p-4 font-semibold uppercase tracking-wide text-neutral-500 dark:text-slate-300"
                             key={label}
@@ -391,7 +391,7 @@ function CartItems({ products }: Props) {
                                 )}
                                 {item.notes && (
                                   <p className="mt-1 text-xs text-neutral-500 dark:text-slate-400">
-                                    Note: {item.notes}
+                                    Nota: {item.notes}
                                   </p>
                                 )}
                                 <button
@@ -399,7 +399,7 @@ function CartItems({ products }: Props) {
                                   className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:underline dark:text-amber-300"
                                 >
                                   <RiEdit2Line size={14} />
-                                  Edit item
+                                  Editar producto
                                 </button>
                               </div>
                             </div>
@@ -410,7 +410,7 @@ function CartItems({ products }: Props) {
                           <td className="p-4">
                             <div className="inline-flex items-center rounded-xl border border-neutral-300 bg-white dark:border-slate-600 dark:bg-slate-900">
                               <button
-                                aria-label={`Decrease quantity for ${item.name}`}
+                                aria-label={`Disminuir cantidad de ${item.name}`}
                                 className="rounded-l-xl p-2 transition hover:bg-neutral-100 focus:bg-neutral-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
                                 onClick={() =>
                                   updateQuantity(item.lineKey, item.quantity - 1)
@@ -422,7 +422,7 @@ function CartItems({ products }: Props) {
                                 {item.quantity}
                               </p>
                               <button
-                                aria-label={`Increase quantity for ${item.name}`}
+                                aria-label={`Aumentar cantidad de ${item.name}`}
                                 className="rounded-r-xl p-2 transition hover:bg-neutral-100 focus:bg-neutral-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
                                 onClick={() =>
                                   updateQuantity(item.lineKey, item.quantity + 1)
@@ -437,8 +437,8 @@ function CartItems({ products }: Props) {
                           </td>
                           <td className="p-4">
                             <button
-                              title="Delete item"
-                              aria-label={`Delete ${item.name}`}
+                              title="Eliminar producto"
+                              aria-label={`Eliminar ${item.name}`}
                               className="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 dark:hover:bg-red-400/10 dark:hover:text-red-300 dark:focus:bg-red-400/10 dark:focus:text-red-300"
                               onClick={() => removeItem(item.lineKey)}
                             >
@@ -459,7 +459,7 @@ function CartItems({ products }: Props) {
                 onClick={clearCart}
               >
                 <RiDeleteBin6Line size={16} />
-                Clear cart
+                Vaciar carrito
               </button>
             )}
           </div>
@@ -467,7 +467,7 @@ function CartItems({ products }: Props) {
           {cartItems.length > 0 && (
             <aside className="sticky top-24 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:shadow-black/30 lg:col-span-1">
               <h3 className="mb-6 text-xl font-semibold text-neutral-900 dark:text-slate-100">
-                Order summary
+                Resumen del pedido
               </h3>
 
               <div className="mb-5 space-y-3 text-sm">
@@ -476,13 +476,13 @@ function CartItems({ products }: Props) {
                   <p>$ {formatMoney(subTotal)}</p>
                 </div>
                 <div className="flex justify-between text-neutral-600 dark:text-slate-300">
-                  <h4>Shipping</h4>
+                  <h4>Envio</h4>
                   <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                    {shipping === 0 ? "Free" : "$ " + formatMoney(shipping)}
+                    {shipping === 0 ? "Gratis" : "$ " + formatMoney(shipping)}
                   </p>
                 </div>
                 <div className="flex justify-between text-neutral-600 dark:text-slate-300">
-                  <h4>Tax</h4>
+                  <h4>Impuestos</h4>
                   <p>${formatMoney(tax)}</p>
                 </div>
               </div>
@@ -493,25 +493,25 @@ function CartItems({ products }: Props) {
                   <p className="text-xl font-semibold text-neutral-900 dark:text-slate-100">${total}</p>
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-slate-400">
-                  Includes all taxes and fees.
+                  Incluye todos los impuestos y cargos.
                 </p>
               </div>
 
               <button className="btn-primary inline-flex w-full items-center justify-center gap-2">
                 <RiLock2Line size={16} />
-                Check out securely
+                Finalizar compra segura
               </button>
 
               <p className="mt-3 flex items-start gap-2 text-xs text-neutral-500 dark:text-slate-400">
                 <RiInformationLine size={16} className="mt-0.5" />
-                You can still update quantities at checkout before final payment.
+                Aun puedes ajustar cantidades antes del pago final.
               </p>
 
               <Link
                 href="/shop"
                 className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-amber-600 transition hover:underline focus:underline dark:text-amber-400"
               >
-                Continue shopping
+                Seguir comprando
                 <RiArrowRightLine size={16} />
               </Link>
             </aside>
@@ -524,12 +524,12 @@ function CartItems({ products }: Props) {
           <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                Edit {editingItem.name}
+                Editar {editingItem.name}
               </h3>
               <button
                 onClick={() => setEditingLineKey(null)}
                 className="rounded-md p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
-                aria-label="Close edit dialog"
+                aria-label="Cerrar dialogo de edicion"
               >
                 <RiCloseLine size={20} />
               </button>
@@ -548,8 +548,8 @@ function CartItems({ products }: Props) {
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {group.minSelect > 0
-                            ? `Required ${group.minSelect}-${group.maxSelect}`
-                            : `Optional up to ${group.maxSelect}`}{" "}
+                            ? `Requerido ${group.minSelect}-${group.maxSelect}`
+                            : `Opcional hasta ${group.maxSelect}`}{" "}
                           ({selectedCount}/{group.maxSelect})
                         </p>
                       </div>
@@ -605,7 +605,7 @@ function CartItems({ products }: Props) {
                 })
               ) : (
                 <p className="rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300">
-                  This product has no configurable options.
+                  Este producto no tiene opciones configurables.
                 </p>
               )}
 
@@ -614,7 +614,7 @@ function CartItems({ products }: Props) {
                   htmlFor="edit-item-notes"
                   className="text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
-                  Notes (optional)
+                  Notas (opcional)
                 </label>
                 <textarea
                   id="edit-item-notes"
@@ -629,17 +629,17 @@ function CartItems({ products }: Props) {
 
             <div className="mt-5 flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                New price: ${formatMoney(draftUnitPriceCents)}
+                Nuevo precio: ${formatMoney(draftUnitPriceCents)}
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setEditingLineKey(null)}
                   className="rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button onClick={handleSaveEdit} className="btn-primary text-sm">
-                  Save changes
+                  Guardar cambios
                 </button>
               </div>
             </div>
@@ -651,3 +651,7 @@ function CartItems({ products }: Props) {
 }
 
 export default CartItems;
+
+
+
+

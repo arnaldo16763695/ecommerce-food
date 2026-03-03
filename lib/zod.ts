@@ -4,8 +4,8 @@ import * as z from "zod"
 export const LoginFormSchema = z.object({
   email: z
     .string()
-    .email("Invalid email address."),
+    .email("Correo electrónico inválido."),
   password: z
     .string()
-    .min(6, "Password must be at least 6 characters."),
+    .min(6, "La contraseña debe tener al menos 6 caracteres."),
 })

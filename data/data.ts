@@ -8,12 +8,12 @@ import {
 export const navItems = [
   {
     id: 1,
-    label: "Home",
+    label: "Inicio",
     href: "/",
   },
   {
     id: 2,
-    label: "Shop",
+    label: "Tienda",
     href: "/shop",
   },
 ];
@@ -211,7 +211,7 @@ export const testimonials = [
   {
     id: 1,
     name: "Lisa Williams",
-    role: "Homeowner",
+    role: "Cliente",
     img: "/images/testimonial-1.png",
     quote:
       "Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt ipsum minus debitis asperiores rerum!",
@@ -219,7 +219,7 @@ export const testimonials = [
   {
     id: 2,
     name: "David Johnson",
-    role: "Interior Designer",
+    role: "Cliente",
     img: "/images/testimonial-2.png",
     quote:
       "Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt ipsum minus debitis asperiores rerum!",
@@ -227,7 +227,7 @@ export const testimonials = [
   {
     id: 3,
     name: "Emily Brown",
-    role: "Architect",
+    role: "Cliente",
     img: "/images/testimonial-3.png",
     quote:
       "Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt ipsum minus debitis asperiores rerum!",
@@ -236,17 +236,17 @@ export const testimonials = [
 export const footerList = [
   {
     id: 1,
-    title: "Quick links",
-    links: ["Home", "Shop", "About Us", "Contact"],
+    title: "Enlaces rápidos",
+    links: ["Inicio", "Tienda", "Sobre nosotros", "Contacto"],
   },
   {
     id: 2,
-    title: "Customer Care",
+    title: "Atención al cliente",
     links: [
-      "FAQs",
-      "Shipping & Returns",
-      "Privacy Policy",
-      "Terms & Conditions",
+      "Preguntas frecuentes",
+      "Envíos y devoluciones",
+      "Política de privacidad",
+      "Términos y condiciones",
     ],
   },
 ];
@@ -255,25 +255,25 @@ export const productFeatures = [
   {
     id: 1,
     icon: RiTruckLine,
-    title: "Free Shipping",
-    text: "On orders over $100",
+    title: "Envío gratis",
+    text: "En pedidos mayores a $100",
   },
   {
     id: 2,
     icon: RiShieldCheckLine,
-    title: "2 Year Warranty",
-    text: "Quality guarantee",
+    title: "Garantía de 2 años",
+    text: "Calidad garantizada",
   },
   {
     id: 3,
     icon: RiRefreshLine,
-    title: "Easy Returns",
-    text: "30-day return policy",
+    title: "Devoluciones fáciles",
+    text: "Política de devolución de 30 días",
   },
   {
     id: 4,
     icon: RiCustomerService2Line,
-    title: "24/7 Support",
-    text: "Expert assistance",
+    title: "Soporte 24/7",
+    text: "Asistencia especializada",
   },
 ];

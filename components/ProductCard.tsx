@@ -17,18 +17,18 @@ function ProductCard({ product }: Props) {
 
   const imageSrc = resolveProductImageSrc(product.images[0]?.url);
   const productDescription =
-    product.description?.trim() || "Freshly prepared with quality ingredients.";
+    product.description?.trim() || "Preparado al momento con ingredientes de calidad.";
   const prepTime =
     typeof product.prepTimeMin === "number"
-      ? `${product.prepTimeMin} min prep`
+      ? `${product.prepTimeMin} min de preparación`
       : null;
   const customizationNames = product.optionGroups
     .slice(0, 2)
     .map((group) => group.group.name);
   const customizationText =
     customizationNames.length > 0
-      ? `Customize: ${customizationNames.join(" - ")}`
-      : "No customization options";
+      ? `Personaliza: ${customizationNames.join(" - ")}`
+      : "Sin opciones de personalización";
 
   return (
     <>
@@ -44,7 +44,7 @@ function ProductCard({ product }: Props) {
           <Link
             href={`/shop/product/${product.id}/details`}
             className="absolute right-0 top-0 gap-2 rounded-xs border border-amber-200 bg-white p-2 opacity-0 transition-all hover:text-amber-600 focus:text-amber-600 group-hover:opacity-100 dark:border-amber-300/40 dark:bg-slate-800 dark:text-slate-200"
-            title="view product details"
+            title="Ver detalles del producto"
           >
             <RiEyeLine />
           </Link>
@@ -52,7 +52,7 @@ function ProductCard({ product }: Props) {
         <div className="mt-auto space-y-5">
           <button
             className="btn-primary flex w-full items-center justify-center gap-1"
-            aria-label={`Configure ${product.name} and add to order`}
+            aria-label={`Configurar ${product.name} y agregar al pedido`}
             onClick={() => {
               setQuickAddInstanceKey((prev) => prev + 1);
               setOpenQuickAdd(true);
@@ -61,7 +61,7 @@ function ProductCard({ product }: Props) {
             <span>
               <RiShoppingBag2Line size={22} />
             </span>
-            Add to order
+            Agregar al pedido
           </button>
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-4">

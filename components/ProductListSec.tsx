@@ -8,15 +8,15 @@ import { useMemo, useState } from "react";
 type Props = { products: AllProducts[] };
 
 type SortOption =
-  | "sort By"
-  | "Price: Low to High"
-  | "Price: High to Low"
-  | "Name: A to Z"
-  | "Name: Z to A";
+  | "Ordenar por"
+  | "Precio: menor a mayor"
+  | "Precio: mayor a menor"
+  | "Nombre: A a Z"
+  | "Nombre: Z a A";
 
 function ProductListSec({ products }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOption, setSortOption] = useState<SortOption>("sort By");
+  const [sortOption, setSortOption] = useState<SortOption>("Ordenar por");
 
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
@@ -33,16 +33,16 @@ function ProductListSec({ products }: Props) {
     }
 
     switch (sortOption) {
-      case "Price: Low to High":
+      case "Precio: menor a mayor":
         filtered.sort((a, b) => a.basePriceCents - b.basePriceCents);
         break;
-      case "Price: High to Low":
+      case "Precio: mayor a menor":
         filtered.sort((a, b) => b.basePriceCents - a.basePriceCents);
         break;
-      case "Name: A to Z":
+      case "Nombre: A a Z":
         filtered.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case "Name: Z to A":
+      case "Nombre: Z a A":
         filtered.sort((a, b) => b.name.localeCompare(a.name));
         break;
       default:
@@ -62,7 +62,7 @@ function ProductListSec({ products }: Props) {
           <div className="border dark:bg-white border-gray-200 flex focus-within:border-amber-600 rounded-md">
             <input
               type="text"
-              placeholder="Search"
+              placeholder="Buscar"
               className="w-full h-full py-2 outline-none px-3.5 text-gray-700"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -78,11 +78,11 @@ function ProductListSec({ products }: Props) {
               onChange={(e) => setSortOption(e.target.value as SortOption)}
             >
               {[
-                "sort By",
-                "Price: Low to High",
-                "Price: High to Low",
-                "Name: A to Z",
-                "Name: Z to A",
+                "Ordenar por",
+                "Precio: menor a mayor",
+                "Precio: mayor a menor",
+                "Nombre: A a Z",
+                "Nombre: Z a A",
               ].map((item, index) => (
                 <option
                   key={index}
@@ -107,7 +107,7 @@ function ProductListSec({ products }: Props) {
           </div>
         ) : (
           <div className="text-center py-10">
-            <p className="text-gray-500">No products found</p>
+            <p className="text-gray-500">No se encontraron productos</p>
           </div>
         )}
       </div>

@@ -13,12 +13,12 @@ import { RiGoogleFill, RiFacebookFill } from  "@remixicon/react";
 
 const SignUpFormSchema = z
   .object({
-    email: z.string().min(1, "Email is required").email("Invalid email"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string().min(1, "Please confirm your password"),
+    email: z.string().min(1, "El correo es obligatorio").email("Correo inválido"),
+    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+    confirmPassword: z.string().min(1, "Confirma tu contraseña"),
   })
   .refine((v) => v.password === v.confirmPassword, {
-    message: "Passwords do not match",
+    message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
   });
 
@@ -61,14 +61,14 @@ export default function SignUpPage() {
       if (!res.ok) {
         // Mensajes típicos del endpoint
         if (res.status === 409) {
-          setError("email", { message: "This email is already registered." });
+          setError("email", { message: "Este correo ya está registrado." });
           return;
         }
         if (res.status === 400) {
-          setServerError(payload?.error ?? "Invalid signup data.");
+          setServerError(payload?.error ?? "Datos de registro inválidos.");
           return;
         }
-        setServerError(payload?.error ?? "Signup failed. Try again.");
+        setServerError(payload?.error ?? "No se pudo registrar. Inténtalo de nuevo.");
         return;
       }
 
@@ -87,7 +87,7 @@ export default function SignUpPage() {
         // router.push(login?.url ?? "/");
         router.push(`/login?verify=sent&email=${encodeURIComponent(data.email)}`);
     } catch (e) {
-      setServerError("Server error. Please try again.");
+      setServerError("Error del servidor. Inténtalo de nuevo.");
       console.log(e)
     }
   }
@@ -103,10 +103,10 @@ export default function SignUpPage() {
         <div className="space-y-8">
           <div className="text-center space-y-2 mt-5">
             <h2 className="text-3xl text-neutral-800 dark:text-slate-100 lg:text-4xl">
-              Create account
+              Crear cuenta
             </h2>
             <p className="text-gray-600 dark:text-slate-300">
-              Sign up to start ordering your favorite meals.
+              Regístrate para comenzar a pedir tus comidas favoritas.
             </p>
           </div>
 
@@ -119,12 +119,12 @@ export default function SignUpPage() {
                   htmlFor="email"
                   className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200"
                 >
-                  Email
+                  Correo
                 </label>
                 <input
                   type="email"
                   id="email"
-                  placeholder="Enter your email"
+                  placeholder="Ingresa tu correo"
                   autoComplete="email"
                   className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
                     errors.email
@@ -146,12 +146,12 @@ export default function SignUpPage() {
                   htmlFor="password"
                   className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200"
                 >
-                  Password
+                  Contraseña
                 </label>
                 <input
                   type="password"
                   id="password"
-                  placeholder="Create a password"
+                  placeholder="Crea una contraseña"
                   autoComplete="new-password"
                   className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
                     errors.password
@@ -173,12 +173,12 @@ export default function SignUpPage() {
                   htmlFor="confirmPassword"
                   className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200"
                 >
-                  Confirm password
+                  Confirmar contraseña
                 </label>
                 <input
                   type="password"
                   id="confirmPassword"
-                  placeholder="Repeat your password"
+                  placeholder="Repite tu contraseña"
                   autoComplete="new-password"
                   className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
                     errors.confirmPassword
@@ -204,7 +204,7 @@ export default function SignUpPage() {
               disabled={isSubmitting}
               className="btn-primary w-full py-3 text-lg disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSubmitting ? "Creating account..." : "Sign up"}
+              {isSubmitting ? "Creando cuenta..." : "Registrarse"}
             </button>
           </form>
 
@@ -215,7 +215,7 @@ export default function SignUpPage() {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="bg-white px-3 text-gray-500 dark:bg-slate-800 dark:text-slate-400">
-                Or continue with
+                O continúa con
               </span>
             </div>
           </div>
@@ -243,13 +243,13 @@ export default function SignUpPage() {
 
           <div className="text-center text-sm gap-2 flex justify-center flex-wrap">
             <span className="block text-gray-600 dark:text-slate-300">
-              Already have an account?
+              ¿Ya tienes una cuenta?
             </span>
             <Link
               href="/login"
               className="font-medium transition-colors hover:text-amber-600 hover:underline focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
             >
-              Sign in
+              Iniciar sesión
             </Link>
           </div>
         </div>

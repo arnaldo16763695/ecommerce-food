@@ -77,14 +77,14 @@ function LoginPage() {
 
       // Email not verified
       if (error === "CredentialsSignin" && code === "EmailNotVerified") {
-        setAuthError("You must verify your email before signing in.");
+        setAuthError("Debes verificar tu correo antes de iniciar sesión.");
         setNeedsVerification(true);
         return;
       }
 
       // Wrong email/password
       if (error === "CredentialsSignin") {
-        setAuthError("Wrong email or password.");
+        setAuthError("Correo o contraseña incorrectos.");
         return;
       }
 
@@ -96,7 +96,7 @@ function LoginPage() {
       );
     } catch (err) {
       console.error("Sign-in error:", err);
-      setAuthError("Something went wrong. Please try again.");
+      setAuthError("Algo salió mal. Inténtalo de nuevo.");
     }
   }
 
@@ -111,30 +111,30 @@ function LoginPage() {
           <div className="space-y-8">
             <div className="text-center space-y-2 mt-5">
               <h2 className="text-3xl text-neutral-800 dark:text-slate-100 lg:text-4xl">
-                Welcome back
+                Bienvenido de nuevo
               </h2>
               <p className="text-gray-600 dark:text-slate-300">
-                Sign in to continue ordering your favorite meals.
+                Inicia sesión para seguir pidiendo tus comidas favoritas.
               </p>
             </div>
 
             {verify === "sent" && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
-                We sent you a verification link{email ? ` to ${email}` : ""}.
-                Please check your inbox.
+                Te enviamos un enlace de verificación{email ? ` a ${email}` : ""}.
+                Revisa tu bandeja de entrada.
               </div>
             )}
 
             {verified === "1" && (
               <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 dark:border-green-400/30 dark:bg-green-400/10 dark:text-green-200">
-                Email verified. You can sign in now.
+                Correo verificado. Ya puedes iniciar sesión.
               </div>
             )}
 
             {verified === "0" && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-400/30 dark:bg-red-400/10 dark:text-red-200">
-                Verification link is invalid or expired. You can request a new
-                one below.
+                El enlace de verificación es inválido o expiró. Puedes solicitar
+                uno nuevo abajo.
               </div>
             )}
 
@@ -152,12 +152,12 @@ function LoginPage() {
                     htmlFor="email"
                     className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200"
                   >
-                    Email
+                    Correo
                   </label>
                   <input
                     type="email"
                     id="email"
-                    placeholder="Enter your email"
+                    placeholder="Ingresa tu correo"
                     autoComplete="email"
                     className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
                       errors.email
@@ -179,12 +179,12 @@ function LoginPage() {
                     htmlFor="password"
                     className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200"
                   >
-                    Password
+                    Contraseña
                   </label>
                   <input
                     type="password"
                     id="password"
-                    placeholder="Enter your password"
+                    placeholder="Ingresa tu contraseña"
                     autoComplete="current-password"
                     className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
                       errors.password
@@ -213,14 +213,14 @@ function LoginPage() {
                     htmlFor="remember"
                     className="block text-sm text-gray-700 dark:text-slate-300"
                   >
-                    Remember me
+                    Recuérdame
                   </label>
                 </div>
                 <Link
                   href="#"
                   className="text-amber-600 transition-colors hover:text-amber-700 hover:underline focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
                 >
-                  Forgot password?
+                  ¿Olvidaste tu contraseña?
                 </Link>
               </div>
 
@@ -288,10 +288,10 @@ function LoginPage() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Signing in...
+                    Iniciando sesión...
                   </span>
                 ) : (
-                  "Sign in"
+                  "Iniciar sesión"
                 )}
               </button>
             </form>
@@ -303,7 +303,7 @@ function LoginPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="bg-white px-3 text-gray-500 dark:bg-slate-800 dark:text-slate-400">
-                  Or continue with
+                  O continúa con
                 </span>
               </div>
             </div>
@@ -334,13 +334,13 @@ function LoginPage() {
 
             <div className="text-center text-sm gap-2 flex justify-center flex-wrap">
               <span className="block text-gray-600 dark:text-slate-300">
-                Don&apos;t have an account?
+                ¿No tienes una cuenta?
               </span>
               <Link
                 href="/signup"
                 className="font-medium transition-colors hover:text-amber-600 hover:underline focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
               >
-                Sign up
+                Regístrate
               </Link>
             </div>
           </div>

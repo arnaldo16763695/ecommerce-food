@@ -20,10 +20,10 @@ export default async function Home() {
           <div className="relative z-10 flex min-h-[75svh] items-center justify-center px-6 text-center text-white">
             <div className="max-w-2xl p-6 md:p-10">
               <p className="inline-block rounded-md bg-white/90 px-3 py-1 text-sm font-medium uppercase tracking-wide text-amber-700">
-                Delicious food, fast delivery
+                Comida deliciosa, entrega rápida
               </p>
               <h1 className="mt-4 text-4xl font-semibold leading-tight text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.55)] md:text-5xl lg:text-6xl">
-                Order your favorite food
+                Pide tu comida favorita
               </h1>
             </div>
           </div>
@@ -67,11 +67,11 @@ export default async function Home() {
                       {category.name}
                     </h2>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      Browse the full menu for this category.
+                      Explora el menú completo de esta categoría.
                     </p>
                   </div>
                   <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
-                    {category.productCount} items
+                    {category.productCount} productos
                   </span>
                 </div>
 
@@ -86,7 +86,7 @@ export default async function Home() {
                 </div>
 
                 <p className="relative z-10 mt-4 text-sm font-medium text-amber-700 transition-colors group-hover:text-amber-800 dark:text-amber-300 dark:group-hover:text-amber-200">
-                  View menu
+                  Ver menú
                 </p>
               </Link>
             ))}
@@ -94,10 +94,10 @@ export default async function Home() {
         </div>
       </section>
       {/* Products section */}
-      <section className="pt-28">
+      <section className="pt-28 mb-4">
         <div className="page-container">
           {/* Title  */}
-          <h2 className="section-title text-center">Explore all products</h2>
+          <h2 className="section-title text-center">Explora todos los productos</h2>
           {/* Card wrapper */}
           <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
             {allProductsDB.slice(0, 12).map((product) => (
@@ -108,15 +108,15 @@ export default async function Home() {
             href="/shop"
             className="btn-primary block mt-14 mx-auto max-w-max"
           >
-            View all products
+            Ver todos los productos
           </Link>
         </div>
       </section>
 
       {/* Testimonials  */}
-      <section className="py-28">
+      {/* <section className="py-28">
         <div className="page-container">
-          <h2 className="section-title text-center">What our Clients say</h2>
+          <h2 className="section-title text-center">Lo que dicen nuestros clientes</h2>
           <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-11 lg:mt-14">
             {testimonials.map((testimonial) => (
               // Card 
@@ -144,7 +144,7 @@ export default async function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
     </>
   );
 }

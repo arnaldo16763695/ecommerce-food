@@ -141,7 +141,7 @@ export default function OptionGroupsTable() {
         const body = (await res.json().catch(() => null)) as
           | { error?: string }
           | null;
-        throw new Error(body?.error ?? "Could not load option groups");
+        throw new Error(body?.error ?? "No se pudieron cargar los grupos de opciones");
       }
 
       const payload = (await res.json()) as ListResponse<OptionGroup>;
@@ -150,10 +150,10 @@ export default function OptionGroupsTable() {
       setTotalPages(Math.max(1, payload.meta?.totalPages ?? 1));
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Unexpected error loading groups";
+        err instanceof Error ? err.message : "Error inesperado al cargar grupos";
       setError(message);
       toast({
-        title: "Error loading option groups",
+        title: "Error al cargar grupos de opciones",
         description: message,
         variant: "destructive",
       });
@@ -170,10 +170,10 @@ export default function OptionGroupsTable() {
   }, [loadGroups]);
 
   const visibleRange = useMemo(() => {
-    if (total === 0 || groups.length === 0) return "0 results";
+    if (total === 0 || groups.length === 0) return "0 resultados";
     const from = (page - 1) * LIMIT + 1;
     const to = from + groups.length - 1;
-    return `${from}-${to} of ${total} groups`;
+    return `${from}-${to} de ${total} grupos`;
   }, [page, total, groups.length]);
 
   function openCreateGroup() {
@@ -225,23 +225,23 @@ export default function OptionGroupsTable() {
         const body = (await res.json().catch(() => null)) as
           | { error?: string }
           | null;
-        throw new Error(body?.error ?? "Could not save option group");
+        throw new Error(body?.error ?? "No se pudo guardar el grupo de opciones");
       }
 
       setGroupDialogOpen(false);
       setEditingGroup(null);
       setGroupForm(emptyGroupForm);
       toast({
-        title: isEdit ? "Option group updated" : "Option group created",
-        description: "Changes were saved successfully.",
+        title: isEdit ? "Grupo de opciones actualizado" : "Grupo de opciones creado",
+        description: "Los cambios se guardaron correctamente.",
       });
       await loadGroups();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Unexpected error saving group";
+        err instanceof Error ? err.message : "Error inesperado al guardar el grupo";
       setError(message);
       toast({
-        title: "Could not save option group",
+        title: "No se pudo guardar el grupo de opciones",
         description: message,
         variant: "destructive",
       });
@@ -266,16 +266,16 @@ export default function OptionGroupsTable() {
         const body = (await res.json().catch(() => null)) as
           | { error?: string }
           | null;
-        throw new Error(body?.error ?? "Could not load options");
+        throw new Error(body?.error ?? "No se pudieron cargar las opciones");
       }
 
       const payload = (await res.json()) as { data: OptionItem[] };
       setOptions(payload.data ?? []);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Unexpected error loading options";
+        err instanceof Error ? err.message : "Error inesperado al cargar opciones";
       toast({
-        title: "Could not load options",
+        title: "No se pudieron cargar las opciones",
         description: message,
         variant: "destructive",
       });
@@ -330,7 +330,7 @@ export default function OptionGroupsTable() {
         const body = (await res.json().catch(() => null)) as
           | { error?: string }
           | null;
-        throw new Error(body?.error ?? "Could not save option");
+        throw new Error(body?.error ?? "No se pudo guardar la opcion");
       }
 
       const body = (await res.json()) as { data: OptionItem };
@@ -345,15 +345,15 @@ export default function OptionGroupsTable() {
       setEditingOption(null);
       setOptionForm(emptyOptionForm);
       toast({
-        title: isEdit ? "Option updated" : "Option created",
-        description: "Changes were saved successfully.",
+        title: isEdit ? "opcion actualizada" : "opcion creada",
+        description: "Los cambios se guardaron correctamente.",
       });
       await loadGroups();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Unexpected error saving option";
+        err instanceof Error ? err.message : "Error inesperado al guardar la opcion";
       toast({
-        title: "Could not save option",
+        title: "No se pudo guardar la opcion",
         description: message,
         variant: "destructive",
       });
@@ -374,7 +374,7 @@ export default function OptionGroupsTable() {
         const body = (await res.json().catch(() => null)) as
           | { error?: string }
           | null;
-        throw new Error(body?.error ?? "Could not delete option");
+        throw new Error(body?.error ?? "No se pudo eliminar la opcion");
       }
 
       setOptions((prev) => prev.filter((item) => item.id !== option.id));
@@ -383,15 +383,15 @@ export default function OptionGroupsTable() {
         setOptionForm(emptyOptionForm);
       }
       toast({
-        title: "Option deleted",
-        description: "The option was removed.",
+        title: "opcion eliminada",
+        description: "La opcion fue eliminada.",
       });
       await loadGroups();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Unexpected error deleting option";
+        err instanceof Error ? err.message : "Error inesperado al eliminar la opcion";
       toast({
-        title: "Could not delete option",
+        title: "No se pudo eliminar la opcion",
         description: message,
         variant: "destructive",
       });
@@ -411,15 +411,15 @@ export default function OptionGroupsTable() {
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search by name"
+            placeholder="Buscar por nombre"
             className="sm:max-w-sm"
           />
           <Button type="submit" disabled={loading}>
-            Search
+            Buscar
           </Button>
         </form>
         <Button type="button" onClick={openCreateGroup}>
-          New Option Group
+          Nuevo grupo de opciones
         </Button>
       </div>
 
@@ -432,26 +432,26 @@ export default function OptionGroupsTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Selection Rules</TableHead>
-            <TableHead>Order</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Options</TableHead>
-            <TableHead>Used By Products</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Reglas de selección</TableHead>
+            <TableHead>Orden</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Opciones</TableHead>
+            <TableHead>Usado por productos</TableHead>
+            <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
             <TableRow>
               <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
-                Loading option groups...
+                Cargando grupos de opciones...
               </TableCell>
             </TableRow>
           ) : groups.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
-                No option groups found.
+                No se encontraron grupos de opciones.
               </TableCell>
             </TableRow>
           ) : (
@@ -459,12 +459,12 @@ export default function OptionGroupsTable() {
               <TableRow key={group.id}>
                 <TableCell>{group.name}</TableCell>
                 <TableCell>
-                  Min {group.minSelect} / Max {group.maxSelect}
+                  Mín {group.minSelect} / Máx {group.maxSelect}
                 </TableCell>
                 <TableCell>{group.sortOrder}</TableCell>
                 <TableCell>
                   <Badge variant={group.isActive ? "success" : "warning"}>
-                    {group.isActive ? "Active" : "Inactive"}
+                    {group.isActive ? "Activo" : "Inactivo"}
                   </Badge>
                 </TableCell>
                 <TableCell>{group._count.options}</TableCell>
@@ -472,10 +472,10 @@ export default function OptionGroupsTable() {
                 <TableCell>
                   <div className="flex gap-2">
                     <Button type="button" variant="outline" onClick={() => openEditGroup(group)}>
-                      Edit
+                      Editar
                     </Button>
                     <Button type="button" variant="outline" onClick={() => loadOptions(group)}>
-                      Options
+                      Opciones
                     </Button>
                   </div>
                 </TableCell>
@@ -492,10 +492,10 @@ export default function OptionGroupsTable() {
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={loading || page <= 1}
         >
-          Previous
+          Anterior
         </Button>
         <p className="text-sm">
-          Page {page} of {totalPages}
+          Pagina {page} de {totalPages}
         </p>
         <Button
           type="button"
@@ -503,36 +503,36 @@ export default function OptionGroupsTable() {
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           disabled={loading || page >= totalPages}
         >
-          Next
+          Siguiente
         </Button>
       </div>
 
       <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingGroup ? "Edit option group" : "New option group"}</DialogTitle>
+            <DialogTitle>{editingGroup ? "Editar grupo de opciones" : "Nuevo grupo de opciones"}</DialogTitle>
             <DialogDescription>
-              Define how many options customers can select for this group.
+              Define cuantas opciones puede seleccionar el cliente en este grupo.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={submitGroup} className="space-y-3">
             <div className="space-y-1">
               <label htmlFor="group-name" className="text-sm font-medium">
-                Name
+                Nombre
               </label>
               <Input
                 id="group-name"
                 value={groupForm.name}
                 onChange={(e) => setGroupForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Example: Sauces"
+                placeholder="Ejemplo: Salsas"
               />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1">
                 <label htmlFor="group-min" className="text-sm font-medium">
-                  Min Select
+                  Seleccion minima
                 </label>
                 <Input
                   id="group-min"
@@ -546,7 +546,7 @@ export default function OptionGroupsTable() {
               </div>
               <div className="space-y-1">
                 <label htmlFor="group-max" className="text-sm font-medium">
-                  Max Select
+                  Seleccion maxima
                 </label>
                 <Input
                   id="group-max"
@@ -560,7 +560,7 @@ export default function OptionGroupsTable() {
               </div>
               <div className="space-y-1">
                 <label htmlFor="group-order" className="text-sm font-medium">
-                  Sort Order
+                  Orden
                 </label>
                 <Input
                   id="group-order"
@@ -575,7 +575,7 @@ export default function OptionGroupsTable() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Status</label>
+              <label className="text-sm font-medium">Estado</label>
               <Select
                 value={groupForm.isActive}
                 onValueChange={(value) =>
@@ -586,21 +586,21 @@ export default function OptionGroupsTable() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="ACTIVE">Activo</SelectItem>
+                  <SelectItem value="INACTIVE">Inactivo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setGroupDialogOpen(false)}>
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={savingGroup}>
-                {savingGroup ? "Saving..." : "Save"}
+                {savingGroup ? "Guardando..." : "Guardar"}
               </Button>
             </DialogFooter>
           </form>
@@ -610,9 +610,9 @@ export default function OptionGroupsTable() {
       <Dialog open={optionsDialogOpen} onOpenChange={setOptionsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Manage Options: {optionsGroup?.name ?? ""}</DialogTitle>
+            <DialogTitle>Gestionar opciones: {optionsGroup?.name ?? ""}</DialogTitle>
             <DialogDescription>
-              Create and edit options for this group. Prices are in cents.
+              Crea y edita opciones para este grupo. Los precios estan en centavos.
             </DialogDescription>
           </DialogHeader>
 
@@ -620,7 +620,7 @@ export default function OptionGroupsTable() {
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="space-y-1 sm:col-span-2">
                 <label htmlFor="option-name" className="text-sm font-medium">
-                  Name
+                  Nombre
                 </label>
                 <Input
                   id="option-name"
@@ -628,12 +628,12 @@ export default function OptionGroupsTable() {
                   onChange={(e) =>
                     setOptionForm((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  placeholder="Example: Extra cheese"
+                  placeholder="Ejemplo: Queso extra"
                 />
               </div>
               <div className="space-y-1">
                 <label htmlFor="option-price" className="text-sm font-medium">
-                  Price Delta
+                  Precio adicional
                 </label>
                 <Input
                   id="option-price"
@@ -650,7 +650,7 @@ export default function OptionGroupsTable() {
               </div>
               <div className="space-y-1">
                 <label htmlFor="option-order" className="text-sm font-medium">
-                  Sort Order
+                  Orden
                 </label>
                 <Input
                   id="option-order"
@@ -666,7 +666,7 @@ export default function OptionGroupsTable() {
 
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1">
-                <label className="text-sm font-medium">Status</label>
+                <label className="text-sm font-medium">Estado</label>
                 <Select
                   value={optionForm.isActive}
                   onValueChange={(value) =>
@@ -677,21 +677,21 @@ export default function OptionGroupsTable() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder="Estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    <SelectItem value="ACTIVE">Activo</SelectItem>
+                    <SelectItem value="INACTIVE">Inactivo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               {editingOption ? (
                 <Button type="button" variant="outline" onClick={startCreateOption}>
-                  Clear
+                  Limpiar
                 </Button>
               ) : null}
               <Button type="submit" disabled={savingOption}>
-                {savingOption ? "Saving..." : editingOption ? "Update" : "Add"}
+                {savingOption ? "Guardando..." : editingOption ? "Actualizar" : "Agregar"}
               </Button>
             </div>
           </form>
@@ -699,24 +699,24 @@ export default function OptionGroupsTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Precio</TableHead>
+                <TableHead>Orden</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {optionsLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
-                    Loading options...
+                    Cargando opciones...
                   </TableCell>
                 </TableRow>
               ) : options.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
-                    No options in this group yet.
+                    Aun no hay opciones en este grupo.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -730,16 +730,16 @@ export default function OptionGroupsTable() {
                       <TableCell>{option.sortOrder}</TableCell>
                       <TableCell>
                         <Badge variant={option.isActive ? "success" : "warning"}>
-                          {option.isActive ? "Active" : "Inactive"}
+                          {option.isActive ? "Activo" : "Inactivo"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button type="button" variant="outline" onClick={() => startEditOption(option)}>
-                            Edit
+                            Editar
                           </Button>
                           <Button type="button" variant="destructive" onClick={() => void deleteOption(option)}>
-                            Delete
+                            Eliminar
                           </Button>
                         </div>
                       </TableCell>
@@ -753,3 +753,6 @@ export default function OptionGroupsTable() {
     </section>
   );
 }
+
+
+
