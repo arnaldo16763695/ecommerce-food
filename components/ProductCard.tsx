@@ -7,6 +7,7 @@ import { RiEyeLine, RiShoppingBag2Line } from "@remixicon/react";
 
 import QuickAddProductSheet from "@/components/QuickAddProductSheet";
 import { AllProducts } from "@/lib/data/productsData";
+import { resolveProductImageSrc } from "@/lib/product-image";
 
 type Props = { product: AllProducts };
 
@@ -14,7 +15,7 @@ function ProductCard({ product }: Props) {
   const [openQuickAdd, setOpenQuickAdd] = React.useState(false);
   const [quickAddInstanceKey, setQuickAddInstanceKey] = React.useState(0);
 
-  const imageUrl = product.images[0]?.url || "product-1.png";
+  const imageSrc = resolveProductImageSrc(product.images[0]?.url);
   const productDescription =
     product.description?.trim() || "Freshly prepared with quality ingredients.";
   const prepTime =
@@ -34,7 +35,7 @@ function ProductCard({ product }: Props) {
       <div className="group relative flex flex-col gap-2.5 rounded-md border border-slate-200 bg-white p-8 transition-all hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:hover:shadow-black/30">
         <div className="relative flex h-full items-center justify-center rounded-xl bg-amber-50 py-10 dark:bg-slate-700/60">
           <Image
-            src={`/images/${imageUrl}`}
+            src={imageSrc}
             alt={product.name}
             width={200}
             height={200}

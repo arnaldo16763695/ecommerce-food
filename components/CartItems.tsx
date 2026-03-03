@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AllProducts } from "@/lib/data/productsData";
 import type { CartItemOption } from "@/types/types";
 import { buildCartLineKey } from "@/lib/cart-line-key";
+import { resolveProductImageSrc } from "@/lib/product-image";
 
 type Props = {
   products: AllProducts[];
@@ -84,7 +85,7 @@ function CartItems({ products }: Props) {
           quantity: item.quantity,
           notes: item.notes ?? undefined,
           options: item.options ?? [],
-          image: `/images/${product.images[0]?.url || "product-1.png"}`,
+          image: resolveProductImageSrc(product.images[0]?.url),
           customizationGroups,
         } satisfies DisplayCartItem;
       })

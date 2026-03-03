@@ -18,6 +18,7 @@ import { ProductById } from "@/lib/data/productsData";
 import { AllProductsByCategory } from "@/lib/data/productsData";
 import { productFeatures } from "@/data/data";
 import { buildCartLineKey } from "@/lib/cart-line-key";
+import { resolveProductImageSrc } from "@/lib/product-image";
 
 type Props = {
   product: ProductById;
@@ -204,7 +205,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
           <div className="grid items-start gap-8 lg:grid-cols-2 xl:gap-14">
             <div className="overflow-hidden rounded-3xl border border-amber-200/60 bg-linear-to-b from-amber-100 to-amber-50 p-8 dark:border-slate-700 dark:from-slate-800 dark:to-slate-700">
               <Image
-                src={`/images/${product.images[0]?.url || "product-1.png"}`}
+                src={resolveProductImageSrc(product.images[0]?.url)}
                 alt={product.name}
                 width={700}
                 height={700}
@@ -470,7 +471,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                   >
                     <div className="mb-3 flex items-center justify-center rounded-xl bg-amber-50 p-3 dark:bg-slate-700/70">
                       <Image
-                        src={`/images/${item.images[0]?.url || "product-1.png"}`}
+                        src={resolveProductImageSrc(item.images[0]?.url)}
                         alt={item.name}
                         width={180}
                         height={180}

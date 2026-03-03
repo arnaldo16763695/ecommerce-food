@@ -9,6 +9,7 @@ import { buildCartLineKey } from "@/lib/cart-line-key";
 import { useCartStore } from "@/store/cartStore";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "@/components/ui/use-toast";
+import { resolveProductImageSrc } from "@/lib/product-image";
 
 type Props = {
   open: boolean;
@@ -144,7 +145,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
           <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-4 flex items-center justify-center rounded-lg bg-white p-3 dark:bg-slate-900">
               <Image
-                src={`/images/${product.images[0]?.url || "product-1.png"}`}
+                src={resolveProductImageSrc(product.images[0]?.url)}
                 alt={product.name}
                 width={220}
                 height={220}
