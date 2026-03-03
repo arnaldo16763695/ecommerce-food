@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getCloudinaryConfig, signCloudinaryParams } from "@/lib/cloudinary";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const session = await auth();
 
   if (!session?.user) {
@@ -15,9 +15,15 @@ export async function POST() {
 
   try {
     const { cloudName, apiKey, apiSecret, uploadFolder } = getCloudinaryConfig();
+    const body = await req.json().catch(() => null);
+    const folderSuffix =
+      typeof body?.folderSuffix === "string" ? body.folderSuffix.trim() : "";
+    const folder = folderSuffix
+      ? `${uploadFolder}/${folderSuffix.replace(/^\/+|\/+$/g, "")}`
+      : uploadFolder;
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const paramsToSign = {
-      folder: uploadFolder,
+      folder,
       timestamp,
     };
 
@@ -28,7 +34,7 @@ export async function POST() {
         cloudName,
         apiKey,
         timestamp,
-        folder: uploadFolder,
+        folder,
         signature,
       },
     });

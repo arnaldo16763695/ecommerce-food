@@ -47,7 +47,10 @@ const productCardSelect = {
 export async function getAllProducts() {
   try {
     return await prisma.product.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: [{ categoryId: null }, { category: { is: { isActive: true } } }],
+      },
       orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
       select: productCardSelect,
     });
@@ -116,6 +119,7 @@ export async function getProductById(id: string) {
       where: {
         id: id,
         isActive: true,
+        OR: [{ categoryId: null }, { category: { is: { isActive: true } } }],
       },
       orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
       select: {
@@ -180,6 +184,7 @@ export async function getAllProductsByCategory(
       where: {
         isActive: true,
         categoryId: categoryId,
+        category: { is: { isActive: true } },
       },
       orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
       select: {

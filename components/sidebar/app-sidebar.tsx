@@ -66,6 +66,10 @@ const data = {
           title: "Categorias",
           url: "/admin/categories",
         },
+        {
+          title: "Option Groups",
+          url: "/admin/option-groups",
+        },
       ],
     },
     {
