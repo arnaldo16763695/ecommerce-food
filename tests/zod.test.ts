@@ -19,7 +19,7 @@ describe("LoginFormSchema", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe("Invalid email address.");
+      expect(result.error.issues[0]?.message).toBe("Correo electronico invalido.");
     }
   });
 
@@ -32,9 +32,8 @@ describe("LoginFormSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
-        "Password must be at least 6 characters.",
+        "La contrasena debe tener al menos 6 caracteres.",
       );
     }
   });
 });
-

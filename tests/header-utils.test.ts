@@ -7,8 +7,8 @@ import {
 
 describe("header utils", () => {
   it("returns the right accessible label", () => {
-    expect(getMenuButtonLabel(true)).toBe("Close menu");
-    expect(getMenuButtonLabel(false)).toBe("Open menu");
+    expect(getMenuButtonLabel(true)).toBe("Cerrar menu");
+    expect(getMenuButtonLabel(false)).toBe("Abrir menu");
   });
 
   it("returns the expected menu visibility class combination", () => {

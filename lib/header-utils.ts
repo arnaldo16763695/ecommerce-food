@@ -1,5 +1,5 @@
 export const getMenuButtonLabel = (openMenu: boolean) =>
-  openMenu ? "Close menu" : "Open menu";
+  openMenu ? "Cerrar menu" : "Abrir menu";
 
 export const getMobileMenuVisibilityClass = (openMenu: boolean) =>
   openMenu ? "visible grid" : "invisible hidden";
