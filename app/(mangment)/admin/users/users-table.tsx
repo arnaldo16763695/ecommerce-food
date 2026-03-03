@@ -98,7 +98,7 @@ export default function UsersTable() {
     } finally {
       setLoading(false);
     }
-  }, [page, query]);
+  }, [page, query, toast]);
 
   useEffect(() => {
     loadUsers();

@@ -1,8 +1,6 @@
-import { testimonials } from "@/data/data";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
-import { RiDoubleQuotesL } from "@remixicon/react";
 import { getAllProducts } from "@/lib/data/productsData";
 import { getCategoriesWithProductCounts } from "@/lib/data/productsData";
 
