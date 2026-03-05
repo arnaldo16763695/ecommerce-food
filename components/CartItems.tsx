@@ -533,10 +533,13 @@ function CartItems({ products }: Props) {
                 </p>
               </div>
 
-              <button className="btn-primary inline-flex w-full items-center justify-center gap-2">
+              <Link
+                href="/checkout"
+                className="btn-primary inline-flex w-full items-center justify-center gap-2"
+              >
                 <RiLock2Line size={16} />
                 Finalizar compra segura
-              </button>
+              </Link>
 
               <p className="mt-3 flex items-start gap-2 text-xs text-neutral-500 dark:text-slate-400">
                 <RiInformationLine size={16} className="mt-0.5" />
