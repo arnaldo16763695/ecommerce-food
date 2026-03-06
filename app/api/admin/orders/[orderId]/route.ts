@@ -29,11 +29,28 @@ type Params = {
   params: Promise<{ orderId: string }>;
 };
 
-const preparerAllowedNextStatusByCurrent: Record<string, string[]> = {
-  CONFIRMED: ["PREPARING"],
-  PREPARING: ["READY"],
-  READY: ["READY"],
-};
+const orderSummarySelect = {
+  id: true,
+  orderNumber: true,
+  status: true,
+  paymentStatus: true,
+  fulfillmentType: true,
+  customerName: true,
+  totalCents: true,
+  createdAt: true,
+  assignedPreparer: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
+  _count: {
+    select: {
+      items: true,
+    },
+  },
+} as const;
 
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth();
@@ -63,6 +80,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
       customerPhone: true,
       customerEmail: true,
       notes: true,
+      assignedAt: true,
+      assignedPreparer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
       subtotalCents: true,
       taxCents: true,
       discountCents: true,
@@ -136,7 +161,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existing = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, assignedPreparerId: true },
   });
   if (!existing) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -164,15 +189,64 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       );
     }
 
-    const allowedNext = preparerAllowedNextStatusByCurrent[existing.status] ?? [];
-    if (!allowedNext.includes(parsed.data.status)) {
+    if (parsed.data.status === "PREPARING") {
+      const claimed = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: "CONFIRMED",
+          assignedPreparerId: null,
+        },
+        data: {
+          status: "PREPARING",
+          assignedPreparerId: session.user.id,
+          assignedAt: new Date(),
+        },
+      });
+
+      if (claimed.count === 0) {
+        return NextResponse.json(
+          {
+            error: "El pedido ya fue tomado por otro preparador o no esta en CONFIRMED.",
+          },
+          { status: 409 },
+        );
+      }
+
+      const updated = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: orderSummarySelect,
+      });
+
+      return NextResponse.json({ data: updated });
+    }
+
+    const completed = await prisma.order.updateMany({
+      where: {
+        id: orderId,
+        status: "PREPARING",
+        assignedPreparerId: session.user.id,
+      },
+      data: {
+        status: "READY",
+      },
+    });
+
+    if (completed.count === 0) {
       return NextResponse.json(
         {
-          error: `Invalid transition for PREPARER: ${existing.status} -> ${parsed.data.status}`,
+          error:
+            "No puedes marcar este pedido como listo porque no esta asignado a tu usuario.",
         },
-        { status: 400 },
+        { status: 409 },
       );
     }
+
+    const updated = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: orderSummarySelect,
+    });
+
+    return NextResponse.json({ data: updated });
   }
 
   const updated = await prisma.order.update({
@@ -183,21 +257,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ? { paymentStatus: parsed.data.paymentStatus }
         : {}),
     },
-    select: {
-      id: true,
-      orderNumber: true,
-      status: true,
-      paymentStatus: true,
-      fulfillmentType: true,
-      customerName: true,
-      totalCents: true,
-      createdAt: true,
-      _count: {
-        select: {
-          items: true,
-        },
-      },
-    },
+    select: orderSummarySelect,
   });
 
   return NextResponse.json({ data: updated });

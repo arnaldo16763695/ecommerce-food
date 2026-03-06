@@ -57,6 +57,7 @@ model User {
   sessions     Session[]
   cart         Cart[]
   orders       Order[]
+  assignedOrders Order[] @relation("OrderAssignedPreparer")
 
   @@map("users")
 }
@@ -235,6 +236,8 @@ model ProductOptionGroup {
 model Order {
   id     String  @id @default(cuid())
   userId String? @map("user_id")
+  assignedPreparerId String? @map("assigned_preparer_id")
+  assignedAt DateTime? @map("assigned_at")
 
   // Secuencial y único, sin nullable para evitar líos de colisiones
   orderNumber Int @unique @default(autoincrement()) @map("order_number")
@@ -260,12 +263,14 @@ model Order {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignedPreparer User? @relation("OrderAssignedPreparer", fields: [assignedPreparerId], references: [id], onDelete: SetNull)
 
   address OrderAddress?
   items   OrderItem[]
 
   @@index([createdAt])
   @@index([userId])
+  @@index([assignedPreparerId])
   @@index([status, createdAt])
   @@index([paymentStatus, createdAt])
   @@map("orders")

@@ -67,6 +67,13 @@ export async function GET(req: NextRequest) {
         customerName: true,
         totalCents: true,
         createdAt: true,
+        assignedPreparer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         _count: {
           select: {
             items: true,
