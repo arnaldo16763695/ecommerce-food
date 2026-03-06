@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { z } from "zod";
 
 const updateRoleSchema = z.object({
-  role: z.enum(["CUSTOMER", "ADMIN"]),
+  role: z.enum(["CUSTOMER", "ADMIN", "PREPARER"]),
 });
 
 type Params = {

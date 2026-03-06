@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type UserRole = "CUSTOMER" | "ADMIN";
+type UserRole = "CUSTOMER" | "ADMIN" | "PREPARER";
 
 type AdminUser = {
   id: string;
@@ -227,6 +227,7 @@ export default function UsersTable() {
                     <SelectContent>
                       <SelectItem value="CUSTOMER">CUSTOMER</SelectItem>
                       <SelectItem value="ADMIN">ADMIN</SelectItem>
+                      <SelectItem value="PREPARER">PREPARER</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>

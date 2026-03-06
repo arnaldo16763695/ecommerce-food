@@ -42,7 +42,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       if (session.user) {
         session.user.id = String(token.id ?? "");
-        session.user.role = token.role === "ADMIN" ? "ADMIN" : "CUSTOMER";
+        if (token.role === "ADMIN") {
+          session.user.role = "ADMIN";
+        } else if (token.role === "PREPARER") {
+          session.user.role = "PREPARER";
+        } else {
+          session.user.role = "CUSTOMER";
+        }
       }
       return session;
     },
@@ -97,7 +103,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new EmailNotVerifiedError();
         }
 
-        if (portal === "admin" && user.role !== "ADMIN") {
+        if (
+          portal === "admin" &&
+          user.role !== "ADMIN" &&
+          user.role !== "PREPARER"
+        ) {
           throw new NotAdminError();
         }
 

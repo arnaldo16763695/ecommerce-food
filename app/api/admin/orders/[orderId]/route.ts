@@ -29,6 +29,12 @@ type Params = {
   params: Promise<{ orderId: string }>;
 };
 
+const preparerAllowedNextStatusByCurrent: Record<string, string[]> = {
+  CONFIRMED: ["PREPARING"],
+  PREPARING: ["READY"],
+  READY: ["READY"],
+};
+
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth();
 
@@ -36,7 +42,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (session.user.role !== "ADMIN") {
+  if (session.user.role !== "ADMIN" && session.user.role !== "PREPARER") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -110,7 +116,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (session.user.role !== "ADMIN") {
+  const isAdmin = session.user.role === "ADMIN";
+  const isPreparer = session.user.role === "PREPARER";
+
+  if (!isAdmin && !isPreparer) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -127,10 +136,43 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existing = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (!existing) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+
+  if (isPreparer) {
+    if (parsed.data.paymentStatus !== undefined) {
+      return NextResponse.json(
+        { error: "PREPARER cannot update payment status" },
+        { status: 403 },
+      );
+    }
+
+    if (!parsed.data.status) {
+      return NextResponse.json(
+        { error: "PREPARER can only update operational order status" },
+        { status: 400 },
+      );
+    }
+
+    if (parsed.data.status !== "PREPARING" && parsed.data.status !== "READY") {
+      return NextResponse.json(
+        { error: "PREPARER can only set PREPARING or READY" },
+        { status: 403 },
+      );
+    }
+
+    const allowedNext = preparerAllowedNextStatusByCurrent[existing.status] ?? [];
+    if (!allowedNext.includes(parsed.data.status)) {
+      return NextResponse.json(
+        {
+          error: `Invalid transition for PREPARER: ${existing.status} -> ${parsed.data.status}`,
+        },
+        { status: 400 },
+      );
+    }
   }
 
   const updated = await prisma.order.update({
