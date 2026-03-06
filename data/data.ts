@@ -16,6 +16,11 @@ export const navItems = [
     label: "Tienda",
     href: "/shop",
   },
+  {
+    id: 3,
+    label: "Mis pedidos",
+    href: "/orders",
+  },
 ];
 
 export const categoryItems = [

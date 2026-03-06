@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { validateCheckoutCart } from "@/lib/checkout-validation";
+import { sendNewOrderInternalAlert } from "@/lib/notifications/order-notifications";
 import { z } from "zod";
 
 const GUEST_CART_COOKIE = "guest_cart_token";
@@ -300,6 +301,28 @@ export async function POST(req: Request) {
 
       return createdOrder;
     });
+
+    try {
+      await sendNewOrderInternalAlert({
+        orderNumber: order.orderNumber,
+        customerName: parsed.data.customerName.trim(),
+        customerPhone: parsed.data.customerPhone?.trim() || null,
+        customerEmail: parsed.data.customerEmail?.trim() || null,
+        fulfillmentType: parsed.data.fulfillmentType,
+        totalCents: order.totalCents,
+        itemsCount: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+        createdAt: order.createdAt,
+      });
+    } catch (notificationError) {
+      console.error("[checkout] failed to send internal order alert", {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        error:
+          notificationError instanceof Error
+            ? notificationError.message
+            : "unknown_error",
+      });
+    }
 
     const response = NextResponse.json({ data: order }, { status: 201 });
 
