@@ -3,7 +3,10 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { validateCheckoutCart } from "@/lib/checkout-validation";
-import { sendNewOrderInternalAlert } from "@/lib/notifications/order-notifications";
+import {
+  sendNewOrderInternalAlert,
+  sendOrderConfirmationToCustomer,
+} from "@/lib/notifications/order-notifications";
 import { z } from "zod";
 
 const GUEST_CART_COOKIE = "guest_cart_token";
@@ -302,27 +305,43 @@ export async function POST(req: Request) {
       return createdOrder;
     });
 
-    try {
-      await sendNewOrderInternalAlert({
+    const customerName = parsed.data.customerName.trim();
+    const customerPhone = parsed.data.customerPhone?.trim() || null;
+    const customerEmail = parsed.data.customerEmail?.trim() || null;
+    const itemsCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+
+    const notificationResults = await Promise.allSettled([
+      sendNewOrderInternalAlert({
         orderNumber: order.orderNumber,
-        customerName: parsed.data.customerName.trim(),
-        customerPhone: parsed.data.customerPhone?.trim() || null,
-        customerEmail: parsed.data.customerEmail?.trim() || null,
+        customerName,
+        customerPhone,
+        customerEmail,
         fulfillmentType: parsed.data.fulfillmentType,
         totalCents: order.totalCents,
-        itemsCount: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+        itemsCount,
         createdAt: order.createdAt,
-      });
-    } catch (notificationError) {
-      console.error("[checkout] failed to send internal order alert", {
+      }),
+      sendOrderConfirmationToCustomer({
+        orderNumber: order.orderNumber,
+        customerName,
+        customerEmail,
+        fulfillmentType: parsed.data.fulfillmentType,
+        totalCents: order.totalCents,
+        itemsCount,
+      }),
+    ]);
+
+    notificationResults.forEach((result, index) => {
+      if (result.status !== "rejected") return;
+
+      console.error("[checkout] failed to send order notification", {
         orderId: order.id,
         orderNumber: order.orderNumber,
+        notificationType: index === 0 ? "internal_alert" : "customer_confirmation",
         error:
-          notificationError instanceof Error
-            ? notificationError.message
-            : "unknown_error",
+          result.reason instanceof Error ? result.reason.message : "unknown_error",
       });
-    }
+    });
 
     const response = NextResponse.json({ data: order }, { status: 201 });
 

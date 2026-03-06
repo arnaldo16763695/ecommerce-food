@@ -15,6 +15,15 @@ function formatMoney(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+type CustomerOrderConfirmationInput = {
+  orderNumber: number;
+  customerName: string;
+  customerEmail: string | null;
+  fulfillmentType: "PICKUP" | "DELIVERY";
+  totalCents: number;
+  itemsCount: number;
+};
+
 export async function sendNewOrderInternalAlert(input: NewOrderAlertInput) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL;
@@ -54,3 +63,43 @@ export async function sendNewOrderInternalAlert(input: NewOrderAlertInput) {
   });
 }
 
+export async function sendOrderConfirmationToCustomer(
+  input: CustomerOrderConfirmationInput,
+) {
+  if (!input.customerEmail) return;
+
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+
+  const subject = `Confirmacion de pedido #${input.orderNumber}`;
+  const text = [
+    `Hola ${input.customerName},`,
+    "",
+    `Recibimos tu pedido #${input.orderNumber}.`,
+    `Tipo de entrega: ${input.fulfillmentType === "DELIVERY" ? "Delivery" : "Retiro en tienda"}`,
+    `Items: ${input.itemsCount}`,
+    `Total: ${formatMoney(input.totalCents)}`,
+    "",
+    "Gracias por tu compra.",
+  ].join("\n");
+
+  // Safe fallback for local/dev environments without email config.
+  if (!apiKey || !from) {
+    console.log("[order-confirmation] email skipped (missing env vars):", {
+      hasApiKey: Boolean(apiKey),
+      from,
+      to: input.customerEmail,
+      orderNumber: input.orderNumber,
+    });
+    console.log("[order-confirmation] payload:\n" + text);
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  await resend.emails.send({
+    from,
+    to: input.customerEmail,
+    subject,
+    text,
+  });
+}

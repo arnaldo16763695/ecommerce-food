@@ -76,3 +76,55 @@ describe("sendNewOrderInternalAlert", () => {
   });
 });
 
+describe("sendOrderConfirmationToCustomer", () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    vi.resetModules();
+    sendMock.mockReset();
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    vi.clearAllMocks();
+  });
+
+  it("does nothing when customer email is missing", async () => {
+    const mod = await import("../lib/notifications/order-notifications");
+    await mod.sendOrderConfirmationToCustomer({
+      orderNumber: 1003,
+      customerName: "Cliente",
+      customerEmail: null,
+      fulfillmentType: "PICKUP",
+      totalCents: 2000,
+      itemsCount: 1,
+    });
+
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("sends email to customer when resend env vars are configured", async () => {
+    process.env.RESEND_API_KEY = "test_key";
+    process.env.RESEND_FROM_EMAIL = "orders@example.com";
+
+    const mod = await import("../lib/notifications/order-notifications");
+    await mod.sendOrderConfirmationToCustomer({
+      orderNumber: 1004,
+      customerName: "Cliente",
+      customerEmail: "customer@example.com",
+      fulfillmentType: "DELIVERY",
+      totalCents: 7200,
+      itemsCount: 4,
+    });
+
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: "orders@example.com",
+        to: "customer@example.com",
+        subject: "Confirmacion de pedido #1004",
+      }),
+    );
+  });
+});
