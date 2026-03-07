@@ -41,9 +41,15 @@ export function NavMain({
 }: {
   items: NavMainItem[]
 }) {
+  const [mounted, setMounted] = React.useState(false)
   const [openStateByKey, setOpenStateByKey] = React.useState<Record<string, boolean>>({})
 
   React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  React.useEffect(() => {
+    if (!mounted) return
     try {
       const raw = window.localStorage.getItem(NAV_MAIN_OPEN_STATE_KEY)
       if (!raw) return
@@ -54,7 +60,7 @@ export function NavMain({
     } catch {
       // Ignore malformed localStorage values.
     }
-  }, [])
+  }, [mounted])
 
   const handleOpenChange = React.useCallback((itemKey: string, nextOpen: boolean) => {
     setOpenStateByKey((prev) => {
@@ -67,6 +73,14 @@ export function NavMain({
       return next
     })
   }, [])
+
+  if (!mounted) {
+    return (
+      <SidebarGroup>
+        <SidebarGroupLabel>Panel</SidebarGroupLabel>
+      </SidebarGroup>
+    )
+  }
 
   return (
     <SidebarGroup>
