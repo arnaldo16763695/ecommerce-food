@@ -124,6 +124,21 @@ export async function GET(_req: NextRequest, { params }: Params) {
           },
         },
       },
+      preparationItems: {
+        select: {
+          id: true,
+          orderItemId: true,
+          isPrepared: true,
+          preparedAt: true,
+          preparedByUser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -218,6 +233,29 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       });
 
       return NextResponse.json({ data: updated });
+    }
+
+    const [totalOrderItems, preparedItems] = await prisma.$transaction([
+      prisma.orderItem.count({
+        where: {
+          orderId,
+        },
+      }),
+      prisma.orderPreparationItem.count({
+        where: {
+          orderId,
+          isPrepared: true,
+        },
+      }),
+    ]);
+
+    if (totalOrderItems === 0 || preparedItems < totalOrderItems) {
+      return NextResponse.json(
+        {
+          error: "No puedes cerrar el pedido. Faltan items por preparar en el checklist.",
+        },
+        { status: 400 },
+      );
     }
 
     const completed = await prisma.order.updateMany({

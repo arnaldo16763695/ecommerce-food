@@ -71,6 +71,17 @@ type KitchenOrderDetail = {
   deliveryFeeCents: number;
   totalCents: number;
   createdAt: string;
+  preparationItems: Array<{
+    id: string;
+    orderItemId: string;
+    isPrepared: boolean;
+    preparedAt: string | null;
+    preparedByUser: {
+      id: string;
+      name: string | null;
+      email: string | null;
+    } | null;
+  }>;
   items: Array<{
     id: string;
     nameSnapshot: string;
@@ -125,9 +136,7 @@ export default function KitchenBoard() {
     null,
   );
   const [detailLoading, setDetailLoading] = useState(false);
-  const [preparedItemsByOrder, setPreparedItemsByOrder] = useState<
-    Record<string, Record<string, boolean>>
-  >({});
+  const [savingOrderItemId, setSavingOrderItemId] = useState<string | null>(null);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -193,15 +202,16 @@ export default function KitchenBoard() {
       return { total: 0, done: 0, isComplete: false };
     }
 
-    const map = preparedItemsByOrder[activeOrderDetail.id] ?? {};
     const total = activeOrderDetail.items.length;
-    const done = activeOrderDetail.items.reduce(
-      (sum, item) => sum + (map[item.id] ? 1 : 0),
-      0,
-    );
+    const done = activeOrderDetail.items.reduce((sum, item) => {
+      const prepared = activeOrderDetail.preparationItems.some(
+        (prep) => prep.orderItemId === item.id && prep.isPrepared,
+      );
+      return sum + (prepared ? 1 : 0);
+    }, 0);
 
     return { total, done, isComplete: total > 0 && done === total };
-  }, [activeOrderDetail, preparedItemsByOrder]);
+  }, [activeOrderDetail]);
 
   const canManageActiveOrder = useMemo(() => {
     if (!activeOrderDetail || !session?.user) return false;
@@ -228,17 +238,6 @@ export default function KitchenBoard() {
 
         const body = (await res.json()) as { data: KitchenOrderDetail };
         setActiveOrderDetail(body.data);
-        setPreparedItemsByOrder((prev) => {
-          if (prev[orderId]) return prev;
-
-          const initialState = Object.fromEntries(
-            body.data.items.map((item) => [item.id, false]),
-          ) as Record<string, boolean>;
-          return {
-            ...prev,
-            [orderId]: initialState,
-          };
-        });
       } catch (err) {
         toast({
           title: "Error en detalle",
@@ -259,14 +258,71 @@ export default function KitchenBoard() {
     void fetchOrderDetail(orderId);
   }
 
-  function togglePrepared(orderId: string, itemId: string) {
-    setPreparedItemsByOrder((prev) => ({
-      ...prev,
-      [orderId]: {
-        ...(prev[orderId] ?? {}),
-        [itemId]: !(prev[orderId]?.[itemId] ?? false),
-      },
-    }));
+  async function togglePrepared(orderId: string, itemId: string, isPrepared: boolean) {
+    setSavingOrderItemId(itemId);
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/preparation/${itemId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isPrepared }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? "No se pudo actualizar el checklist.");
+      }
+
+      const body = (await res.json()) as {
+        data: {
+          id: string;
+          orderId: string;
+          orderItemId: string;
+          isPrepared: boolean;
+          preparedAt: string | null;
+          preparedByUser: {
+            id: string;
+            name: string | null;
+            email: string | null;
+          } | null;
+        };
+      };
+
+      setActiveOrderDetail((prev) => {
+        if (!prev || prev.id !== orderId) return prev;
+
+        const existing = prev.preparationItems.find(
+          (item) => item.orderItemId === itemId,
+        );
+
+        if (existing) {
+          return {
+            ...prev,
+            preparationItems: prev.preparationItems.map((item) =>
+              item.orderItemId === itemId ? body.data : item,
+            ),
+          };
+        }
+
+        return {
+          ...prev,
+          preparationItems: [...prev.preparationItems, body.data],
+        };
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo actualizar checklist",
+        description:
+          err instanceof Error ? err.message : "Error inesperado actualizando item.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingOrderItemId(null);
+    }
   }
 
   async function handleStatusChange(orderId: string, status: "PREPARING" | "READY") {
@@ -462,7 +518,9 @@ export default function KitchenBoard() {
 
               <div className="space-y-2">
                 {activeOrderDetail.items.map((item) => {
-                  const checked = Boolean(preparedItemsByOrder[activeOrderDetail.id]?.[item.id]);
+                  const checked = activeOrderDetail.preparationItems.some(
+                    (prep) => prep.orderItemId === item.id && prep.isPrepared,
+                  );
 
                   return (
                     <label
@@ -474,9 +532,17 @@ export default function KitchenBoard() {
                         className="mt-1 size-4"
                         checked={checked}
                         disabled={
-                          activeOrderDetail.status !== "PREPARING" || !canManageActiveOrder
+                          activeOrderDetail.status !== "PREPARING" ||
+                          !canManageActiveOrder ||
+                          savingOrderItemId === item.id
                         }
-                        onChange={() => togglePrepared(activeOrderDetail.id, item.id)}
+                        onChange={(e) =>
+                          void togglePrepared(
+                            activeOrderDetail.id,
+                            item.id,
+                            e.currentTarget.checked,
+                          )
+                        }
                       />
                       <div className="min-w-0 text-sm">
                         <p className="font-medium">

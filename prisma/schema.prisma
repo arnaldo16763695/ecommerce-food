@@ -58,6 +58,7 @@ model User {
   cart         Cart[]
   orders       Order[]
   assignedOrders Order[] @relation("OrderAssignedPreparer")
+  preparedOrderItems OrderPreparationItem[] @relation("OrderPreparationBy")
 
   @@map("users")
 }
@@ -267,6 +268,7 @@ model Order {
 
   address OrderAddress?
   items   OrderItem[]
+  preparationItems OrderPreparationItem[]
 
   @@index([createdAt])
   @@index([userId])
@@ -309,10 +311,31 @@ model OrderItem {
   product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   options OrderItemOption[]
+  preparationItem OrderPreparationItem?
 
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+model OrderPreparationItem {
+  id        String   @id @default(cuid())
+  orderId   String   @map("order_id")
+  orderItemId String @unique @map("order_item_id")
+  isPrepared Boolean @default(false) @map("is_prepared")
+  preparedAt DateTime? @map("prepared_at")
+  preparedByUserId String? @map("prepared_by_user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  preparedByUser User? @relation("OrderPreparationBy", fields: [preparedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([preparedByUserId])
+  @@index([isPrepared])
+  @@map("order_preparation_items")
 }
 
 model OrderItemOption {
