@@ -4,6 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 type OrderStatus =
   | "PENDING"
@@ -24,8 +31,35 @@ type PublicOrder = {
   paymentStatus: PaymentStatus;
   fulfillmentType: FulfillmentType;
   customerName: string;
+  customerPhone: string | null;
+  customerEmail: string | null;
+  notes: string | null;
+  subtotalCents: number;
+  discountCents: number;
+  deliveryFeeCents: number;
+  taxCents: number;
   totalCents: number;
   createdAt: string;
+  address: {
+    address1: string;
+    address2: string | null;
+    city: string | null;
+    notes: string | null;
+  } | null;
+  items: Array<{
+    id: string;
+    nameSnapshot: string;
+    unitPriceCents: number;
+    quantity: number;
+    notes: string | null;
+    options: Array<{
+      id: string;
+      groupNameSnapshot: string;
+      optionNameSnapshot: string;
+      priceDeltaCents: number;
+      quantity: number;
+    }>;
+  }>;
 };
 
 function formatMoney(cents: number) {
@@ -72,6 +106,7 @@ export default function OrdersLookup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orders, setOrders] = useState<PublicOrder[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<PublicOrder | null>(null);
 
   async function fetchOrders(payload: { orderNumber?: number; contact?: string }) {
     setLoading(true);
@@ -215,10 +250,154 @@ export default function OrdersLookup() {
                 <p>Cliente: {order.customerName}</p>
                 <p>Total: {formatMoney(order.totalCents)}</p>
               </div>
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelectedOrder(order)}
+                >
+                  Ver detalle
+                </Button>
+              </div>
             </article>
           ))
         )}
       </div>
+
+      <Dialog
+        open={Boolean(selectedOrder)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedOrder(null);
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          {selectedOrder ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Detalle pedido #{selectedOrder.orderNumber}</DialogTitle>
+                <DialogDescription>
+                  {new Date(selectedOrder.createdAt).toLocaleString("es-VE", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 text-sm">
+                <div className="rounded-md border p-3">
+                  <p>
+                    <span className="font-medium">Cliente:</span> {selectedOrder.customerName}
+                  </p>
+                  {selectedOrder.customerPhone ? (
+                    <p>
+                      <span className="font-medium">Telefono:</span>{" "}
+                      {selectedOrder.customerPhone}
+                    </p>
+                  ) : null}
+                  {selectedOrder.customerEmail ? (
+                    <p>
+                      <span className="font-medium">Email:</span> {selectedOrder.customerEmail}
+                    </p>
+                  ) : null}
+                  <p>
+                    <span className="font-medium">Entrega:</span>{" "}
+                    {selectedOrder.fulfillmentType === "DELIVERY"
+                      ? "Delivery"
+                      : "Retiro en tienda"}
+                  </p>
+                  {selectedOrder.notes ? (
+                    <p>
+                      <span className="font-medium">Notas:</span> {selectedOrder.notes}
+                    </p>
+                  ) : null}
+                </div>
+
+                {selectedOrder.address ? (
+                  <div className="rounded-md border p-3">
+                    <p className="font-medium">Direccion de entrega</p>
+                    <p>{selectedOrder.address.address1}</p>
+                    {selectedOrder.address.address2 ? <p>{selectedOrder.address.address2}</p> : null}
+                    {selectedOrder.address.city ? <p>{selectedOrder.address.city}</p> : null}
+                    {selectedOrder.address.notes ? (
+                      <p>
+                        <span className="font-medium">Referencia:</span>{" "}
+                        {selectedOrder.address.notes}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="rounded-md border p-3">
+                  <p className="mb-2 font-medium">Items</p>
+                  <div className="space-y-3">
+                    {selectedOrder.items.map((item) => (
+                      <div key={item.id} className="rounded border p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium">{item.nameSnapshot}</p>
+                          <p>
+                            {item.quantity} x {formatMoney(item.unitPriceCents)}
+                          </p>
+                        </div>
+                        {item.options.length > 0 ? (
+                          <ul className="mt-1 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                            {item.options.map((option) => (
+                              <li key={option.id}>
+                                {option.groupNameSnapshot}: {option.optionNameSnapshot}
+                                {option.priceDeltaCents > 0
+                                  ? ` (+${formatMoney(option.priceDeltaCents)})`
+                                  : ""}
+                                {option.quantity > 1 ? ` x${option.quantity}` : ""}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {item.notes ? (
+                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                            Nota item: {item.notes}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-md border p-3">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>{formatMoney(selectedOrder.subtotalCents)}</span>
+                  </div>
+                  {selectedOrder.discountCents > 0 ? (
+                    <div className="flex justify-between">
+                      <span>Descuento</span>
+                      <span>-{formatMoney(selectedOrder.discountCents)}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between">
+                    <span>Envio</span>
+                    <span>
+                      {selectedOrder.deliveryFeeCents === 0
+                        ? "Gratis"
+                        : formatMoney(selectedOrder.deliveryFeeCents)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Impuestos</span>
+                    <span>{formatMoney(selectedOrder.taxCents)}</span>
+                  </div>
+                  <div className="mt-2 flex justify-between border-t pt-2 font-semibold">
+                    <span>Total</span>
+                    <span>{formatMoney(selectedOrder.totalCents)}</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

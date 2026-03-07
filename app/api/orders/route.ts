@@ -59,8 +59,42 @@ export async function POST(req: Request) {
         paymentStatus: true,
         fulfillmentType: true,
         customerName: true,
+        customerPhone: true,
+        customerEmail: true,
+        notes: true,
+        subtotalCents: true,
+        discountCents: true,
+        deliveryFeeCents: true,
+        taxCents: true,
         totalCents: true,
         createdAt: true,
+        address: {
+          select: {
+            address1: true,
+            address2: true,
+            city: true,
+            notes: true,
+          },
+        },
+        items: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            nameSnapshot: true,
+            unitPriceCents: true,
+            quantity: true,
+            notes: true,
+            options: {
+              select: {
+                id: true,
+                groupNameSnapshot: true,
+                optionNameSnapshot: true,
+                priceDeltaCents: true,
+                quantity: true,
+              },
+            },
+          },
+        },
       },
     });
 
