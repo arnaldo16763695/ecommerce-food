@@ -21,18 +21,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-type OrderStatus =
-  | "PENDING"
-  | "CONFIRMED"
-  | "PREPARING"
-  | "READY"
-  | "OUT_FOR_DELIVERY"
-  | "COMPLETED"
-  | "CANCELED";
+import {
+  getSelectableOrderStatuses,
+  type FulfillmentType,
+  type OrderStatus,
+} from "@/lib/order-workflow";
 
 type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
-type FulfillmentType = "PICKUP" | "DELIVERY";
 
 type AdminOrder = {
   id: string;
@@ -337,13 +332,14 @@ export default function OrdersTable() {
                         <SelectValue placeholder="Estado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="PENDING">Pendiente</SelectItem>
-                        <SelectItem value="CONFIRMED">Confirmado</SelectItem>
-                        <SelectItem value="PREPARING">Preparando</SelectItem>
-                        <SelectItem value="READY">Listo</SelectItem>
-                        <SelectItem value="OUT_FOR_DELIVERY">En camino</SelectItem>
-                        <SelectItem value="COMPLETED">Completado</SelectItem>
-                        <SelectItem value="CANCELED">Cancelado</SelectItem>
+                        {getSelectableOrderStatuses(
+                          order.status,
+                          order.fulfillmentType,
+                        ).map((nextStatus) => (
+                          <SelectItem key={nextStatus} value={nextStatus}>
+                            {statusToLabel(nextStatus)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { publishKitchenEvent } from "@/lib/kitchen-events";
+import {
+  canTransitionOrderStatus,
+  canTransitionPaymentStatus,
+} from "@/lib/order-workflow";
 import { z } from "zod";
 
 const updateOrderSchema = z
@@ -177,7 +181,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existing = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, status: true, assignedPreparerId: true },
+    select: {
+      id: true,
+      status: true,
+      fulfillmentType: true,
+      paymentStatus: true,
+      assignedPreparerId: true,
+    },
   });
   if (!existing) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -195,6 +205,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json(
         { error: "PREPARER can only update operational order status" },
         { status: 400 },
+      );
+    }
+
+    if (
+      !canTransitionOrderStatus(
+        existing.status,
+        parsed.data.status,
+        existing.fulfillmentType,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error: `Transicion no permitida: ${existing.status} -> ${parsed.data.status}.`,
+        },
+        { status: 409 },
       );
     }
 
@@ -302,6 +327,34 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     return NextResponse.json({ data: updated });
+  }
+
+  if (
+    parsed.data.status !== undefined &&
+    !canTransitionOrderStatus(
+      existing.status,
+      parsed.data.status,
+      existing.fulfillmentType,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        error: `Transicion de estado no permitida: ${existing.status} -> ${parsed.data.status}.`,
+      },
+      { status: 409 },
+    );
+  }
+
+  if (
+    parsed.data.paymentStatus !== undefined &&
+    !canTransitionPaymentStatus(existing.paymentStatus, parsed.data.paymentStatus)
+  ) {
+    return NextResponse.json(
+      {
+        error: `Transicion de pago no permitida: ${existing.paymentStatus} -> ${parsed.data.paymentStatus}.`,
+      },
+      { status: 409 },
+    );
   }
 
   const updated = await prisma.order.update({
