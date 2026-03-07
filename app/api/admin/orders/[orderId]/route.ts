@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { publishKitchenEvent } from "@/lib/kitchen-events";
 import { z } from "zod";
 
 const updateOrderSchema = z
@@ -232,6 +233,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         select: orderSummarySelect,
       });
 
+      if (updated) {
+        publishKitchenEvent({
+          type: "ORDER_STATUS_CHANGED",
+          orderId: updated.id,
+          orderNumber: updated.orderNumber,
+        });
+      }
+
       return NextResponse.json({ data: updated });
     }
 
@@ -284,6 +293,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       select: orderSummarySelect,
     });
 
+    if (updated) {
+      publishKitchenEvent({
+        type: "ORDER_STATUS_CHANGED",
+        orderId: updated.id,
+        orderNumber: updated.orderNumber,
+      });
+    }
+
     return NextResponse.json({ data: updated });
   }
 
@@ -296,6 +313,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         : {}),
     },
     select: orderSummarySelect,
+  });
+
+  publishKitchenEvent({
+    type: "ORDER_STATUS_CHANGED",
+    orderId: updated.id,
+    orderNumber: updated.orderNumber,
   });
 
   return NextResponse.json({ data: updated });

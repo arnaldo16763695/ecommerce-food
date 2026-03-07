@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { validateCheckoutCart } from "@/lib/checkout-validation";
+import { publishKitchenEvent } from "@/lib/kitchen-events";
 import {
   sendNewOrderInternalAlert,
   sendOrderConfirmationToCustomer,
@@ -344,6 +345,12 @@ export async function POST(req: Request) {
     });
 
     const response = NextResponse.json({ data: order }, { status: 201 });
+
+    publishKitchenEvent({
+      type: "ORDER_CREATED",
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+    });
 
     if (isGuest) {
       response.cookies.set({

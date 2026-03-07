@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { publishKitchenEvent } from "@/lib/kitchen-events";
 import { z } from "zod";
 
 const updatePreparationSchema = z.object({
@@ -98,6 +99,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     },
   });
 
+  publishKitchenEvent({
+    type: "ORDER_ITEM_PREPARATION_CHANGED",
+    orderId,
+  });
+
   return NextResponse.json({ data: updated });
 }
-

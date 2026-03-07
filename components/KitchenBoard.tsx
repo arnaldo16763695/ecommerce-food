@@ -185,7 +185,7 @@ export default function KitchenBoard() {
   useEffect(() => {
     const timer = setInterval(() => {
       void loadOrders();
-    }, 10000);
+    }, 60000);
     return () => clearInterval(timer);
   }, [loadOrders]);
 
@@ -257,6 +257,24 @@ export default function KitchenBoard() {
     setActiveOrderDetail(null);
     void fetchOrderDetail(orderId);
   }
+
+  useEffect(() => {
+    const eventSource = new EventSource("/api/kitchen/events");
+
+    const onKitchenEvent = () => {
+      void loadOrders();
+      if (activeOrderDetail?.id) {
+        void fetchOrderDetail(activeOrderDetail.id);
+      }
+    };
+
+    eventSource.addEventListener("kitchen", onKitchenEvent);
+
+    return () => {
+      eventSource.removeEventListener("kitchen", onKitchenEvent);
+      eventSource.close();
+    };
+  }, [activeOrderDetail?.id, fetchOrderDetail, loadOrders]);
 
   async function togglePrepared(orderId: string, itemId: string, isPrepared: boolean) {
     setSavingOrderItemId(itemId);
@@ -385,7 +403,7 @@ export default function KitchenBoard() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-600 dark:text-slate-300">
-          Actualizacion automatica cada 10 segundos.
+          Actualizacion en tiempo real (SSE) con respaldo cada 60 segundos.
         </p>
         <Button variant="outline" onClick={() => void loadOrders()} disabled={loading}>
           Actualizar ahora
