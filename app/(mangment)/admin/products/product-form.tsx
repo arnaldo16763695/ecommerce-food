@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { formatCentsToMajorUnit, parseMajorUnitToCents } from "@/lib/money";
 import {
   Select,
   SelectContent,
@@ -75,8 +76,8 @@ export default function ProductForm({
   const [name, setName] = useState(initialData?.name ?? "");
   const [slug, setSlug] = useState(initialData?.slug ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
-  const [basePriceCents, setBasePriceCents] = useState(
-    initialData ? String(initialData.basePriceCents) : "",
+  const [basePriceInput, setBasePriceInput] = useState(
+    initialData ? formatCentsToMajorUnit(initialData.basePriceCents) : "",
   );
   const [prepTimeMin, setPrepTimeMin] = useState(
     initialData?.prepTimeMin ? String(initialData.prepTimeMin) : "",
@@ -191,11 +192,16 @@ export default function ProductForm({
     setSaving(true);
 
     try {
+      const parsedBasePriceCents = parseMajorUnitToCents(basePriceInput);
+      if (parsedBasePriceCents === null) {
+        throw new Error("El precio base debe ser un numero valido con hasta 2 decimales.");
+      }
+
       const payload = {
         name: name.trim(),
         slug: slug.trim() || undefined,
         description: description.trim() || undefined,
-        basePriceCents: Number.parseInt(basePriceCents, 10),
+        basePriceCents: parsedBasePriceCents,
         prepTimeMin: prepTimeMin.trim()
           ? Number.parseInt(prepTimeMin, 10)
           : null,
@@ -308,15 +314,15 @@ export default function ProductForm({
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-1.5">
           <label htmlFor="product-price" className="text-sm font-medium">
-            Precio base (centavos)
+            Precio base (USD)
           </label>
           <Input
             id="product-price"
-            type="number"
-            min={0}
-            value={basePriceCents}
-            onChange={(e) => setBasePriceCents(e.target.value)}
-            placeholder="Ejemplo: 1299"
+            type="text"
+            inputMode="decimal"
+            value={basePriceInput}
+            onChange={(e) => setBasePriceInput(e.target.value)}
+            placeholder="Ejemplo: 10.30"
             required
           />
         </div>

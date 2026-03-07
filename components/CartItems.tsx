@@ -18,6 +18,10 @@ import type { CartItemOption } from "@/types/types";
 import { buildCartLineKey } from "@/lib/cart-line-key";
 import { resolveProductImageSrc } from "@/lib/product-image";
 import {
+  convertUsdCentsToVesCents,
+  formatCurrencyFromCents,
+} from "@/lib/money";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -29,6 +33,7 @@ import { Button } from "@/components/ui/button";
 
 type Props = {
   products: AllProducts[];
+  usdToVesRate: number | null;
 };
 
 type CustomizationGroup = NonNullable<AllProducts["optionGroups"]>[number]["group"];
@@ -46,11 +51,7 @@ type DisplayCartItem = {
   customizationGroups: CustomizationGroup[];
 };
 
-function formatMoney(cents: number) {
-  return (cents / 100).toFixed(2);
-}
-
-function CartItems({ products }: Props) {
+function CartItems({ products, usdToVesRate }: Props) {
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -189,7 +190,17 @@ function CartItems({ products }: Props) {
 
   const tax = Math.round(subTotal * 0.1);
   const shipping = subTotal === 0 ? 0 : subTotal >= 10000 ? 0 : 1000;
-  const total = ((subTotal + tax + shipping) / 100).toFixed(2);
+  const totalCents = subTotal + tax + shipping;
+
+  const formatUsd = (cents: number) => formatCurrencyFromCents(cents, "USD", "en-US");
+  const formatVes = (cents: number) =>
+    usdToVesRate
+      ? formatCurrencyFromCents(
+          convertUsdCentsToVesCents(cents, usdToVesRate),
+          "VES",
+          "es-VE",
+        )
+      : null;
 
   const handleToggleDraftOption = (group: CustomizationGroup, optionId: string) => {
     setDraftSelectedByGroup((prev) => {
@@ -342,7 +353,7 @@ function CartItems({ products }: Props) {
                           </div>
 
                           <p className="mb-3 text-sm text-neutral-600 dark:text-slate-300">
-                            ${formatMoney(item.price)} cada uno
+                            {formatUsd(item.price)} cada uno
                           </p>
 
                           <div className="inline-flex items-center rounded-xl border border-neutral-300 bg-white dark:border-slate-600 dark:bg-slate-900">
@@ -376,7 +387,7 @@ function CartItems({ products }: Props) {
                           Subtotal
                         </p>
                         <p className="font-semibold text-amber-600">
-                          ${formatMoney(item.price * item.quantity)}
+                          {formatUsd(item.price * item.quantity)}
                         </p>
                       </div>
                     </article>
@@ -441,7 +452,7 @@ function CartItems({ products }: Props) {
                             </div>
                           </td>
                           <td className="p-4 text-neutral-700 dark:text-slate-300">
-                            ${formatMoney(item.price)}
+                            {formatUsd(item.price)}
                           </td>
                           <td className="p-4">
                             <div className="inline-flex items-center rounded-xl border border-neutral-300 bg-white dark:border-slate-600 dark:bg-slate-900">
@@ -469,7 +480,7 @@ function CartItems({ products }: Props) {
                             </div>
                           </td>
                           <td className="p-4 font-semibold text-neutral-900 dark:text-slate-100">
-                            ${formatMoney(item.price * item.quantity)}
+                            {formatUsd(item.price * item.quantity)}
                           </td>
                           <td className="p-4">
                             <button
@@ -509,24 +520,47 @@ function CartItems({ products }: Props) {
               <div className="mb-5 space-y-3 text-sm">
                 <div className="flex justify-between text-neutral-600 dark:text-slate-300">
                   <h4>Subtotal</h4>
-                  <p>$ {formatMoney(subTotal)}</p>
+                  <div className="text-right">
+                    <p>{formatUsd(subTotal)}</p>
+                    {formatVes(subTotal) ? (
+                      <p className="text-xs text-neutral-500 dark:text-slate-400">
+                        {formatVes(subTotal)}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="flex justify-between text-neutral-600 dark:text-slate-300">
                   <h4>Envio</h4>
                   <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                    {shipping === 0 ? "Gratis" : "$ " + formatMoney(shipping)}
+                    {shipping === 0 ? "Gratis" : formatUsd(shipping)}
                   </p>
                 </div>
                 <div className="flex justify-between text-neutral-600 dark:text-slate-300">
                   <h4>Impuestos</h4>
-                  <p>${formatMoney(tax)}</p>
+                  <div className="text-right">
+                    <p>{formatUsd(tax)}</p>
+                    {formatVes(tax) ? (
+                      <p className="text-xs text-neutral-500 dark:text-slate-400">
+                        {formatVes(tax)}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
               <div className="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-slate-600 dark:bg-slate-700/60">
                 <div className="mb-1 flex items-center justify-between">
                   <h4 className="font-semibold text-neutral-800 dark:text-slate-100">Total</h4>
-                  <p className="text-xl font-semibold text-neutral-900 dark:text-slate-100">${total}</p>
+                  <div className="text-right">
+                    <p className="text-xl font-semibold text-neutral-900 dark:text-slate-100">
+                      {formatUsd(totalCents)}
+                    </p>
+                    {formatVes(totalCents) ? (
+                      <p className="text-xs text-neutral-500 dark:text-slate-400">
+                        {formatVes(totalCents)}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-slate-400">
                   Incluye todos los impuestos y cargos.
@@ -627,8 +661,8 @@ function CartItems({ products }: Props) {
                               </div>
                               <span className="text-sm text-amber-700 dark:text-amber-300">
                                 {option.priceDeltaCents > 0
-                                  ? `+$${formatMoney(option.priceDeltaCents)}`
-                                  : "Included"}
+                                  ? `+${formatUsd(option.priceDeltaCents)}`
+                                  : "Incluido"}
                               </span>
                             </label>
                           );
@@ -668,7 +702,7 @@ function CartItems({ products }: Props) {
 
             <div className="mt-5 flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                Nuevo precio: ${formatMoney(draftUnitPriceCents)}
+                Nuevo precio: {formatUsd(draftUnitPriceCents)}
               </p>
               <div className="flex gap-2">
                 <button

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { formatCentsToMajorUnit, parseMajorUnitToCents } from "@/lib/money";
 import {
   Select,
   SelectContent,
@@ -72,7 +73,7 @@ type GroupForm = {
 
 type OptionForm = {
   name: string;
-  priceDeltaCents: string;
+  priceDelta: string;
   sortOrder: string;
   isActive: "ACTIVE" | "INACTIVE";
 };
@@ -89,7 +90,7 @@ const emptyGroupForm: GroupForm = {
 
 const emptyOptionForm: OptionForm = {
   name: "",
-  priceDeltaCents: "0",
+  priceDelta: "0.00",
   sortOrder: "",
   isActive: "ACTIVE",
 };
@@ -294,7 +295,7 @@ export default function OptionGroupsTable() {
     setEditingOption(option);
     setOptionForm({
       name: option.name,
-      priceDeltaCents: String(option.priceDeltaCents),
+      priceDelta: formatCentsToMajorUnit(option.priceDeltaCents),
       sortOrder: String(option.sortOrder),
       isActive: option.isActive ? "ACTIVE" : "INACTIVE",
     });
@@ -307,9 +308,14 @@ export default function OptionGroupsTable() {
     setSavingOption(true);
 
     try {
+      const parsedPriceDeltaCents = parseMajorUnitToCents(optionForm.priceDelta);
+      if (parsedPriceDeltaCents === null) {
+        throw new Error("El precio adicional debe ser un numero valido con hasta 2 decimales.");
+      }
+
       const payload = {
         name: optionForm.name.trim(),
-        priceDeltaCents: Number.parseInt(optionForm.priceDeltaCents, 10),
+        priceDeltaCents: parsedPriceDeltaCents,
         sortOrder: optionForm.sortOrder.trim()
           ? Number.parseInt(optionForm.sortOrder, 10)
           : undefined,
@@ -612,7 +618,7 @@ export default function OptionGroupsTable() {
           <DialogHeader>
             <DialogTitle>Gestionar opciones: {optionsGroup?.name ?? ""}</DialogTitle>
             <DialogDescription>
-              Crea y edita opciones para este grupo. Los precios estan en centavos.
+              Crea y edita opciones para este grupo. Puedes usar punto o coma en decimales.
             </DialogDescription>
           </DialogHeader>
 
@@ -637,15 +643,16 @@ export default function OptionGroupsTable() {
                 </label>
                 <Input
                   id="option-price"
-                  type="number"
-                  min={0}
-                  value={optionForm.priceDeltaCents}
+                  type="text"
+                  inputMode="decimal"
+                  value={optionForm.priceDelta}
                   onChange={(e) =>
                     setOptionForm((prev) => ({
                       ...prev,
-                      priceDeltaCents: e.target.value,
+                      priceDelta: e.target.value,
                     }))
                   }
+                  placeholder="Ejemplo: 1.50"
                 />
               </div>
               <div className="space-y-1">

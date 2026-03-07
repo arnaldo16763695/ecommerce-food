@@ -9,16 +9,17 @@ import { useCartStore } from "@/store/cartStore";
 import { resolveProductImageSrc } from "@/lib/product-image";
 import type { AllProducts } from "@/lib/data/productsData";
 import Image from "next/image";
+import {
+  convertUsdCentsToVesCents,
+  formatCurrencyFromCents,
+} from "@/lib/money";
 
 type Props = {
   products: AllProducts[];
+  usdToVesRate: number | null;
 };
 
-function formatMoney(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-export default function CheckoutForm({ products }: Props) {
+export default function CheckoutForm({ products, usdToVesRate }: Props) {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
@@ -84,6 +85,16 @@ export default function CheckoutForm({ products }: Props) {
   const deliveryFeeCents =
     fulfillmentType === "DELIVERY" ? (subtotalCents >= 10_000 ? 0 : 1_000) : 0;
   const totalCents = subtotalCents + taxCents + deliveryFeeCents;
+
+  const formatUsd = (cents: number) => formatCurrencyFromCents(cents, "USD", "en-US");
+  const formatVes = (cents: number) =>
+    usdToVesRate
+      ? formatCurrencyFromCents(
+          convertUsdCentsToVesCents(cents, usdToVesRate),
+          "VES",
+          "es-VE",
+        )
+      : null;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -270,8 +281,13 @@ export default function CheckoutForm({ products }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.name}</p>
                   <p className="text-xs text-slate-500">
-                    {item.quantity} x {formatMoney(item.unitPriceCents)}
+                    {item.quantity} x {formatUsd(item.unitPriceCents)}
                   </p>
+                  {formatVes(item.unitPriceCents) ? (
+                    <p className="text-xs text-slate-500">
+                      {item.quantity} x {formatVes(item.unitPriceCents)}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -280,21 +296,41 @@ export default function CheckoutForm({ products }: Props) {
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>{formatMoney(subtotalCents)}</span>
+              <div className="text-right">
+                <p>{formatUsd(subtotalCents)}</p>
+                {formatVes(subtotalCents) ? (
+                  <p className="text-xs text-slate-500">{formatVes(subtotalCents)}</p>
+                ) : null}
+              </div>
             </div>
             <div className="flex justify-between">
               <span>Impuestos</span>
-              <span>{formatMoney(taxCents)}</span>
+              <div className="text-right">
+                <p>{formatUsd(taxCents)}</p>
+                {formatVes(taxCents) ? (
+                  <p className="text-xs text-slate-500">{formatVes(taxCents)}</p>
+                ) : null}
+              </div>
             </div>
             {fulfillmentType === "DELIVERY" ? (
               <div className="flex justify-between">
                 <span>Envio</span>
-                <span>{deliveryFeeCents === 0 ? "Gratis" : formatMoney(deliveryFeeCents)}</span>
+                <div className="text-right">
+                  <p>{deliveryFeeCents === 0 ? "Gratis" : formatUsd(deliveryFeeCents)}</p>
+                  {deliveryFeeCents > 0 && formatVes(deliveryFeeCents) ? (
+                    <p className="text-xs text-slate-500">{formatVes(deliveryFeeCents)}</p>
+                  ) : null}
+                </div>
               </div>
             ) : null}
             <div className="flex justify-between border-t pt-2 font-semibold">
               <span>Total</span>
-              <span>{formatMoney(totalCents)}</span>
+              <div className="text-right">
+                <p>{formatUsd(totalCents)}</p>
+                {formatVes(totalCents) ? (
+                  <p className="text-xs text-slate-500">{formatVes(totalCents)}</p>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>

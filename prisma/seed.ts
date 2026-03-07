@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "../app/generated/prisma";
+import { PrismaClient, Roles } from "../app/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = process.env.DATABASE_URL;
@@ -10,6 +10,22 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
+
+async function upsertUser(params: {
+  email: string;
+  name: string;
+  role: Roles;
+  passwordHash: string;
+}) {
+  const { email, name, role, passwordHash } = params;
+
+  return prisma.user.upsert({
+    where: { email },
+    update: { name, role, passwordHash },
+    create: { email, name, role, passwordHash },
+    select: { id: true, email: true, role: true },
+  });
+}
 
 async function upsertOptionGroup(params: {
   name: string;
@@ -61,29 +77,85 @@ async function upsertOption(params: {
   });
 }
 
-async function main() {
-  // =========================
-  // 1) Seed user (Credentials)
-  // =========================
-  const email = process.env.SEED_EMAIL ?? "demo@local.test";
-  const password =
-    process.env.SEED_PASSWORD ?? randomBytes(12).toString("base64url"); // generates a strong one
+async function seedExchangeRate() {
+  const rateValue = Number(process.env.SEED_USD_VES_RATE ?? "89.50");
+  if (!Number.isFinite(rateValue) || rateValue <= 0) {
+    throw new Error("SEED_USD_VES_RATE must be a positive number");
+  }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: { passwordHash },
-    create: {
-      email,
-      name: "Demo User",
-      passwordHash,
+  const activeRate = await prisma.exchangeRate.findFirst({
+    where: {
+      baseCurrency: "USD",
+      quoteCurrency: "VES",
+      isActive: true,
     },
-    select: { id: true, email: true },
+    orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
+    select: { id: true },
   });
 
+  if (activeRate) {
+    await prisma.exchangeRate.update({
+      where: { id: activeRate.id },
+      data: {
+        rate: rateValue,
+        source: "BCV",
+        effectiveAt: new Date(),
+        isActive: true,
+      },
+    });
+  } else {
+    await prisma.exchangeRate.create({
+      data: {
+        baseCurrency: "USD",
+        quoteCurrency: "VES",
+        rate: rateValue,
+        source: "BCV",
+        isActive: true,
+        effectiveAt: new Date(),
+      },
+    });
+  }
+}
+
+async function main() {
   // =========================
-  // 2) Seed categories
+  // 1) Seed users (Credentials)
+  // =========================
+  const customerEmail = process.env.SEED_EMAIL ?? "demo@local.test";
+  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@local.test";
+  const preparerEmail = process.env.SEED_PREPARER_EMAIL ?? "preparer@local.test";
+  const password =
+    process.env.SEED_PASSWORD ?? randomBytes(12).toString("base64url");
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  const users = await Promise.all([
+    upsertUser({
+      email: customerEmail,
+      name: "Demo Customer",
+      role: "CUSTOMER",
+      passwordHash,
+    }),
+    upsertUser({
+      email: adminEmail,
+      name: "Demo Admin",
+      role: "ADMIN",
+      passwordHash,
+    }),
+    upsertUser({
+      email: preparerEmail,
+      name: "Demo Preparer",
+      role: "PREPARER",
+      passwordHash,
+    }),
+  ]);
+
+  // =========================
+  // 2) Seed exchange rate
+  // =========================
+  await seedExchangeRate();
+
+  // =========================
+  // 3) Seed categories
   // =========================
   const burgers = await prisma.category.upsert({
     where: { slug: "burgers" },
@@ -100,7 +172,7 @@ async function main() {
   });
 
   // =========================
-  // 3) Seed option groups + options
+  // 4) Seed option groups + options
   // =========================
   const ingredients = await upsertOptionGroup({
     name: "Ingredients",
@@ -134,7 +206,7 @@ async function main() {
   });
 
   // =========================
-  // 4) Seed products
+  // 5) Seed products
   // =========================
   const classicBurger = await prisma.product.upsert({
     where: { slug: "classic-burger" },
@@ -178,7 +250,7 @@ async function main() {
   });
 
   // =========================
-  // 5) Attach option groups to product
+  // 6) Attach option groups to product
   // =========================
   await prisma.productOptionGroup.upsert({
     where: { productId_groupId: { productId: classicBurger.id, groupId: ingredients.id } },
@@ -192,10 +264,12 @@ async function main() {
     create: { productId: classicBurger.id, groupId: extras.id, sortOrder: 2 },
   });
 
-  console.log("✅ Seeded user:", user);
-  console.log("🔑 Password:", password);
-  console.log("✅ Seeded categories, products, and modifiers.");
-  console.log("ℹ️ Tip: you can set SEED_EMAIL and SEED_PASSWORD in your .env.local");
+  console.log("Seeded users:", users);
+  console.log("Seed password:", password);
+  console.log("Seeded categories, products, modifiers, and exchange rate.");
+  console.log(
+    "Tip: set SEED_EMAIL, SEED_ADMIN_EMAIL, SEED_PREPARER_EMAIL, SEED_PASSWORD, and SEED_USD_VES_RATE in .env.local",
+  );
 }
 
 main()

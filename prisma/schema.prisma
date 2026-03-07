@@ -103,6 +103,26 @@ enum PaymentStatus {
 }
 
 // =========================
+// Currency / Exchange Rates
+// =========================
+model ExchangeRate {
+  id String @id @default(cuid())
+
+  baseCurrency  String @default("USD") @map("base_currency")
+  quoteCurrency String @default("VES") @map("quote_currency")
+  rate          Decimal @db.Decimal(14, 6)
+  source        String? @db.VarChar(100)
+  isActive      Boolean @default(true) @map("is_active")
+  effectiveAt   DateTime @default(now()) @map("effective_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([baseCurrency, quoteCurrency, isActive])
+  @@index([effectiveAt])
+  @@map("exchange_rates")
+}
+
+// =========================
 // Categories / Products
 // =========================
 model Category {

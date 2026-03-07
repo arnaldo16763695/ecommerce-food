@@ -70,6 +70,10 @@ const data = {
           title: "Grupos de opciones",
           url: "/admin/option-groups",
         },
+        {
+          title: "Tasa de cambio",
+          url: "/admin/exchange-rates",
+        },
       ],
     },
     {
