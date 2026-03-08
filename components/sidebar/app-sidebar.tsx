@@ -1,128 +1,60 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import {
-  AudioWaveform,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  SquareTerminal,
-} from "lucide-react"
-
-import { NavMain } from "@/components/sidebar/nav-main"
-import { NavUser } from "@/components/sidebar/nav-user"
-import { TeamSwitcher } from "@/components/sidebar/team-switcher"
+import * as React from "react";
+import { Bot, SquareTerminal } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { NavMain } from "@/components/sidebar/nav-main";
+import { NavUser } from "@/components/sidebar/nav-user";
+import { TeamSwitcher } from "@/components/sidebar/team-switcher";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-// This is sample data.
-const data = {
-  user: {
-    name: "Arnaldo Espinoza",
-    email: "arnaldoespinoza1@hotmail.com",
-    avatar: "/avatars/arnaldo.jpg",
+const navMain = [
+  {
+    title: "Administracion",
+    url: "#",
+    icon: SquareTerminal,
+    isActive: true,
+    items: [
+      { title: "Usuarios", url: "/admin/users" },
+      { title: "Productos", url: "/admin/products" },
+      { title: "Categorias", url: "/admin/categories" },
+      { title: "Grupos de opciones", url: "/admin/option-groups" },
+      { title: "Tasa de cambio", url: "/admin/exchange-rates" },
+    ],
   },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Administración",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "Usuarios",
-          url: "/admin/users",
-        },
-        {
-          title: "Productos",
-          url: "/admin/products",
-        },
-        {
-          title: "Categorias",
-          url: "/admin/categories",
-        },
-        {
-          title: "Grupos de opciones",
-          url: "/admin/option-groups",
-        },
-        {
-          title: "Tasa de cambio",
-          url: "/admin/exchange-rates",
-        },
-      ],
-    },
-    {
-      title: "Pedidos",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Pedidos",
-          url: "/admin/orders",
-        },       
-      ],
-    },
-   
-    
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
-}
+  {
+    title: "Pedidos",
+    url: "#",
+    icon: Bot,
+    items: [{ title: "Pedidos", url: "/admin/orders" }],
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: session } = useSession();
+
+  const userName = session?.user?.name ?? "Usuario";
+  const userEmail = session?.user?.email ?? "usuario@local";
+  const userAvatar = session?.user?.image ?? "/avatars/arnaldo.jpg";
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        {/* <NavProjects projects={data.projects} /> */}
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={{ name: userName, email: userEmail, avatar: userAvatar }} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

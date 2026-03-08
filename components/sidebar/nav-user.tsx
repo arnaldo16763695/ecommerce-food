@@ -1,20 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles,
-} from "lucide-react"
-
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import * as React from "react";
+import Link from "next/link";
+import { BadgeCheck, ChevronsUpDown, LogOut } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,30 +13,30 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { ThemeMenuItems } from "./ThemeMenuItems"
+} from "@/components/ui/sidebar";
+import { ThemeMenuItems } from "./ThemeMenuItems";
 
 export function NavUser({
   user,
 }: {
   user: {
-    name: string
-    email: string
-    avatar: string
-  }
+    name: string;
+    email: string;
+    avatar: string;
+  };
 }) {
-  const [mounted, setMounted] = React.useState(false)
-  const { isMobile } = useSidebar()
+  const [mounted, setMounted] = React.useState(false);
+  const { isMobile } = useSidebar();
 
   React.useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   if (!mounted) {
     return (
@@ -54,7 +44,7 @@ export function NavUser({
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" disabled>
             <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+              <AvatarFallback className="rounded-lg">US</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
@@ -63,7 +53,7 @@ export function NavUser({
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
-    )
+    );
   }
 
   return (
@@ -77,7 +67,7 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">US</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -96,7 +86,7 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">US</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -106,35 +96,22 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Actualizar a Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Cuenta
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Facturación
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notificaciones
+              <DropdownMenuItem asChild>
+                <Link href="/admin/account">
+                  <BadgeCheck />
+                  Cuenta
+                </Link>
               </DropdownMenuItem>
               <ThemeMenuItems />
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => void signOut({ callbackUrl: "/" })}>
               <LogOut />
-              Cerrar sesión
+              Cerrar sesion
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }
