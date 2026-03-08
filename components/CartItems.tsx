@@ -283,7 +283,7 @@ function CartItems({ products, usdToVesRate }: Props) {
         <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1.5">
             <h3 className="text-3xl font-semibold tracking-tight text-neutral-900 dark:text-slate-100">
-              Carrito de compras
+              Bolsa de compras
             </h3>
             <p className="text-sm text-neutral-600 dark:text-slate-300">
               ({totalItems}) {totalItems > 1 ? "articulos" : "articulo"} listos para finalizar compra
