@@ -29,14 +29,15 @@ async function upsertUser(params: {
 
 async function upsertOptionGroup(params: {
   name: string;
+  aliases?: string[];
   minSelect: number;
   maxSelect: number;
   sortOrder?: number;
 }) {
-  const { name, minSelect, maxSelect, sortOrder = 0 } = params;
+  const { name, aliases = [], minSelect, maxSelect, sortOrder = 0 } = params;
 
   const existing = await prisma.optionGroup.findFirst({
-    where: { name },
+    where: { name: { in: [name, ...aliases] } },
     select: { id: true },
   });
 
@@ -55,13 +56,14 @@ async function upsertOptionGroup(params: {
 async function upsertOption(params: {
   groupId: string;
   name: string;
+  aliases?: string[];
   priceDeltaCents?: number;
   sortOrder?: number;
 }) {
-  const { groupId, name, priceDeltaCents = 0, sortOrder = 0 } = params;
+  const { groupId, name, aliases = [], priceDeltaCents = 0, sortOrder = 0 } = params;
 
   const existing = await prisma.option.findFirst({
-    where: { groupId, name },
+    where: { groupId, name: { in: [name, ...aliases] } },
     select: { id: true },
   });
 
@@ -131,19 +133,19 @@ async function main() {
   const users = await Promise.all([
     upsertUser({
       email: customerEmail,
-      name: "Demo Customer",
+      name: "Cliente Demo",
       role: "CUSTOMER",
       passwordHash,
     }),
     upsertUser({
       email: adminEmail,
-      name: "Demo Admin",
+      name: "Administrador Demo",
       role: "ADMIN",
       passwordHash,
     }),
     upsertUser({
       email: preparerEmail,
-      name: "Demo Preparer",
+      name: "Preparador Demo",
       role: "PREPARER",
       passwordHash,
     }),
@@ -159,15 +161,15 @@ async function main() {
   // =========================
   const burgers = await prisma.category.upsert({
     where: { slug: "burgers" },
-    update: { name: "Burgers", sortOrder: 1, isActive: true },
-    create: { name: "Burgers", slug: "burgers", sortOrder: 1, isActive: true },
+    update: { name: "Hamburguesas", sortOrder: 1, isActive: true },
+    create: { name: "Hamburguesas", slug: "burgers", sortOrder: 1, isActive: true },
     select: { id: true },
   });
 
   const drinks = await prisma.category.upsert({
     where: { slug: "drinks" },
-    update: { name: "Drinks", sortOrder: 2, isActive: true },
-    create: { name: "Drinks", slug: "drinks", sortOrder: 2, isActive: true },
+    update: { name: "Bebidas", sortOrder: 2, isActive: true },
+    create: { name: "Bebidas", slug: "drinks", sortOrder: 2, isActive: true },
     select: { id: true },
   });
 
@@ -175,7 +177,8 @@ async function main() {
   // 4) Seed option groups + options
   // =========================
   const ingredients = await upsertOptionGroup({
-    name: "Ingredients",
+    name: "Ingredientes",
+    aliases: ["Ingredients"],
     minSelect: 0,
     maxSelect: 3,
     sortOrder: 1,
@@ -183,24 +186,42 @@ async function main() {
 
   const extras = await upsertOptionGroup({
     name: "Extras",
+    aliases: ["Extra"],
     minSelect: 0,
     maxSelect: 5,
     sortOrder: 2,
   });
 
-  await upsertOption({ groupId: ingredients.id, name: "No lettuce", sortOrder: 1 });
-  await upsertOption({ groupId: ingredients.id, name: "No tomato", sortOrder: 2 });
-  await upsertOption({ groupId: ingredients.id, name: "No onion", sortOrder: 3 });
+  await upsertOption({
+    groupId: ingredients.id,
+    name: "Sin lechuga",
+    aliases: ["No lettuce"],
+    sortOrder: 1,
+  });
+  await upsertOption({
+    groupId: ingredients.id,
+    name: "Sin tomate",
+    aliases: ["No tomato"],
+    sortOrder: 2,
+  });
+  await upsertOption({
+    groupId: ingredients.id,
+    name: "Sin cebolla",
+    aliases: ["No onion"],
+    sortOrder: 3,
+  });
 
   await upsertOption({
     groupId: extras.id,
-    name: "Extra cheese",
+    name: "Queso extra",
+    aliases: ["Extra cheese"],
     priceDeltaCents: 500,
     sortOrder: 1,
   });
   await upsertOption({
     groupId: extras.id,
-    name: "Bacon",
+    name: "Tocineta",
+    aliases: ["Bacon"],
     priceDeltaCents: 700,
     sortOrder: 2,
   });
@@ -211,7 +232,7 @@ async function main() {
   const classicBurger = await prisma.product.upsert({
     where: { slug: "classic-burger" },
     update: {
-      name: "Classic Burger",
+      name: "Hamburguesa Clasica",
       categoryId: burgers.id,
       basePriceCents: 5000,
       isActive: true,
@@ -219,9 +240,9 @@ async function main() {
     },
     create: {
       categoryId: burgers.id,
-      name: "Classic Burger",
+      name: "Hamburguesa Clasica",
       slug: "classic-burger",
-      description: "Beef patty, cheese, tomato, lettuce, and sauce.",
+      description: "Carne de res, queso, tomate, lechuga y salsa de la casa.",
       basePriceCents: 5000,
       isActive: true,
       isFeatured: true,
@@ -233,16 +254,16 @@ async function main() {
   await prisma.product.upsert({
     where: { slug: "cola-350" },
     update: {
-      name: "Cola 350ml",
+      name: "Refresco Cola 350ml",
       categoryId: drinks.id,
       basePriceCents: 1500,
       isActive: true,
     },
     create: {
       categoryId: drinks.id,
-      name: "Cola 350ml",
+      name: "Refresco Cola 350ml",
       slug: "cola-350",
-      description: "Cold drink.",
+      description: "Bebida fria.",
       basePriceCents: 1500,
       isActive: true,
       prepTimeMin: 0,
@@ -264,11 +285,11 @@ async function main() {
     create: { productId: classicBurger.id, groupId: extras.id, sortOrder: 2 },
   });
 
-  console.log("Seeded users:", users);
-  console.log("Seed password:", password);
-  console.log("Seeded categories, products, modifiers, and exchange rate.");
+  console.log("Usuarios seed:", users);
+  console.log("Contrasena seed:", password);
+  console.log("Seed completado: categorias, productos, modificadores y tasa de cambio.");
   console.log(
-    "Tip: set SEED_EMAIL, SEED_ADMIN_EMAIL, SEED_PREPARER_EMAIL, SEED_PASSWORD, and SEED_USD_VES_RATE in .env.local",
+    "Tip: define SEED_EMAIL, SEED_ADMIN_EMAIL, SEED_PREPARER_EMAIL, SEED_PASSWORD y SEED_USD_VES_RATE en .env.local",
   );
 }
 
