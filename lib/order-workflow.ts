@@ -73,3 +73,9 @@ export function canTransitionPaymentStatus(
   if (current === next) return true;
   return getAllowedPaymentStatusTransitions(current).includes(next);
 }
+
+export function getSelectablePaymentStatuses(
+  current: PaymentStatus,
+): PaymentStatus[] {
+  return [current, ...getAllowedPaymentStatusTransitions(current)];
+}

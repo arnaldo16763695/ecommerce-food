@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useSession } from "next-auth/react";
 import {
   Dialog,
   DialogContent,
@@ -101,15 +102,28 @@ function paymentToLabel(status: PaymentStatus) {
 }
 
 export default function OrdersLookup() {
+  const { data: session } = useSession();
   const [orderNumber, setOrderNumber] = useState("");
   const [contact, setContact] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orders, setOrders] = useState<PublicOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<PublicOrder | null>(null);
+  const [liveMode, setLiveMode] = useState(false);
+  const [lastLookupPayload, setLastLookupPayload] = useState<
+    { orderNumber?: number; contact?: string } | null
+  >(null);
 
-  async function fetchOrders(payload: { orderNumber?: number; contact?: string }) {
-    setLoading(true);
+  const fetchOrders = useCallback(
+    async (
+      payload: { orderNumber?: number; contact?: string },
+      options?: { silent?: boolean },
+    ) => {
+      if (!options?.silent) {
+        setLoading(true);
+      }
+
+      setLastLookupPayload(payload);
     setError(null);
 
     try {
@@ -132,14 +146,34 @@ export default function OrdersLookup() {
       setOrders([]);
       setError(err instanceof Error ? err.message : "Error inesperado.");
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
-  }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    if (!liveMode) return;
+    if (!lastLookupPayload) return;
+
+    const source = new EventSource("/api/orders/events");
+    source.addEventListener("orders", () => {
+      void fetchOrders(lastLookupPayload, { silent: true });
+    });
+
+    return () => {
+      source.close();
+    };
+  }, [fetchOrders, lastLookupPayload, liveMode, session?.user?.id]);
 
   function handleLookup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const numericOrder = Number(orderNumber);
     const hasOrder = Number.isFinite(numericOrder) && numericOrder > 0;
+    setLiveMode(false);
 
     void fetchOrders({
       orderNumber: hasOrder ? numericOrder : undefined,
@@ -148,6 +182,7 @@ export default function OrdersLookup() {
   }
 
   function handleLoadMyOrders() {
+    setLiveMode(true);
     void fetchOrders({});
   }
 
@@ -160,6 +195,11 @@ export default function OrdersLookup() {
         <p className="text-sm text-slate-600 dark:text-slate-300">
           Si no iniciaste sesion, usa numero de pedido + email o telefono.
         </p>
+        {liveMode && session?.user?.id ? (
+          <p className="text-xs text-emerald-700 dark:text-emerald-400">
+            Actualizacion en tiempo real activa para tus pedidos.
+          </p>
+        ) : null}
       </div>
 
       <form onSubmit={handleLookup} className="grid gap-3 md:grid-cols-3">

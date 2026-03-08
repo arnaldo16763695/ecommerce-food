@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canTransitionOrderStatus,
   canTransitionPaymentStatus,
+  getSelectablePaymentStatuses,
   getSelectableOrderStatuses,
 } from "../lib/order-workflow";
 
@@ -44,5 +45,11 @@ describe("payment workflow transitions", () => {
   it("allows PAID -> REFUNDED and blocks REFUNDED -> PAID", () => {
     expect(canTransitionPaymentStatus("PAID", "REFUNDED")).toBe(true);
     expect(canTransitionPaymentStatus("REFUNDED", "PAID")).toBe(false);
+  });
+
+  it("returns current + allowed payment transitions for selector", () => {
+    expect(getSelectablePaymentStatuses("UNPAID")).toEqual(["UNPAID", "PAID"]);
+    expect(getSelectablePaymentStatuses("PAID")).toEqual(["PAID", "REFUNDED"]);
+    expect(getSelectablePaymentStatuses("REFUNDED")).toEqual(["REFUNDED"]);
   });
 });

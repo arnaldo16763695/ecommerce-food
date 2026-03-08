@@ -465,6 +465,30 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     );
   }
 
+  const resultingStatus = parsed.data.status ?? existing.status;
+  const resultingPaymentStatus = parsed.data.paymentStatus ?? existing.paymentStatus;
+
+  if (parsed.data.status === "COMPLETED" && resultingPaymentStatus !== "PAID") {
+    return NextResponse.json(
+      { error: "No se puede completar un pedido sin marcarlo como pagado (PAID)." },
+      { status: 409 },
+    );
+  }
+
+  if (
+    parsed.data.paymentStatus === "REFUNDED" &&
+    resultingStatus !== "COMPLETED" &&
+    resultingStatus !== "CANCELED"
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Solo se puede marcar REFUNDED en pedidos COMPLETED o CANCELED.",
+      },
+      { status: 409 },
+    );
+  }
+
   const updated = await prisma.order.update({
     where: { id: orderId },
     data: {

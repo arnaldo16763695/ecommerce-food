@@ -22,12 +22,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  getSelectablePaymentStatuses,
   getSelectableOrderStatuses,
   type FulfillmentType,
   type OrderStatus,
+  type PaymentStatus,
 } from "@/lib/order-workflow";
-
-type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
 
 type AdminOrder = {
   id: string;
@@ -207,6 +207,54 @@ export default function OrdersTable() {
     }
   }
 
+  async function handlePaymentStatusChange(
+    orderId: string,
+    paymentStatus: PaymentStatus,
+  ) {
+    setSavingOrderId(orderId);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ paymentStatus }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? "No se pudo actualizar el estado de pago");
+      }
+
+      const body = (await res.json()) as { data: AdminOrder };
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? { ...order, ...body.data } : order,
+        ),
+      );
+      toast({
+        title: "Pago actualizado",
+        description: `Pedido #${body.data.orderNumber} actualizado.`,
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error al actualizar el estado de pago";
+      setError(message);
+      toast({
+        title: "No se pudo actualizar el pago",
+        description: message,
+        variant: "destructive",
+      });
+      await loadOrders();
+    } finally {
+      setSavingOrderId(null);
+    }
+  }
+
   function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPage(1);
@@ -296,17 +344,39 @@ export default function OrdersTable() {
                 <TableCell>{order._count.items}</TableCell>
                 <TableCell>{formatMoney(order.totalCents)}</TableCell>
                 <TableCell>
-                  <Badge
-                    variant={
-                      order.paymentStatus === "PAID"
-                        ? "success"
-                        : order.paymentStatus === "REFUNDED"
-                          ? "warning"
-                          : "outline"
-                    }
-                  >
-                    {paymentToLabel(order.paymentStatus)}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={
+                        order.paymentStatus === "PAID"
+                          ? "success"
+                          : order.paymentStatus === "REFUNDED"
+                            ? "warning"
+                            : "outline"
+                      }
+                    >
+                      {paymentToLabel(order.paymentStatus)}
+                    </Badge>
+                    <Select
+                      value={order.paymentStatus}
+                      disabled={savingOrderId === order.id}
+                      onValueChange={(value) =>
+                        handlePaymentStatusChange(order.id, value as PaymentStatus)
+                      }
+                    >
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Pago" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getSelectablePaymentStatuses(order.paymentStatus).map(
+                          (nextPaymentStatus) => (
+                            <SelectItem key={nextPaymentStatus} value={nextPaymentStatus}>
+                              {paymentToLabel(nextPaymentStatus)}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
