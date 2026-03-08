@@ -13,6 +13,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type OrderStatus =
   | "PENDING"
@@ -48,6 +55,13 @@ type KitchenOrder = {
 type OrdersResponse = {
   data: KitchenOrder[];
 };
+
+type KitchenStatusFilter = "ALL" | "CONFIRMED" | "PREPARING" | "READY";
+type KitchenPrioritySort =
+  | "OLDEST_FIRST"
+  | "NEWEST_FIRST"
+  | "DELIVERY_FIRST"
+  | "HIGHEST_TOTAL";
 
 type KitchenOrderDetail = {
   id: string;
@@ -112,6 +126,44 @@ function formatDate(value: string) {
   });
 }
 
+function formatElapsedTime(fromDateIso: string, nowMs: number) {
+  const diffMs = Math.max(0, nowMs - new Date(fromDateIso).getTime());
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function sortKitchenOrders(
+  orders: KitchenOrder[],
+  prioritySort: KitchenPrioritySort,
+): KitchenOrder[] {
+  const copy = orders.slice();
+
+  switch (prioritySort) {
+    case "NEWEST_FIRST":
+      return copy.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    case "DELIVERY_FIRST":
+      return copy.sort((a, b) => {
+        const aDelivery = a.fulfillmentType === "DELIVERY" ? 1 : 0;
+        const bDelivery = b.fulfillmentType === "DELIVERY" ? 1 : 0;
+        if (aDelivery !== bDelivery) return bDelivery - aDelivery;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+    case "HIGHEST_TOTAL":
+      return copy.sort((a, b) => b.totalCents - a.totalCents);
+    case "OLDEST_FIRST":
+    default:
+      return copy.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+  }
+}
+
 function statusLabel(status: OrderStatus) {
   switch (status) {
     case "CONFIRMED":
@@ -137,6 +189,14 @@ export default function KitchenBoard() {
   );
   const [detailLoading, setDetailLoading] = useState(false);
   const [savingOrderItemId, setSavingOrderItemId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<KitchenStatusFilter>("ALL");
+  const [prioritySort, setPrioritySort] = useState<KitchenPrioritySort>("OLDEST_FIRST");
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -190,12 +250,19 @@ export default function KitchenBoard() {
   }, [loadOrders]);
 
   const grouped = useMemo(() => {
+    const filtered =
+      statusFilter === "ALL"
+        ? orders
+        : orders.filter((order) => order.status === statusFilter);
+
+    const sorted = sortKitchenOrders(filtered, prioritySort);
+
     return {
-      CONFIRMED: orders.filter((order) => order.status === "CONFIRMED"),
-      PREPARING: orders.filter((order) => order.status === "PREPARING"),
-      READY: orders.filter((order) => order.status === "READY"),
+      CONFIRMED: sorted.filter((order) => order.status === "CONFIRMED"),
+      PREPARING: sorted.filter((order) => order.status === "PREPARING"),
+      READY: sorted.filter((order) => order.status === "READY"),
     };
-  }, [orders]);
+  }, [orders, prioritySort, statusFilter]);
 
   const preparedSummary = useMemo(() => {
     if (!activeOrderDetail) {
@@ -389,6 +456,74 @@ export default function KitchenBoard() {
     }
   }
 
+  async function handleTakeOrder(orderId: string) {
+    setSavingOrderId(orderId);
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "TAKE" }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? "No se pudo tomar el pedido.");
+      }
+
+      toast({
+        title: "Pedido tomado",
+        description: "El pedido fue asignado a tu usuario y paso a PREPARING.",
+      });
+      await loadOrders();
+      await fetchOrderDetail(orderId);
+    } catch (err) {
+      toast({
+        title: "No se pudo tomar",
+        description: err instanceof Error ? err.message : "Error inesperado.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingOrderId(null);
+    }
+  }
+
+  async function handleReleaseOrder(orderId: string) {
+    setSavingOrderId(orderId);
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "RELEASE" }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? "No se pudo liberar el pedido.");
+      }
+
+      toast({
+        title: "Pedido liberado",
+        description: "El pedido regreso a CONFIRMED y quedo disponible.",
+      });
+      await loadOrders();
+      await fetchOrderDetail(orderId);
+    } catch (err) {
+      toast({
+        title: "No se pudo liberar",
+        description: err instanceof Error ? err.message : "Error inesperado.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingOrderId(null);
+    }
+  }
+
   const columns: Array<{
     key: "CONFIRMED" | "PREPARING" | "READY";
     title: string;
@@ -401,13 +536,45 @@ export default function KitchenBoard() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-600 dark:text-slate-300">
           Actualizacion en tiempo real (SSE) con respaldo cada 60 segundos.
         </p>
-        <Button variant="outline" onClick={() => void loadOrders()} disabled={loading}>
-          Actualizar ahora
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as KitchenStatusFilter)}
+          >
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos</SelectItem>
+              <SelectItem value="CONFIRMED">Confirmados</SelectItem>
+              <SelectItem value="PREPARING">Preparando</SelectItem>
+              <SelectItem value="READY">Listos</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={prioritySort}
+            onValueChange={(value) => setPrioritySort(value as KitchenPrioritySort)}
+          >
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Prioridad" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="OLDEST_FIRST">Mas antiguos primero</SelectItem>
+              <SelectItem value="NEWEST_FIRST">Mas recientes primero</SelectItem>
+              <SelectItem value="DELIVERY_FIRST">Delivery primero</SelectItem>
+              <SelectItem value="HIGHEST_TOTAL">Mayor total primero</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" onClick={() => void loadOrders()} disabled={loading}>
+            Actualizar ahora
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -444,6 +611,9 @@ export default function KitchenBoard() {
                       {order.customerName}
                     </p>
                     <p className="text-[11px] text-slate-500">{formatDate(order.createdAt)}</p>
+                    <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                      Espera: {formatElapsedTime(order.createdAt, nowMs)}
+                    </p>
                     <p className="text-xs text-slate-700 dark:text-slate-200">
                       {order._count.items} items - {formatMoney(order.totalCents)}
                     </p>
@@ -459,9 +629,9 @@ export default function KitchenBoard() {
                       <Button
                         className="h-8 w-full text-xs"
                         disabled={savingOrderId === order.id}
-                        onClick={() => void handleStatusChange(order.id, "PREPARING")}
+                        onClick={() => void handleTakeOrder(order.id)}
                       >
-                        Iniciar preparacion
+                        Tomar pedido
                       </Button>
                     ) : null}
 
@@ -476,6 +646,17 @@ export default function KitchenBoard() {
                             order.assignedPreparer?.email ??
                             "Sin asignar"}
                         </p>
+                        {session?.user?.role === "ADMIN" ||
+                        order.assignedPreparer?.id === session?.user?.id ? (
+                          <Button
+                            variant="outline"
+                            className="mt-1 h-7 w-full text-[11px]"
+                            disabled={savingOrderId === order.id}
+                            onClick={() => void handleReleaseOrder(order.id)}
+                          >
+                            Liberar pedido
+                          </Button>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -518,6 +699,9 @@ export default function KitchenBoard() {
                 </p>
                 <p className="text-xs text-slate-500">
                   Progreso: {preparedSummary.done}/{preparedSummary.total} items listos
+                </p>
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                  Espera: {formatElapsedTime(activeOrderDetail.createdAt, nowMs)}
                 </p>
                 {activeOrderDetail.assignedPreparer ? (
                   <p className="text-xs text-slate-600 dark:text-slate-300">
@@ -598,9 +782,9 @@ export default function KitchenBoard() {
               <Button
                 className="w-full"
                 disabled={savingOrderId === activeOrderDetail.id}
-                onClick={() => void handleStatusChange(activeOrderDetail.id, "PREPARING")}
+                onClick={() => void handleTakeOrder(activeOrderDetail.id)}
               >
-                Iniciar preparacion
+                Tomar pedido
               </Button>
             ) : null}
 
@@ -621,6 +805,14 @@ export default function KitchenBoard() {
                   onClick={() => void handleStatusChange(activeOrderDetail.id, "READY")}
                 >
                   Marcar pedido como listo
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={savingOrderId === activeOrderDetail.id || !canManageActiveOrder}
+                  onClick={() => void handleReleaseOrder(activeOrderDetail.id)}
+                >
+                  Liberar pedido
                 </Button>
               </div>
             ) : null}

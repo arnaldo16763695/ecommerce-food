@@ -10,6 +10,7 @@ import { z } from "zod";
 
 const updateOrderSchema = z
   .object({
+    action: z.enum(["TAKE", "RELEASE"]).optional(),
     status: z
       .enum([
         "PENDING",
@@ -24,7 +25,10 @@ const updateOrderSchema = z
     paymentStatus: z.enum(["UNPAID", "PAID", "REFUNDED"]).optional(),
   })
   .refine(
-    (value) => value.status !== undefined || value.paymentStatus !== undefined,
+    (value) =>
+      value.status !== undefined ||
+      value.paymentStatus !== undefined ||
+      value.action !== undefined,
     {
       message: "At least one field is required",
     },
@@ -179,6 +183,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
+  if (
+    parsed.data.action !== undefined &&
+    (parsed.data.status !== undefined || parsed.data.paymentStatus !== undefined)
+  ) {
+    return NextResponse.json(
+      { error: "Action cannot be combined with status or paymentStatus updates." },
+      { status: 400 },
+    );
+  }
+
   const existing = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
@@ -191,6 +205,100 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   });
   if (!existing) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+
+  if (parsed.data.action === "TAKE") {
+    const taken = await prisma.order.updateMany({
+      where: {
+        id: orderId,
+        status: "CONFIRMED",
+        assignedPreparerId: null,
+      },
+      data: {
+        status: "PREPARING",
+        assignedPreparerId: session.user.id,
+        assignedAt: new Date(),
+      },
+    });
+
+    if (taken.count === 0) {
+      return NextResponse.json(
+        { error: "No se pudo tomar el pedido. Ya fue tomado o no esta en CONFIRMED." },
+        { status: 409 },
+      );
+    }
+
+    const updated = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: orderSummarySelect,
+    });
+
+    if (updated) {
+      publishKitchenEvent({
+        type: "ORDER_STATUS_CHANGED",
+        orderId: updated.id,
+        orderNumber: updated.orderNumber,
+      });
+    }
+
+    return NextResponse.json({ data: updated });
+  }
+
+  if (parsed.data.action === "RELEASE") {
+    const releaseWhere =
+      isAdmin
+        ? {
+            id: orderId,
+            status: "PREPARING" as const,
+          }
+        : {
+            id: orderId,
+            status: "PREPARING" as const,
+            assignedPreparerId: session.user.id,
+          };
+
+    const released = await prisma.order.updateMany({
+      where: releaseWhere,
+      data: {
+        status: "CONFIRMED",
+        assignedPreparerId: null,
+        assignedAt: null,
+      },
+    });
+
+    if (released.count === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No se pudo liberar el pedido. Debe estar en PREPARING y asignado al preparador correcto.",
+        },
+        { status: 409 },
+      );
+    }
+
+    await prisma.orderPreparationItem.updateMany({
+      where: { orderId },
+      data: {
+        isPrepared: false,
+        preparedAt: null,
+        preparedByUserId: null,
+      },
+    });
+
+    const updated = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: orderSummarySelect,
+    });
+
+    if (updated) {
+      publishKitchenEvent({
+        type: "ORDER_STATUS_CHANGED",
+        orderId: updated.id,
+        orderNumber: updated.orderNumber,
+      });
+    }
+
+    return NextResponse.json({ data: updated });
   }
 
   if (isPreparer) {
