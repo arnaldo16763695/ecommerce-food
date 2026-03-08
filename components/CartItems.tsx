@@ -593,7 +593,7 @@ function CartItems({ products, usdToVesRate }: Props) {
       </div>
 
       {editingItem && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-90 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
