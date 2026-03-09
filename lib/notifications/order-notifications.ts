@@ -15,6 +15,26 @@ function formatMoney(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function getResendConfig() {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from =
+    process.env.RESEND_FROM_EMAIL ??
+    process.env.EMAIL_FROM ??
+    process.env.RESEND_FROM;
+
+  if (!apiKey) {
+    throw new Error("Missing RESEND_API_KEY env var.");
+  }
+
+  if (!from) {
+    throw new Error(
+      "Missing sender env var. Configure RESEND_FROM_EMAIL (or EMAIL_FROM / RESEND_FROM).",
+    );
+  }
+
+  return { apiKey, from };
+}
+
 type CustomerOrderConfirmationInput = {
   orderNumber: number;
   customerName: string;
@@ -25,9 +45,12 @@ type CustomerOrderConfirmationInput = {
 };
 
 export async function sendNewOrderInternalAlert(input: NewOrderAlertInput) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const { apiKey, from } = getResendConfig();
   const to = process.env.ORDERS_ALERT_EMAIL;
+
+  if (!to) {
+    throw new Error("Missing ORDERS_ALERT_EMAIL env var.");
+  }
 
   const subject = `Nuevo pedido #${input.orderNumber}`;
   const lines = [
@@ -42,25 +65,19 @@ export async function sendNewOrderInternalAlert(input: NewOrderAlertInput) {
   ];
   const text = lines.join("\n");
 
-  // Safe fallback for local/dev environments without email config.
-  if (!apiKey || !from || !to) {
-    console.log("[order-alert] email skipped (missing env vars):", {
-      hasApiKey: Boolean(apiKey),
-      from,
-      to,
-      orderNumber: input.orderNumber,
-    });
-    console.log("[order-alert] payload:\n" + text);
-    return;
-  }
-
   const resend = new Resend(apiKey);
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from,
     to,
     subject,
     text,
   });
+
+  if (result.error) {
+    throw new Error(
+      `Resend internal alert failed: ${result.error.message ?? "unknown_error"}`,
+    );
+  }
 }
 
 export async function sendOrderConfirmationToCustomer(
@@ -68,8 +85,7 @@ export async function sendOrderConfirmationToCustomer(
 ) {
   if (!input.customerEmail) return;
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const { apiKey, from } = getResendConfig();
 
   const subject = `Confirmacion de pedido #${input.orderNumber}`;
   const text = [
@@ -83,23 +99,17 @@ export async function sendOrderConfirmationToCustomer(
     "Gracias por tu compra.",
   ].join("\n");
 
-  // Safe fallback for local/dev environments without email config.
-  if (!apiKey || !from) {
-    console.log("[order-confirmation] email skipped (missing env vars):", {
-      hasApiKey: Boolean(apiKey),
-      from,
-      to: input.customerEmail,
-      orderNumber: input.orderNumber,
-    });
-    console.log("[order-confirmation] payload:\n" + text);
-    return;
-  }
-
   const resend = new Resend(apiKey);
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from,
     to: input.customerEmail,
     subject,
     text,
   });
+
+  if (result.error) {
+    throw new Error(
+      `Resend customer confirmation failed: ${result.error.message ?? "unknown_error"}`,
+    );
+  }
 }
