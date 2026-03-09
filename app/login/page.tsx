@@ -1,5 +1,5 @@
 "use client";
-import { RiFacebookFill, RiGoogleFill } from "@remixicon/react";
+import { RiGoogleFill } from "@remixicon/react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -309,7 +309,7 @@ function LoginPage() {
             </div>
 
             {/* Social login buttons   */}
-            <div className="grid gap-4 grid-cols-2 font-cunia">
+            <div className="grid gap-4 grid-cols-1 font-cunia">
               <button
                 type="button"
                 onClick={() => signIn("google", { callbackUrl: "/" })}
@@ -319,16 +319,6 @@ function LoginPage() {
                   <RiGoogleFill />
                 </span>
                 Google
-              </button>
-              <button
-                type="button"
-                onClick={() => signIn("facebook", { callbackUrl: "/" })}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 text-gray-700 transition-colors hover:bg-gray-50 focus:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-              >
-                <span>
-                  <RiFacebookFill />
-                </span>
-                Facebook
               </button>
             </div>
 
