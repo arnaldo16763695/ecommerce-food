@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { randomBytes, createHash } from "crypto";
+import {
+  buildVerificationUrl,
+  sendVerificationEmail,
+} from "@/lib/notifications/verification-email";
 
 function sha256(input: string) {
   return createHash("sha256").update(input).digest("hex");
@@ -11,7 +15,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const email = String(body.email ?? "").trim().toLowerCase();
 
-    // Respuesta genérica (no revela si existe o no)
+    // Generic response to avoid leaking whether an account exists.
     const okResponse = NextResponse.json({ ok: true }, { status: 200 });
 
     if (!email) return okResponse;
@@ -21,13 +25,12 @@ export async function POST(req: Request) {
       select: { emailVerified: true },
     });
 
-    // Si no existe o ya está verificado, igual respondemos ok (sin revelar nada)
+    // If user does not exist or is already verified, keep generic response.
     if (!user || user.emailVerified) return okResponse;
 
-    // Crear token nuevo (hasheado en DB)
     const rawToken = randomBytes(32).toString("hex");
     const token = sha256(rawToken);
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await prisma.verificationToken.deleteMany({ where: { identifier: email } });
 
@@ -35,17 +38,12 @@ export async function POST(req: Request) {
       data: { identifier: email, token, expires },
     });
 
-    // En dev lo mostramos por consola (después lo enviamos por email real)
-    const baseUrl = process.env.AUTH_URL ?? "http://localhost:3000";
-    const verifyUrl =
-      `${baseUrl}/api/auth/verify-email?` +
-      `email=${encodeURIComponent(email)}&token=${rawToken}`;
-
-    console.log("✅ Resend verify email:", verifyUrl);
+    const verifyUrl = buildVerificationUrl(email, rawToken);
+    await sendVerificationEmail({ to: email, verifyUrl });
 
     return okResponse;
   } catch {
-    // Igual genérico
+    // Keep generic response in case of failure.
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 }
