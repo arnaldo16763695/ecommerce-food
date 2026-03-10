@@ -50,12 +50,7 @@ const Header = () => {
   const userLabel = session?.user?.name ?? session?.user?.email ?? "Usuario";
   const canAccessKitchen =
     session?.user?.role === "ADMIN" || session?.user?.role === "PREPARER";
-  const visibleNavItems = useMemo(() => {
-    return navItems.filter((item) => {
-      if (item.href === "/orders" && !isLoggedIn) return false;
-      return true;
-    });
-  }, [isLoggedIn]);
+ 
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 py-3 font-cunia backdrop-blur dark:border-slate-700 dark:bg-gray-900/95">
@@ -69,7 +64,7 @@ const Header = () => {
           aria-label="Navegación principal"
         >
           <ul className="mx-auto flex items-center justify-center gap-9 text-slate-800 dark:text-slate-100">
-            {visibleNavItems.map((item) => (
+            {navItems.map((item) => (
               <li key={item.id}>
                 <Link
                   href={item.href}
@@ -166,7 +161,7 @@ const Header = () => {
             className={`absolute right-0 top-full mt-2.5 w-full min-w-52 space-y-3 rounded-lg border border-slate-200 bg-white p-3 shadow ${getMobileMenuVisibilityClass(openMenu)} transition dark:border-slate-700 dark:bg-slate-800`}
           >
             <ul className="space-y-1.5 text-slate-800 dark:text-slate-100">
-              {visibleNavItems.map((item) => (
+              {navItems.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
