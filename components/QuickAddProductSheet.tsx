@@ -275,7 +275,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
               onClick={handleAddToCart}
             >
               <RiShoppingBag2Line size={20} aria-hidden="true" />
-              Agregar al carrito
+              Agregar al pedido
             </button>
           </div>
         </div>
