@@ -26,6 +26,7 @@ function LoginPage() {
   const verify = sp.get("verify");
   const email = sp.get("email");
   const verified = sp.get("verified"); // from /verify-email redirect
+  const reset = sp.get("reset");
   const {
     register,
     handleSubmit,
@@ -138,6 +139,12 @@ function LoginPage() {
               </div>
             )}
 
+            {reset === "1" && (
+              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 dark:border-green-400/30 dark:bg-green-400/10 dark:text-green-200">
+                Contrasena actualizada correctamente. Inicia sesion con tu nueva
+                contrasena.
+              </div>
+            )}
             {/* Form   */}
             <form
               onSubmit={handleSubmit(onSubmit)}
@@ -217,7 +224,7 @@ function LoginPage() {
                   </label>
                 </div>
                 <Link
-                  href="#"
+                  href="/forgot-password"
                   className="text-amber-600 transition-colors hover:text-amber-700 hover:underline focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
                 >
                   ¿Olvidaste tu contraseña?
@@ -341,3 +348,4 @@ function LoginPage() {
 }
 
 export default LoginPage;
+

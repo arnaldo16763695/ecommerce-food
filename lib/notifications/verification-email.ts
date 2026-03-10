@@ -17,7 +17,10 @@ export async function sendVerificationEmail(params: {
   verifyUrl: string;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const from =
+    process.env.RESEND_FROM_EMAIL ??
+    process.env.EMAIL_FROM ??
+    process.env.RESEND_FROM;
 
   if (!apiKey || !from) {
     console.log("[auth-verification] email skipped (missing env vars):", {
@@ -30,7 +33,7 @@ export async function sendVerificationEmail(params: {
   }
 
   const resend = new Resend(apiKey);
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from,
     to: params.to,
     subject: "Verifica tu correo",
@@ -43,4 +46,10 @@ export async function sendVerificationEmail(params: {
       "Si no solicitaste este registro, ignora este mensaje.",
     ].join("\n"),
   });
+
+  if (result.error) {
+    throw new Error(
+      `Resend verification email failed: ${result.error.message ?? "unknown_error"}`,
+    );
+  }
 }
