@@ -5,4 +5,5 @@ export const LoginFormSchema = z.object({
   password: z
     .string()
     .min(6, "La contrasena debe tener al menos 6 caracteres."),
+  rememberMe: z.preprocess((value) => value === true || value === "true", z.boolean()),
 });

@@ -14,6 +14,9 @@ interface SignInResponse {
   code?: string | null;
 }
 
+type LoginFormInput = z.input<typeof LoginFormSchema>;
+type LoginFormValues = z.output<typeof LoginFormSchema>;
+
 export default function AdminLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,21 +27,23 @@ export default function AdminLoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<z.infer<typeof LoginFormSchema>>({
+  } = useForm<LoginFormInput, unknown, LoginFormValues>({
     resolver: zodResolver(LoginFormSchema),
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: false,
     },
   });
 
-  async function onSubmit(data: z.infer<typeof LoginFormSchema>) {
+  async function onSubmit(data: LoginFormValues) {
     setAuthError(null);
 
     const res = await signIn("credentials", {
       email: data.email,
       password: data.password,
       portal: "admin",
+      rememberMe: data.rememberMe ? "true" : "false",
       redirect: false,
       callbackUrl,
     });

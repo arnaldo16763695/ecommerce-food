@@ -16,6 +16,9 @@ interface SignInResponse {
   code?: string | null;
 }
 
+type LoginFormInput = z.input<typeof LoginFormSchema>;
+type LoginFormValues = z.output<typeof LoginFormSchema>;
+
 function LoginPage() {
   const router = useRouter();
   const [authError, setAuthError] = useState<string | null>(null);
@@ -32,15 +35,16 @@ function LoginPage() {
     handleSubmit,
     getValues,
     formState: { errors, isSubmitting },
-  } = useForm<z.infer<typeof LoginFormSchema>>({
+  } = useForm<LoginFormInput, unknown, LoginFormValues>({
     resolver: zodResolver(LoginFormSchema),
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: false,
     },
   });
 
-  async function onSubmit(data: z.infer<typeof LoginFormSchema>) {
+  async function onSubmit(data: LoginFormValues) {
     try {
       setAuthError(null);
       setNeedsVerification(false); // ✅ reset every submit
@@ -49,6 +53,7 @@ function LoginPage() {
       const res = await signIn("credentials", {
         email: data.email,
         password: data.password,
+        rememberMe: data.rememberMe ? "true" : "false",
         redirect: false, // We'll handle redirects ourselves (custom UI)
         callbackUrl: "/", // Where to go after a successful login
       });
@@ -215,6 +220,7 @@ function LoginPage() {
                     className="size-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600 dark:border-slate-600 dark:bg-slate-900"
                     type="checkbox"
                     id="remember"
+                    {...register("rememberMe")}
                   />
                   <label
                     htmlFor="remember"

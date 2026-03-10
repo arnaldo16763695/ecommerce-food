@@ -16,14 +16,19 @@ class NotAdminError extends CredentialsSignin {
   code = "NotAdmin";
 }
 
+const LONG_SESSION_SECONDS = 60 * 60 * 24 * 30; // 30 days
+const SHORT_SESSION_SECONDS = 60 * 60 * 24; // 1 day
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: LONG_SESSION_SECONDS },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.rememberMe =
+          (user as { rememberMe?: boolean }).rememberMe !== false;
       }
 
       if (!token.id && token.sub) {
@@ -37,6 +42,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         token.role = dbUser?.role ?? "CUSTOMER";
       }
+
+      const maxAge =
+        token.rememberMe === false
+          ? SHORT_SESSION_SECONDS
+          : LONG_SESSION_SECONDS;
+      token.exp = Math.floor(Date.now() / 1000) + maxAge;
+
       return token;
     },
     session({ session, token }) {
@@ -71,11 +83,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
         portal: { label: "Portal", type: "text" },
+        rememberMe: { label: "Remember me", type: "text" },
       },
       async authorize(credentials) {
         const email = credentials?.email;
         const password = credentials?.password;
         const portal = credentials?.portal;
+        const rememberMe = credentials?.rememberMe;
+        const rememberSession = rememberMe === "true";
 
         if (typeof email !== "string" || typeof password !== "string")
           return null;
@@ -117,6 +132,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           image: user.image,
+          rememberMe: rememberSession,
         };
       },
     }),
