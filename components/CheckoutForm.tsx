@@ -17,9 +17,16 @@ import {
 type Props = {
   products: AllProducts[];
   usdToVesRate: number | null;
+  deliveryFeeCents: number;
+  freeDeliveryMinCents: number;
 };
 
-export default function CheckoutForm({ products, usdToVesRate }: Props) {
+export default function CheckoutForm({
+  products,
+  usdToVesRate,
+  deliveryFeeCents,
+  freeDeliveryMinCents,
+}: Props) {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
@@ -82,9 +89,13 @@ export default function CheckoutForm({ products, usdToVesRate }: Props) {
   }, [displayItems]);
 
   const taxCents = Math.round(subtotalCents * 0.1);
-  const deliveryFeeCents =
-    fulfillmentType === "DELIVERY" ? (subtotalCents >= 10_000 ? 0 : 1_000) : 0;
-  const totalCents = subtotalCents + taxCents + deliveryFeeCents;
+  const deliveryFeeToApply =
+    fulfillmentType === "DELIVERY"
+      ? subtotalCents >= freeDeliveryMinCents
+        ? 0
+        : deliveryFeeCents
+      : 0;
+  const totalCents = subtotalCents + taxCents + deliveryFeeToApply;
 
   const formatUsd = (cents: number) => formatCurrencyFromCents(cents, "USD", "en-US");
   const formatVes = (cents: number) =>
@@ -316,9 +327,9 @@ export default function CheckoutForm({ products, usdToVesRate }: Props) {
               <div className="flex justify-between">
                 <span>Envio</span>
                 <div className="text-right">
-                  <p>{deliveryFeeCents === 0 ? "Gratis" : formatUsd(deliveryFeeCents)}</p>
-                  {deliveryFeeCents > 0 && formatVes(deliveryFeeCents) ? (
-                    <p className="text-xs text-slate-500">{formatVes(deliveryFeeCents)}</p>
+                  <p>{deliveryFeeToApply === 0 ? "Gratis" : formatUsd(deliveryFeeToApply)}</p>
+                  {deliveryFeeToApply > 0 && formatVes(deliveryFeeToApply) ? (
+                    <p className="text-xs text-slate-500">{formatVes(deliveryFeeToApply)}</p>
                   ) : null}
                 </div>
               </div>

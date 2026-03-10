@@ -1,11 +1,13 @@
 import CheckoutForm from "@/components/CheckoutForm";
 import { getAllProducts } from "@/lib/data/productsData";
 import { getActiveUsdVesRate } from "@/lib/data/exchange-rate";
+import { getDeliverySettings } from "@/lib/data/store-settings";
 
 async function CheckoutPage() {
-  const [products, activeRate] = await Promise.all([
+  const [products, activeRate, deliverySettings] = await Promise.all([
     getAllProducts(),
     getActiveUsdVesRate(),
+    getDeliverySettings(),
   ]);
 
   return (
@@ -20,7 +22,12 @@ async function CheckoutPage() {
           </p>
         </div>
 
-        <CheckoutForm products={products} usdToVesRate={activeRate?.rate ?? null} />
+        <CheckoutForm
+          products={products}
+          usdToVesRate={activeRate?.rate ?? null}
+          deliveryFeeCents={deliverySettings.deliveryFeeCents}
+          freeDeliveryMinCents={deliverySettings.freeDeliveryMinCents}
+        />
       </div>
     </section>
   );

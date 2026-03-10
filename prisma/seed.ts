@@ -119,6 +119,21 @@ async function seedExchangeRate() {
   }
 }
 
+async function seedStoreSettings() {
+  await prisma.storeSettings.upsert({
+    where: { singletonKey: "default" },
+    update: {
+      deliveryFeeCents: 1000,
+      freeDeliveryMinCents: 10000,
+    },
+    create: {
+      singletonKey: "default",
+      deliveryFeeCents: 1000,
+      freeDeliveryMinCents: 10000,
+    },
+  });
+}
+
 async function main() {
   // =========================
   // 1) Seed users (Credentials)
@@ -155,6 +170,7 @@ async function main() {
   // 2) Seed exchange rate
   // =========================
   await seedExchangeRate();
+  await seedStoreSettings();
 
   // =========================
   // 3) Seed categories

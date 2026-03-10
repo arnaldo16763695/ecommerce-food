@@ -26,6 +26,7 @@ const navMain = [
       { title: "Categorias", url: "/admin/categories" },
       { title: "Grupos de opciones", url: "/admin/option-groups" },
       { title: "Tasa de cambio", url: "/admin/exchange-rates" },
+      { title: "Reglas de delivery", url: "/admin/delivery-settings" },
     ],
   },
   {

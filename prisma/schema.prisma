@@ -122,6 +122,17 @@ model ExchangeRate {
   @@map("exchange_rates")
 }
 
+model StoreSettings {
+  id String @id @default(cuid())
+  singletonKey String @unique @default("default") @map("singleton_key")
+  deliveryFeeCents Int @default(1000) @map("delivery_fee_cents")
+  freeDeliveryMinCents Int @default(10000) @map("free_delivery_min_cents")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("store_settings")
+}
+
 // =========================
 // Categories / Products
 // =========================
