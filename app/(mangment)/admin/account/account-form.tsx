@@ -5,16 +5,7 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-
-type CloudinarySignatureResponse = {
-  data: {
-    cloudName: string;
-    apiKey: string;
-    timestamp: string;
-    folder: string;
-    signature: string;
-  };
-};
+import { uploadImageToStorage } from "@/lib/uploads/client-upload";
 
 type AccountData = {
   id: string;
@@ -35,45 +26,11 @@ export default function AccountForm({ initialData }: { initialData: AccountData 
     setUploadingAvatar(true);
 
     try {
-      const signRes = await fetch("/api/admin/uploads/cloudinary-signature", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folderSuffix: "avatars" }),
+      const uploaded = await uploadImageToStorage({
+        file,
+        folderSuffix: "avatars",
       });
-
-      if (!signRes.ok) {
-        const body = (await signRes.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? "No se pudo firmar la subida.");
-      }
-
-      const signBody = (await signRes.json()) as CloudinarySignatureResponse;
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", signBody.data.apiKey);
-      formData.append("timestamp", signBody.data.timestamp);
-      formData.append("folder", signBody.data.folder);
-      formData.append("signature", signBody.data.signature);
-
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${signBody.data.cloudName}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-
-      if (!uploadRes.ok) {
-        const uploadText = await uploadRes.text();
-        throw new Error(`Cloudinary upload failed: ${uploadText}`);
-      }
-
-      const uploadBody = (await uploadRes.json()) as { secure_url?: string };
-      if (!uploadBody.secure_url) {
-        throw new Error("Cloudinary did not return secure_url");
-      }
-
-      setImage(uploadBody.secure_url);
+      setImage(uploaded.url);
       toast({
         title: "Avatar subido",
         description: "La imagen se subio correctamente.",

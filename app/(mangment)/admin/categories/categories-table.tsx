@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { slugify } from "@/lib/slug";
+import { uploadImageToStorage } from "@/lib/uploads/client-upload";
 
 type AdminCategory = {
   id: string;
@@ -51,16 +52,6 @@ type CategoriesResponse = {
     limit: number;
     total: number;
     totalPages: number;
-  };
-};
-
-type CloudinarySignatureResponse = {
-  data: {
-    cloudName: string;
-    apiKey: string;
-    timestamp: string;
-    folder: string;
-    signature: string;
   };
 };
 
@@ -183,48 +174,11 @@ export default function CategoriesTable() {
     setUploadingImage(true);
 
     try {
-      const signRes = await fetch("/api/admin/uploads/cloudinary-signature", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folderSuffix: "categories" }),
+      const uploaded = await uploadImageToStorage({
+        file,
+        folderSuffix: "categories",
       });
-
-      if (!signRes.ok) {
-        const body = (await signRes.json().catch(() => null)) as
-          | { error?: string }
-          | null;
-        throw new Error(body?.error ?? "No se pudo firmar la subida");
-      }
-
-      const signaturePayload = (await signRes.json()) as CloudinarySignatureResponse;
-      const signature = signaturePayload.data;
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", signature.apiKey);
-      formData.append("timestamp", signature.timestamp);
-      formData.append("folder", signature.folder);
-      formData.append("signature", signature.signature);
-
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-
-      if (!uploadRes.ok) {
-        const text = await uploadRes.text();
-        throw new Error(`Cloudinary upload failed: ${text}`);
-      }
-
-      const uploadBody = (await uploadRes.json()) as { secure_url?: string };
-      if (!uploadBody.secure_url) {
-        throw new Error("Cloudinary did not return secure_url");
-      }
-
-      setForm((prev) => ({ ...prev, imgUrl: uploadBody.secure_url! }));
+      setForm((prev) => ({ ...prev, imgUrl: uploaded.url }));
       toast({
         title: "Imagen subida",
         description: "La imagen de categoria fue subida correctamente.",

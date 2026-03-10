@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { uploadImageToStorage } from "@/lib/uploads/client-upload";
 
 type CategoryItem = {
   id: string;
@@ -24,16 +25,6 @@ type OptionGroupItem = {
   name: string;
   minSelect: number;
   maxSelect: number;
-};
-
-type CloudinarySignatureResponse = {
-  data: {
-    cloudName: string;
-    apiKey: string;
-    timestamp: string;
-    folder: string;
-    signature: string;
-  };
 };
 
 type ProductFormInitialData = {
@@ -128,48 +119,11 @@ export default function ProductForm({
     setUploadingImage(true);
 
     try {
-      const signRes = await fetch("/api/admin/uploads/cloudinary-signature", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folderSuffix: "products" }),
+      const uploaded = await uploadImageToStorage({
+        file,
+        folderSuffix: "products",
       });
-
-      if (!signRes.ok) {
-        const body = (await signRes.json().catch(() => null)) as
-          | { error?: string }
-          | null;
-        throw new Error(body?.error ?? "No se pudo firmar la subida");
-      }
-
-      const signPayload = (await signRes.json()) as CloudinarySignatureResponse;
-      const signatureData = signPayload.data;
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", signatureData.apiKey);
-      formData.append("timestamp", signatureData.timestamp);
-      formData.append("folder", signatureData.folder);
-      formData.append("signature", signatureData.signature);
-
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-
-      if (!uploadRes.ok) {
-        const bodyText = await uploadRes.text();
-        throw new Error(`Cloudinary upload failed: ${bodyText}`);
-      }
-
-      const uploadBody = (await uploadRes.json()) as { secure_url?: string };
-      if (!uploadBody.secure_url) {
-        throw new Error("Cloudinary did not return secure_url");
-      }
-
-      setCoverImageUrl(uploadBody.secure_url);
+      setCoverImageUrl(uploaded.url);
       toast({
         title: "Imagen subida",
         description: "La imagen principal se subio correctamente.",
@@ -363,7 +317,7 @@ export default function ProductForm({
           <Input
             value={coverImageUrl}
             onChange={(e) => setCoverImageUrl(e.target.value)}
-            placeholder="URL de portada (Cloudinary)"
+            placeholder="URL de portada"
           />
           <Input
             type="file"

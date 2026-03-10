@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { resolveProductImageSrc } from "@/lib/product-image";
+import { uploadImageToStorage } from "@/lib/uploads/client-upload";
 
 type AdminProduct = {
   id: string;
@@ -47,16 +48,6 @@ type ProductsResponse = {
     limit: number;
     total: number;
     totalPages: number;
-  };
-};
-
-type CloudinarySignatureResponse = {
-  data: {
-    cloudName: string;
-    apiKey: string;
-    timestamp: string;
-    folder: string;
-    signature: string;
   };
 };
 
@@ -194,50 +185,14 @@ export default function ProductsTable() {
     setError(null);
 
     try {
-      const signRes = await fetch("/api/admin/uploads/cloudinary-signature", {
-        method: "POST",
+      const uploaded = await uploadImageToStorage({
+        file,
+        folderSuffix: "products",
       });
-
-      if (!signRes.ok) {
-        const body = (await signRes.json().catch(() => null)) as
-          | { error?: string }
-          | null;
-        throw new Error(body?.error ?? "No se pudo firmar la subida");
-      }
-
-      const signPayload = (await signRes.json()) as CloudinarySignatureResponse;
-      const signatureData = signPayload.data;
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", signatureData.apiKey);
-      formData.append("timestamp", signatureData.timestamp);
-      formData.append("folder", signatureData.folder);
-      formData.append("signature", signatureData.signature);
-
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-
-      if (!uploadRes.ok) {
-        const uploadText = await uploadRes.text();
-        throw new Error(`Cloudinary upload failed: ${uploadText}`);
-      }
-
-      const uploadBody = (await uploadRes.json()) as { secure_url?: string };
-      const secureUrl = uploadBody.secure_url;
-
-      if (!secureUrl) {
-        throw new Error("Cloudinary did not return secure_url");
-      }
 
       await patchProduct(
         productId,
-        { imageUrl: secureUrl, coverImageUrl: secureUrl },
+        { imageUrl: uploaded.url, coverImageUrl: uploaded.url },
         "Imagen actualizada",
       );
     } catch (err) {

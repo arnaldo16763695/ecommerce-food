@@ -18,6 +18,7 @@ describe("sendNewOrderInternalAlert", () => {
   beforeEach(() => {
     vi.resetModules();
     sendMock.mockReset();
+    sendMock.mockResolvedValue({ data: { id: "msg_1" }, error: null });
     process.env = { ...originalEnv };
   });
 
@@ -26,26 +27,26 @@ describe("sendNewOrderInternalAlert", () => {
     vi.clearAllMocks();
   });
 
-  it("skips resend and logs payload when env vars are missing", async () => {
+  it("throws when required env vars are missing", async () => {
     delete process.env.RESEND_API_KEY;
     delete process.env.RESEND_FROM_EMAIL;
     delete process.env.ORDERS_ALERT_EMAIL;
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     const mod = await import("../lib/notifications/order-notifications");
-    await mod.sendNewOrderInternalAlert({
-      orderNumber: 1001,
-      customerName: "Cliente",
-      customerPhone: null,
-      customerEmail: null,
-      fulfillmentType: "PICKUP",
-      totalCents: 4500,
-      itemsCount: 2,
-      createdAt: new Date("2026-03-06T10:00:00.000Z"),
-    });
+    await expect(
+      mod.sendNewOrderInternalAlert({
+        orderNumber: 1001,
+        customerName: "Cliente",
+        customerPhone: null,
+        customerEmail: null,
+        fulfillmentType: "PICKUP",
+        totalCents: 4500,
+        itemsCount: 2,
+        createdAt: new Date("2026-03-06T10:00:00.000Z"),
+      }),
+    ).rejects.toThrow("Missing RESEND_API_KEY env var.");
 
     expect(sendMock).not.toHaveBeenCalled();
-    expect(logSpy).toHaveBeenCalled();
   });
 
   it("sends email when resend env vars are configured", async () => {
@@ -82,6 +83,7 @@ describe("sendOrderConfirmationToCustomer", () => {
   beforeEach(() => {
     vi.resetModules();
     sendMock.mockReset();
+    sendMock.mockResolvedValue({ data: { id: "msg_1" }, error: null });
     process.env = { ...originalEnv };
   });
 
