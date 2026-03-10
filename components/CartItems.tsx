@@ -34,6 +34,8 @@ import { Button } from "@/components/ui/button";
 type Props = {
   products: AllProducts[];
   usdToVesRate: number | null;
+  deliveryFeeCents: number;
+  freeDeliveryMinCents: number;
 };
 
 type CustomizationGroup = NonNullable<AllProducts["optionGroups"]>[number]["group"];
@@ -51,7 +53,12 @@ type DisplayCartItem = {
   customizationGroups: CustomizationGroup[];
 };
 
-function CartItems({ products, usdToVesRate }: Props) {
+function CartItems({
+  products,
+  usdToVesRate,
+  deliveryFeeCents,
+  freeDeliveryMinCents,
+}: Props) {
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -189,7 +196,8 @@ function CartItems({ products, usdToVesRate }: Props) {
   }, [cartItems]);
 
   const tax = Math.round(subTotal * 0.1);
-  const shipping = subTotal === 0 ? 0 : subTotal >= 10000 ? 0 : 1000;
+  const shipping =
+    subTotal === 0 ? 0 : subTotal >= freeDeliveryMinCents ? 0 : deliveryFeeCents;
   const totalCents = subTotal + tax + shipping;
 
   const formatUsd = (cents: number) => formatCurrencyFromCents(cents, "USD", "en-US");

@@ -3,6 +3,8 @@ import { getAllProducts } from "@/lib/data/productsData";
 import { getActiveUsdVesRate } from "@/lib/data/exchange-rate";
 import { getDeliverySettings } from "@/lib/data/store-settings";
 
+export const dynamic = "force-dynamic";
+
 async function CheckoutPage() {
   const [products, activeRate, deliverySettings] = await Promise.all([
     getAllProducts(),
