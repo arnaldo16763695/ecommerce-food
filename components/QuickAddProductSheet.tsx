@@ -142,7 +142,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
         </SheetHeader>
 
         <div className="space-y-5 pb-6 px-2">
-          <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <div className="rounded-xl border border-primary-100 bg-primary-50 p-4 dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-4 flex items-center justify-center rounded-lg bg-white p-3 dark:bg-slate-900">
               <Image
                 src={resolveProductImageSrc(product.images[0]?.url)}
@@ -156,7 +156,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {product.description || "Preparado al momento con ingredientes de calidad."}
             </p>
-            <p className="mt-2 font-semibold text-amber-600">${formatMoney(unitPriceCents)}</p>
+            <p className="mt-2 font-semibold text-primary-600">${formatMoney(unitPriceCents)}</p>
           </div>
 
           {customizationGroups.length > 0 ? (
@@ -192,7 +192,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
                             key={option.id}
                             className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
                               isSelected
-                                ? "border-amber-400 bg-amber-50 dark:border-amber-300 dark:bg-amber-300/10"
+                                ? "border-primary-400 bg-primary-50 dark:border-primary-300 dark:bg-primary-300/10"
                                 : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
                             } ${isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                           >
@@ -206,7 +206,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
                               />
                               <span>{option.name}</span>
                             </div>
-                            <span className="font-medium text-amber-700 dark:text-amber-300">
+                            <span className="font-medium text-primary-700 dark:text-primary-300">
                               {option.priceDeltaCents > 0
                                 ? `+$${formatMoney(option.priceDeltaCents)}`
                                 : "Incluido"}
@@ -234,7 +234,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="Ej: sin cebolla, extra crujiente..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               rows={3}
               maxLength={180}
             />
@@ -266,7 +266,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
 
             <div className="mb-4 rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
               <p className="text-sm text-slate-600 dark:text-slate-300">Total actual</p>
-              <p className="text-2xl font-semibold text-amber-600">${formatMoney(totalPriceCents)}</p>
+              <p className="text-2xl font-semibold text-primary-600">${formatMoney(totalPriceCents)}</p>
             </div>
 
             <button

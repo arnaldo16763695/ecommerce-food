@@ -144,7 +144,7 @@ export default function DashboardPanels() {
   const revenueChartConfig = {
     revenueCents: {
       label: "Ingresos",
-      color: "#f59e0b",
+      color: "var(--color-primary-500)",
     },
   } satisfies ChartConfig;
 
@@ -153,17 +153,17 @@ export default function DashboardPanels() {
     label: statusToLabel(item.status),
   }));
   const statusChartConfig = {
-    count: { label: "Pedidos", color: "#0ea5e9" },
+    count: { label: "Pedidos", color: "var(--color-info-500)" },
   } satisfies ChartConfig;
 
   const fulfillmentChartConfig = {
-    PICKUP: { label: "Retiro", color: "#22c55e" },
-    DELIVERY: { label: "Delivery", color: "#f97316" },
+    PICKUP: { label: "Retiro", color: "var(--color-success-500)" },
+    DELIVERY: { label: "Delivery", color: "var(--color-warning-500)" },
   } satisfies ChartConfig;
-  const pieColors = ["#22c55e", "#f97316"];
+  const pieColors = ["var(--color-success-500)", "var(--color-warning-500)"];
 
   const topProductsChartConfig = {
-    quantity: { label: "Unidades", color: "#6366f1" },
+    quantity: { label: "Unidades", color: "var(--color-secondary-500)" },
   } satisfies ChartConfig;
 
   return (

@@ -55,7 +55,7 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 py-3 font-cunia backdrop-blur dark:border-slate-700 dark:bg-gray-900/95">
       <div className="page-container flex items-center justify-between">
-        <Link className="text-3xl font-semibold text-amber-600" href="/">
+        <Link className="text-3xl font-semibold text-primary-600" href="/">
           Logo
         </Link>
 
@@ -69,9 +69,9 @@ const Header = () => {
                 <Link
                   href={item.href}
                   className={clsx(
-                    "transition-colors hover:text-amber-600 focus:text-amber-600",
+                    "transition-colors hover:text-primary-600 focus:text-primary-600",
                     {
-                      "text-amber-600": pathName === item.href,
+                      "text-primary-600": pathName === item.href,
                     },
                   )}
                 >
@@ -108,16 +108,16 @@ const Header = () => {
             <Link
               href="/shopping-cart"
               aria-label="Abrir carrito de compras"
-              className="relative inline-flex size-10 items-center justify-center rounded-md text-slate-800 transition-colors hover:bg-slate-100 hover:text-amber-600 focus:bg-slate-100 focus:text-amber-600 dark:text-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800"
+              className="relative inline-flex size-10 items-center justify-center rounded-md text-slate-800 transition-colors hover:bg-slate-100 hover:text-primary-600 focus:bg-slate-100 focus:text-primary-600 dark:text-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800"
             >
               <RiShoppingBag2Line
                 size={26}
                 className={clsx("transition-all", {
-                  "text-amber-600": pathName === "/shopping-cart",
+                  "text-primary-600": pathName === "/shopping-cart",
                 })}
               />
               {totalItems > 0 && (
-                <span className="absolute right-0 top-0 flex size-5 items-center justify-center rounded-full bg-amber-600 text-xs text-white">
+                <span className="absolute right-0 top-0 flex size-5 items-center justify-center rounded-full bg-primary-600 text-xs text-white">
                   {totalItems}
                 </span>
               )}
@@ -131,17 +131,17 @@ const Header = () => {
             <Link
               href="/shopping-cart"
               aria-label="Abrir carrito de compras"
-              className="relative inline-flex size-10 items-center justify-center rounded-md transition-colors hover:bg-slate-100 hover:text-amber-600 focus:bg-slate-100 focus:text-amber-600 dark:hover:bg-slate-800 dark:focus:bg-slate-800"
+              className="relative inline-flex size-10 items-center justify-center rounded-md transition-colors hover:bg-slate-100 hover:text-primary-600 focus:bg-slate-100 focus:text-primary-600 dark:hover:bg-slate-800 dark:focus:bg-slate-800"
             >
               <RiShoppingBag2Line
                 size={26}
                 className={clsx("transition-all", {
-                  "text-amber-600": pathName === "/shopping-cart",
+                  "text-primary-600": pathName === "/shopping-cart",
                 })}
               />
 
               {totalItems > 0 && (
-                <span className="absolute right-0 top-0 flex size-5 items-center justify-center rounded-full bg-amber-600 text-xs text-white">
+                <span className="absolute right-0 top-0 flex size-5 items-center justify-center rounded-full bg-primary-600 text-xs text-white">
                   {totalItems}
                 </span>
               )}
@@ -166,9 +166,9 @@ const Header = () => {
                   <Link
                     href={item.href}
                     className={clsx(
-                      "block rounded px-2 py-1 transition-colors hover:text-amber-600 focus:text-amber-600",
+                      "block rounded px-2 py-1 transition-colors hover:text-primary-600 focus:text-primary-600",
                       {
-                        "text-amber-600": pathName === item.href,
+                        "text-primary-600": pathName === item.href,
                       },
                     )}
                     onClick={handleClick}
@@ -182,9 +182,9 @@ const Header = () => {
                   <Link
                     href="/kitchen"
                     className={clsx(
-                      "block rounded px-2 py-1 transition-colors hover:text-amber-600 focus:text-amber-600",
+                      "block rounded px-2 py-1 transition-colors hover:text-primary-600 focus:text-primary-600",
                       {
-                        "text-amber-600": pathName === "/kitchen",
+                        "text-primary-600": pathName === "/kitchen",
                       },
                     )}
                     onClick={handleClick}

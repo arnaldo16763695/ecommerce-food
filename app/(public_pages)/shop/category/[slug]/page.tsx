@@ -15,14 +15,14 @@ async function CategoryShopPage(props: { params: Promise<{ slug: string }> }) {
 
   return (
     <>
-      <section className="border-b border-amber-100 bg-amber-50 py-14 dark:border-slate-700 dark:bg-slate-900">
+      <section className="border-b border-primary-100 bg-primary-50 py-14 dark:border-slate-700 dark:bg-slate-900">
         <div className="page-container">
           <nav className="mb-3 text-sm text-slate-600 dark:text-slate-300">
-            <Link href="/" className="hover:text-amber-600 transition-colors">
+            <Link href="/" className="hover:text-primary-600 transition-colors">
               Inicio
             </Link>
             {" / "}
-            <Link href="/shop" className="hover:text-amber-600 transition-colors">
+            <Link href="/shop" className="hover:text-primary-600 transition-colors">
               Tienda
             </Link>
             {" / "}

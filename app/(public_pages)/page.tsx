@@ -17,7 +17,7 @@ export default async function Home() {
 
           <div className="relative z-10 flex min-h-[75svh] items-center justify-center px-6 text-center text-white">
             <div className="max-w-2xl p-6 md:p-10">
-              <p className="inline-block rounded-md bg-white/90 px-3 py-1 text-sm font-medium uppercase tracking-wide text-amber-700">
+              <p className="inline-block rounded-md bg-white/90 px-3 py-1 text-sm font-medium uppercase tracking-wide text-primary-700">
                 Comida deliciosa, entrega rápida
               </p>
               <h1 className="mt-4 text-4xl font-semibold leading-tight text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.55)] md:text-5xl lg:text-6xl">
@@ -39,10 +39,10 @@ export default async function Home() {
                 <Link
                   key={category.id}
                   href={`/shop/category/${category.slug}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50 dark:border-amber-300/30 dark:bg-slate-800 dark:text-amber-300 dark:hover:bg-amber-300/10"
+                  className="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-white px-3 py-1.5 text-sm font-medium text-primary-700 transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-primary-300/30 dark:bg-slate-800 dark:text-primary-300 dark:hover:bg-primary-300/10"
                 >
                   <span>{category.name}</span>
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-300/20 dark:text-amber-200">
+                  <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs text-primary-800 dark:bg-primary-300/20 dark:text-primary-200">
                     {category.productCount}
                   </span>
                 </Link>
@@ -55,9 +55,9 @@ export default async function Home() {
               <Link
                 key={category.id}
                 href={`/shop/category/${category.slug}`}
-                className="group relative overflow-hidden rounded-2xl border border-amber-100 bg-white px-7 py-6 transition-all hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-400/40 dark:hover:shadow-slate-900/60"
+                className="group relative overflow-hidden rounded-2xl border border-primary-100 bg-white px-7 py-6 transition-all hover:-translate-y-1 hover:border-primary-300 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:hover:border-primary-400/40 dark:hover:shadow-slate-900/60"
               >
-                <div className="absolute -right-16 -top-16 size-40 rounded-full bg-amber-100/80 transition-all duration-300 group-hover:scale-110 dark:bg-amber-400/10" />
+                <div className="absolute -right-16 -top-16 size-40 rounded-full bg-primary-100/80 transition-all duration-300 group-hover:scale-110 dark:bg-primary-400/10" />
 
                 <div className="relative z-10 flex items-start justify-between gap-4">
                   <div>
@@ -68,7 +68,7 @@ export default async function Home() {
                       Explora el menú completo de esta categoría.
                     </p>
                   </div>
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                  <span className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-700 dark:border-primary-400/30 dark:bg-primary-400/10 dark:text-primary-300">
                     {category.productCount} productos
                   </span>
                 </div>
@@ -83,7 +83,7 @@ export default async function Home() {
                   />
                 </div>
 
-                <p className="relative z-10 mt-4 text-sm font-medium text-amber-700 transition-colors group-hover:text-amber-800 dark:text-amber-300 dark:group-hover:text-amber-200">
+                <p className="relative z-10 mt-4 text-sm font-medium text-primary-700 transition-colors group-hover:text-primary-800 dark:text-primary-300 dark:group-hover:text-primary-200">
                   Ver menú
                 </p>
               </Link>
@@ -119,7 +119,7 @@ export default async function Home() {
             {testimonials.map((testimonial) => (
               // Card 
               <div key={testimonial.id} className="bg-white dark:bg-gray-900 p-8 rounded-xl flex flex-col items-center">
-                <span className="text-amber-600 mb-3">
+                <span className="text-primary-600 mb-3">
                   <RiDoubleQuotesL />
                 </span>
                 <p className="text-gray-600 mb-6">&ldquo;{testimonial.quote}&rdquo;</p>

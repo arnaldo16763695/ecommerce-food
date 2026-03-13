@@ -67,7 +67,7 @@ export const Footer = () => {
                   <a
                     key={index}
                     href="#"
-                    className="text-gray-300 hover:text-amber-500 focus:text-amber-500 transition-colors"
+                    className="text-gray-300 hover:text-primary-500 focus:text-primary-500 transition-colors"
                   >
                     <Icon className="" />
                   </a>

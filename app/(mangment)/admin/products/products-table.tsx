@@ -295,7 +295,7 @@ export default function ProductsTable() {
                           event.currentTarget.value = "";
                         }}
                       />
-                      <span className="text-xs font-medium text-amber-700 hover:underline">
+                      <span className="text-xs font-medium text-primary-700 hover:underline">
                         {uploadingProductId === product.id ? "Subiendo..." : "Subir"}
                       </span>
                     </label>

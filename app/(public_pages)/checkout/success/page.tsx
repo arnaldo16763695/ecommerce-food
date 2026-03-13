@@ -19,7 +19,7 @@ async function CheckoutSuccessPage({ searchParams }: Props) {
             Gracias por tu compra. Tu pedido fue registrado correctamente.
           </p>
           {orderNumber ? (
-            <p className="mt-4 text-sm font-medium text-amber-700 dark:text-amber-300">
+            <p className="mt-4 text-sm font-medium text-primary-700 dark:text-primary-300">
               Numero de pedido: #{orderNumber}
             </p>
           ) : null}

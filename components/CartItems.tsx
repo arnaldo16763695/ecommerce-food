@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import {
   RiAddLine,
   RiArrowRightLine,
@@ -344,7 +344,7 @@ function CartItems({
                               )}
                               <button
                                 onClick={() => startEditing(item)}
-                                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:underline dark:text-amber-300"
+                                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline dark:text-primary-300"
                               >
                                 <RiEdit2Line size={14} />
                                 Editar producto
@@ -394,7 +394,7 @@ function CartItems({
                         <p className="text-sm font-medium text-neutral-600 dark:text-slate-300">
                           Subtotal
                         </p>
-                        <p className="font-semibold text-amber-600">
+                        <p className="font-semibold text-primary-600">
                           {formatUsd(item.price * item.quantity)}
                         </p>
                       </div>
@@ -451,7 +451,7 @@ function CartItems({
                                 )}
                                 <button
                                   onClick={() => startEditing(item)}
-                                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:underline dark:text-amber-300"
+                                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline dark:text-primary-300"
                                 >
                                   <RiEdit2Line size={14} />
                                   Editar producto
@@ -590,7 +590,7 @@ function CartItems({
 
               <Link
                 href="/shop"
-                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-amber-600 transition hover:underline focus:underline dark:text-amber-400"
+                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary-600 transition hover:underline focus:underline dark:text-primary-400"
               >
                 Seguir comprando
                 <RiArrowRightLine size={16} />
@@ -649,7 +649,7 @@ function CartItems({
                               key={option.id}
                               className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
                                 isSelected
-                                  ? "border-amber-400 bg-amber-50 dark:border-amber-400 dark:bg-amber-400/10"
+                                  ? "border-primary-400 bg-primary-50 dark:border-primary-400 dark:bg-primary-400/10"
                                   : "border-slate-200 dark:border-slate-600"
                               } ${isDisabled ? "opacity-60" : ""}`}
                             >
@@ -667,7 +667,7 @@ function CartItems({
                                   {option.name}
                                 </span>
                               </div>
-                              <span className="text-sm text-amber-700 dark:text-amber-300">
+                              <span className="text-sm text-primary-700 dark:text-primary-300">
                                 {option.priceDeltaCents > 0
                                   ? `+${formatUsd(option.priceDeltaCents)}`
                                   : "Incluido"}
@@ -703,7 +703,7 @@ function CartItems({
                   onChange={(e) => setDraftNotes(e.target.value)}
                   rows={3}
                   maxLength={180}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-amber-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
             </div>

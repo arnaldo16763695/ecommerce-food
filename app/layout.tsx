@@ -37,7 +37,7 @@ export default async function RootLayout({
       <body
         className={`${lexend.className} ${cunia.variable}  antialiased bg-slate-50  text-gray-900 dark:bg-slate-900 dark:text-slate-200 `}
       >
-        <NextTopLoader showSpinner={false} color="oklch(66.6% 0.179 58.318)" />
+        <NextTopLoader showSpinner={false} color="var(--theme-primary-600)" />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

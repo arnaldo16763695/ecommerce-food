@@ -160,7 +160,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
 
   return (
     <>
-      <div className="flex min-h-52 flex-col items-center justify-center gap-2 border-b border-amber-100 bg-amber-50 px-5 text-center dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex min-h-52 flex-col items-center justify-center gap-2 border-b border-primary-100 bg-primary-50 px-5 text-center dark:border-slate-700 dark:bg-slate-900">
         <h2 className="px-5 text-3xl text-neutral-800 dark:text-slate-100">
           Detalle del producto
         </h2>
@@ -169,7 +169,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
         </p>
       </div>
 
-      <section className="bg-linear-to-b from-slate-50 to-amber-50/40 py-14 dark:from-slate-900 dark:to-slate-800/50 md:py-20">
+      <section className="bg-linear-to-b from-slate-50 to-primary-50/40 py-14 dark:from-slate-900 dark:to-slate-800/50 md:py-20">
         <div className="page-container">
           <nav
             aria-label="Breadcrumb"
@@ -177,14 +177,14 @@ function ProductDetails({ product, relatedProducts }: Props) {
           >
             <Link
               href="/"
-              className="transition hover:text-amber-600 focus:text-amber-600"
+              className="transition hover:text-primary-600 focus:text-primary-600"
             >
               Inicio
             </Link>
             <span>/</span>
             <Link
               href="/shop"
-              className="transition hover:text-amber-600 focus:text-amber-600"
+              className="transition hover:text-primary-600 focus:text-primary-600"
             >
               Tienda
             </Link>
@@ -196,14 +196,14 @@ function ProductDetails({ product, relatedProducts }: Props) {
 
           <Link
             href="/shop"
-            className="mb-8 inline-flex items-center gap-2 font-medium text-amber-600 transition-colors hover:text-amber-700 focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+            className="mb-8 inline-flex items-center gap-2 font-medium text-primary-600 transition-colors hover:text-primary-700 focus:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
           >
             <RiArrowLeftLine />
             Volver a la tienda
           </Link>
 
           <div className="grid items-start gap-8 lg:grid-cols-2 xl:gap-14">
-            <div className="overflow-hidden rounded-3xl border border-amber-200/60 bg-linear-to-b from-amber-100 to-amber-50 p-8 dark:border-slate-700 dark:from-slate-800 dark:to-slate-700">
+            <div className="overflow-hidden rounded-3xl border border-primary-200/60 bg-linear-to-b from-primary-100 to-primary-50 p-8 dark:border-slate-700 dark:from-slate-800 dark:to-slate-700">
               <Image
                 src={resolveProductImageSrc(product.images[0]?.url)}
                 alt={product.name}
@@ -214,8 +214,8 @@ function ProductDetails({ product, relatedProducts }: Props) {
               />
             </div>
 
-            <div className="space-y-6 rounded-3xl border border-amber-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:sticky lg:top-24 md:p-8">
-              <p className="text-sm font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+            <div className="space-y-6 rounded-3xl border border-primary-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:sticky lg:top-24 md:p-8">
+              <p className="text-sm font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300">
                 {product.category?.name ?? product.categoryId ?? "Producto del menu"}
               </p>
               <h1 className="text-3xl text-gray-900 dark:text-slate-100 md:text-4xl">
@@ -224,7 +224,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
 
               <div className="flex flex-wrap items-center gap-4">
                 <div
-                  className="flex items-center gap-1 text-amber-500"
+                  className="flex items-center gap-1 text-primary-500"
                   aria-label="Calificación: 5 de 5"
                 >
                   {[...Array(5)].map((_, index) => (
@@ -236,7 +236,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                 </span>
               </div>
 
-              <p className="font-cunia text-3xl text-amber-600">
+              <p className="font-cunia text-3xl text-primary-600">
                 ${formatMoney(unitPriceCents)}
               </p>
 
@@ -282,7 +282,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                                 key={option.id}
                                 className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 transition-colors ${
                                   isSelected
-                                    ? "border-amber-400 bg-amber-50 dark:border-amber-400 dark:bg-amber-400/10"
+                                    ? "border-primary-400 bg-primary-50 dark:border-primary-400 dark:bg-primary-400/10"
                                     : "border-gray-200 bg-white dark:border-slate-600 dark:bg-slate-800"
                                 } ${isDisabled ? "cursor-not-allowed opacity-60" : ""}`}
                               >
@@ -300,7 +300,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                                     {option.name}
                                   </span>
                                 </div>
-                                <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                                <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
                                   {option.priceDeltaCents > 0
                                     ? `+$${formatMoney(option.priceDeltaCents)}`
                                     : "Incluido"}
@@ -337,7 +337,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ej: sin cebolla, extra crujiente..."
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-primary-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                   rows={3}
                   maxLength={180}
                 />
@@ -375,7 +375,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                   Agregar al carrito
                 </button>
                 <button
-                  className="flex items-center justify-center rounded-lg border border-gray-200 transition-colors hover:border-amber-400 hover:text-amber-700 dark:border-slate-600 dark:text-slate-200 dark:hover:border-amber-400 dark:hover:text-amber-300"
+                  className="flex items-center justify-center rounded-lg border border-gray-200 transition-colors hover:border-primary-400 hover:text-primary-700 dark:border-slate-600 dark:text-slate-200 dark:hover:border-primary-400 dark:hover:text-primary-300"
                   aria-label="Guardar en favoritos"
                 >
                   <RiHeart3Line size={20} aria-hidden="true" />
@@ -386,7 +386,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                 <p className="text-sm text-gray-500 dark:text-slate-400">
                   Total actual
                 </p>
-                <p className="text-2xl font-semibold text-amber-600">
+                <p className="text-2xl font-semibold text-primary-600">
                   ${formatMoney(totalPriceCents)}
                 </p>
                 {selectedOptionsList.length > 0 && (
@@ -422,7 +422,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {productFeatures.map((feature) => (
                     <div key={feature.id} className="flex items-start gap-3">
-                      <span className="shrink-0 rounded-full bg-amber-100 p-2 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300">
+                      <span className="shrink-0 rounded-full bg-primary-100 p-2 text-primary-700 dark:bg-primary-400/20 dark:text-primary-300">
                         <feature.icon aria-hidden="true" />
                       </span>
                       <div>
@@ -441,14 +441,14 @@ function ProductDetails({ product, relatedProducts }: Props) {
               <div className="flex flex-wrap gap-5 pt-1 text-sm text-gray-600 dark:text-slate-300">
                 <p className="inline-flex items-center gap-2">
                   <RiTruckLine
-                    className="text-amber-600 dark:text-amber-400"
+                    className="text-primary-600 dark:text-primary-400"
                     aria-hidden="true"
                   />
                   Envio gratis en compras mayores a $100
                 </p>
                 <p className="inline-flex items-center gap-2">
                   <RiShieldCheckLine
-                    className="text-amber-600 dark:text-amber-400"
+                    className="text-primary-600 dark:text-primary-400"
                     aria-hidden="true"
                   />
                   Devoluciones faciles durante 30 dias
@@ -467,9 +467,9 @@ function ProductDetails({ product, relatedProducts }: Props) {
                   <Link
                     key={item.id}
                     href={`/shop/product/${item.id}/details`}
-                    className="rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-amber-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-400"
+                    className="rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-primary-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:hover:border-primary-400"
                   >
-                    <div className="mb-3 flex items-center justify-center rounded-xl bg-amber-50 p-3 dark:bg-slate-700/70">
+                    <div className="mb-3 flex items-center justify-center rounded-xl bg-primary-50 p-3 dark:bg-slate-700/70">
                       <Image
                         src={resolveProductImageSrc(item.images[0]?.url)}
                         alt={item.name}
@@ -478,13 +478,13 @@ function ProductDetails({ product, relatedProducts }: Props) {
                         className="h-28 w-28 object-contain"
                       />
                     </div>
-                    <p className="mb-1 text-sm font-medium text-amber-700 dark:text-amber-300">
+                    <p className="mb-1 text-sm font-medium text-primary-700 dark:text-primary-300">
                       {item.category?.name}
                     </p>
                     <h3 className="mb-1 text-lg text-gray-900 dark:text-slate-100">
                       {item.name}
                     </h3>
-                    <p className="font-semibold text-amber-600">
+                    <p className="font-semibold text-primary-600">
                       ${formatMoney(item.basePriceCents)}
                     </p>
                   </Link>

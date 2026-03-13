@@ -277,7 +277,7 @@ async function OrderDetailPage({ params }: Props) {
               </div>
             </div>
 
-            <Link href="/admin/orders" className="inline-flex text-sm text-amber-700 hover:underline">
+            <Link href="/admin/orders" className="inline-flex text-sm text-primary-700 hover:underline">
               Volver a pedidos
             </Link>
           </aside>

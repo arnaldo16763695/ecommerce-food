@@ -491,7 +491,7 @@ export default function CategoriesTable() {
                     event.currentTarget.value = "";
                   }}
                 />
-                <span className="text-sm font-medium text-amber-700 hover:underline">
+                <span className="text-sm font-medium text-primary-700 hover:underline">
                   {uploadingImage ? "Subiendo..." : "Subir imagen"}
                 </span>
               </label>

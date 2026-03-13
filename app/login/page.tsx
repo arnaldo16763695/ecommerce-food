@@ -108,10 +108,10 @@ function LoginPage() {
 
   return (
     <>
-      <section className="min-h-svh flex items-center justify-center bg-linear-to-b from-amber-50/60 to-transparent px-4 py-12 dark:from-slate-800/40 dark:to-slate-900 sm:px-6 lg:px-8">
+      <section className="min-h-svh flex items-center justify-center bg-linear-to-b from-primary-50/60 to-transparent px-4 py-12 dark:from-slate-800/40 dark:to-slate-900 sm:px-6 lg:px-8">
         <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/50 sm:p-10 dark:border-slate-700 dark:bg-slate-800 dark:shadow-black/30">
           {/* Logo   */}
-          <span className="font-cunia block text-center text-2xl font-semibold text-amber-600">
+          <span className="font-cunia block text-center text-2xl font-semibold text-primary-600">
             LOGO
           </span>
           <div className="space-y-8">
@@ -125,7 +125,7 @@ function LoginPage() {
             </div>
 
             {verify === "sent" && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
+              <div className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900 dark:border-primary-400/30 dark:bg-primary-400/10 dark:text-primary-200">
                 Te enviamos un enlace de verificación{email ? ` a ${email}` : ""}.
                 Revisa tu bandeja de entrada.
               </div>
@@ -174,7 +174,7 @@ function LoginPage() {
                     className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
                       errors.email
                         ? "border-red-500 focus:border-red-500 focus:ring-red-500/30 dark:border-red-500"
-                        : "border-gray-300 focus:border-amber-500 focus:ring-amber-500/30 dark:border-slate-600 dark:focus:border-amber-400 dark:focus:ring-amber-400/30"
+                        : "border-gray-300 focus:border-primary-500 focus:ring-primary-500/30 dark:border-slate-600 dark:focus:border-primary-400 dark:focus:ring-primary-400/30"
                     } bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400`}
                     {...register("email")}
                   />
@@ -201,7 +201,7 @@ function LoginPage() {
                     className={`w-full rounded-lg border px-4 py-3 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 ${
                       errors.password
                         ? "border-red-500 focus:border-red-500 focus:ring-red-500/30 dark:border-red-500"
-                        : "border-gray-300 focus:border-amber-500 focus:ring-amber-500/30 dark:border-slate-600 dark:focus:border-amber-400 dark:focus:ring-amber-400/30"
+                        : "border-gray-300 focus:border-primary-500 focus:ring-primary-500/30 dark:border-slate-600 dark:focus:border-primary-400 dark:focus:ring-primary-400/30"
                     } bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400`}
                     {...register("password")}
                   />
@@ -217,7 +217,7 @@ function LoginPage() {
               <div className="flex items-center justify-between flex-wrap gap-5">
                 <div className="flex items-center gap-2">
                   <input
-                    className="size-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600 dark:border-slate-600 dark:bg-slate-900"
+                    className="size-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600 dark:border-slate-600 dark:bg-slate-900"
                     type="checkbox"
                     id="remember"
                     {...register("rememberMe")}
@@ -231,7 +231,7 @@ function LoginPage() {
                 </div>
                 <Link
                   href="/forgot-password"
-                  className="text-amber-600 transition-colors hover:text-amber-700 hover:underline focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                  className="text-primary-600 transition-colors hover:text-primary-700 hover:underline focus:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
                 >
                   ¿Olvidaste tu contraseña?
                 </Link>
@@ -247,7 +247,7 @@ function LoginPage() {
                   {needsVerification && (
                     <button
                       type="button"
-                      className="text-sm font-medium text-amber-600 hover:underline dark:text-amber-400"
+                      className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
                       onClick={async () => {
                         setResendMsg(null);
 
@@ -341,7 +341,7 @@ function LoginPage() {
               </span>
               <Link
                 href="/signup"
-                className="font-medium transition-colors hover:text-amber-600 hover:underline focus:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                className="font-medium transition-colors hover:text-primary-600 hover:underline focus:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
               >
                 Regístrate
               </Link>

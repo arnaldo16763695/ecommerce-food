@@ -104,7 +104,7 @@ export default function AdminLoginPage() {
             <input
               id="email"
               type="email"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30"
+              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
               {...register("email")}
             />
             {errors.email && (
@@ -119,7 +119,7 @@ export default function AdminLoginPage() {
             <input
               id="password"
               type="password"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30"
+              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
               {...register("password")}
             />
             {errors.password && (
@@ -132,7 +132,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-amber-600 px-4 py-3 font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-lg bg-primary-600 px-4 py-3 font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting ? "Ingresando..." : "Entrar al panel"}
           </button>

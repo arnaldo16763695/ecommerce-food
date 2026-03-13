@@ -611,7 +611,7 @@ export default function KitchenBoard() {
                       {order.customerName}
                     </p>
                     <p className="text-[11px] text-slate-500">{formatDate(order.createdAt)}</p>
-                    <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                    <p className="text-[11px] font-medium text-primary-700 dark:text-primary-300">
                       Espera: {formatElapsedTime(order.createdAt, nowMs)}
                     </p>
                     <p className="text-xs text-slate-700 dark:text-slate-200">
@@ -700,7 +700,7 @@ export default function KitchenBoard() {
                 <p className="text-xs text-slate-500">
                   Progreso: {preparedSummary.done}/{preparedSummary.total} items listos
                 </p>
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                <p className="text-xs font-medium text-primary-700 dark:text-primary-300">
                   Espera: {formatElapsedTime(activeOrderDetail.createdAt, nowMs)}
                 </p>
                 {activeOrderDetail.assignedPreparer ? (
@@ -756,7 +756,7 @@ export default function KitchenBoard() {
                               <Badge
                                 key={option.id}
                                 variant="outline"
-                                className="border-amber-300 bg-amber-100 text-[10px] text-amber-900 dark:border-amber-500/50 dark:bg-amber-500/20 dark:text-amber-200"
+                                className="border-primary-300 bg-primary-100 text-[10px] text-primary-900 dark:border-primary-500/50 dark:bg-primary-500/20 dark:text-primary-200"
                               >
                                 {option.quantity}x {option.groupNameSnapshot}:{" "}
                                 {option.optionNameSnapshot}
@@ -791,7 +791,7 @@ export default function KitchenBoard() {
             {activeOrderDetail?.status === "PREPARING" ? (
               <div className="w-full space-y-2">
                 {!canManageActiveOrder ? (
-                  <p className="text-center text-xs text-amber-600">
+                  <p className="text-center text-xs text-primary-600">
                     Este pedido esta bloqueado para otro preparador.
                   </p>
                 ) : null}

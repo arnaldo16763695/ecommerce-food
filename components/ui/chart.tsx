@@ -122,7 +122,10 @@ function ChartLegendContent({
           <div key={key} className="flex items-center gap-1.5">
             <span
               className="h-2.5 w-2.5 rounded-sm"
-              style={{ backgroundColor: item.color ?? itemConfig?.color ?? "#94a3b8" }}
+              style={{
+                backgroundColor:
+                  item.color ?? itemConfig?.color ?? "var(--color-neutral-400)",
+              }}
             />
             <span>{itemConfig?.label ?? key}</span>
           </div>
