@@ -106,8 +106,12 @@ export default function OrdersTable() {
   const [error, setError] = useState<string | null>(null);
   const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
+  const loadOrders = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+
+    if (!silent) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -138,21 +142,55 @@ export default function OrdersTable() {
       const message =
         err instanceof Error ? err.message : "Error inesperado al cargar pedidos";
       setError(message);
-      toast({
-        title: "Error al cargar pedidos",
-        description: message,
-        variant: "destructive",
-      });
+      if (!silent) {
+        toast({
+          title: "Error al cargar pedidos",
+          description: message,
+          variant: "destructive",
+        });
+      }
       setOrders([]);
       setTotal(0);
       setTotalPages(1);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [page, query, statusFilter, toast]);
 
   useEffect(() => {
-    loadOrders();
+    void loadOrders();
+  }, [loadOrders]);
+
+  useEffect(() => {
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const eventSource = new EventSource("/api/kitchen/events");
+
+    const queueRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void loadOrders({ silent: true });
+      }, 250);
+    };
+
+    const onKitchenEvent = (event: MessageEvent<string>) => {
+      const payload = JSON.parse(event.data) as { type?: string };
+      if (
+        payload.type === "ORDER_CREATED" ||
+        payload.type === "ORDER_STATUS_CHANGED"
+      ) {
+        queueRefresh();
+      }
+    };
+
+    eventSource.addEventListener("kitchen", onKitchenEvent as EventListener);
+
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      eventSource.removeEventListener("kitchen", onKitchenEvent as EventListener);
+      eventSource.close();
+    };
   }, [loadOrders]);
 
   const visibleRangeLabel = useMemo(() => {
