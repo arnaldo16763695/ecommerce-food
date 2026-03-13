@@ -34,12 +34,6 @@ async function CheckoutSuccessPage({ searchParams }: Props) {
             >
               Ver mis pedidos
             </Link>
-            <Link
-              href="/shopping-cart"
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              Volver al carrito
-            </Link>
           </div>
         </div>
       </div>
