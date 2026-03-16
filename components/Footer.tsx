@@ -1,3 +1,5 @@
+"use client";
+
 import { footerList } from "@/data/data";
 import {
   RiFacebookFill,
@@ -5,6 +7,7 @@ import {
   RiTwitterLine,
 } from "@remixicon/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const footerHrefMap: Record<string, string> = {
   Inicio: "/",
@@ -18,8 +21,13 @@ const footerHrefMap: Record<string, string> = {
 };
 
 export const Footer = () => {
+  const pathname = usePathname();
+  const hideOnMobile = pathname === "/shopping-cart";
+
   return (
-    <footer className="bg-neutral-900 pt-10 pb-6 text-white">
+    <footer
+      className={`bg-neutral-900 pt-10 pb-6 text-white ${hideOnMobile ? "hidden md:block" : ""}`}
+    >
       <div className="page-container space-y-6 divide-y divide-neutral-800">
         {/* Footer top */}
         <div className="grid gap-8 pb-8 sm:pb-12 md:grid-cols-2 lg:grid-cols-4">
