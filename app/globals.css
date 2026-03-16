@@ -48,7 +48,7 @@
   }
 
   .btn-primary {
-    @apply rounded-lg bg-primary-600 px-6 py-2.5 font-medium text-white transition-colors hover:bg-primary-700 focus:bg-primary-700;
+    @apply rounded-lg bg-primary-600 px-6 py-2 font-medium text-white transition-colors hover:bg-primary-700 focus:bg-primary-700;
   }
 
   .section-title {
