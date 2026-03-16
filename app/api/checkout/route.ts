@@ -20,6 +20,10 @@ const checkoutSchema = z
     customerEmail: z.string().trim().email().optional(),
     fulfillmentType: z.enum(["PICKUP", "DELIVERY"]),
     notes: z.string().trim().max(1000).optional(),
+    paymentMethod: z.enum(["MOBILE_PAYMENT", "BANK_TRANSFER", "IN_STORE"]),
+    paymentReference: z.string().trim().max(120).optional(),
+    paymentProofUrl: z.string().trim().url().max(500).optional(),
+    paymentProofPath: z.string().trim().max(500).optional(),
     deliveryAddress: z
       .object({
         address1: z.string().trim().min(3).max(200),
@@ -43,6 +47,17 @@ const checkoutSchema = z
         code: z.ZodIssueCode.custom,
         message: "Delivery address is required for DELIVERY.",
         path: ["deliveryAddress", "address1"],
+      });
+    }
+
+    if (
+      (value.paymentProofUrl && !value.paymentProofPath) ||
+      (!value.paymentProofUrl && value.paymentProofPath)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Payment proof must include url and storage path together.",
+        path: ["paymentProofUrl"],
       });
     }
   });
@@ -252,6 +267,10 @@ export async function POST(req: Request) {
           status: "PENDING",
           fulfillmentType: parsed.data.fulfillmentType,
           paymentStatus: "UNPAID",
+          paymentMethod: parsed.data.paymentMethod,
+          paymentReference: parsed.data.paymentReference?.trim() || null,
+          paymentProofUrl: parsed.data.paymentProofUrl?.trim() || null,
+          paymentProofPath: parsed.data.paymentProofPath?.trim() || null,
           customerName: parsed.data.customerName.trim(),
           customerPhone: parsed.data.customerPhone?.trim() || null,
           customerEmail: parsed.data.customerEmail?.trim() || null,

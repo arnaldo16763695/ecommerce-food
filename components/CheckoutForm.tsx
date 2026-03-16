@@ -1,31 +1,46 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useCartStore } from "@/store/cartStore";
-import { resolveProductImageSrc } from "@/lib/product-image";
 import type { AllProducts } from "@/lib/data/productsData";
-import Image from "next/image";
+import type { CheckoutPaymentMethod } from "@/lib/payment-config";
+import { resolveProductImageSrc } from "@/lib/product-image";
+import { uploadCheckoutProofToStorage } from "@/lib/uploads/client-upload";
 import {
   convertUsdCentsToVesCents,
   formatCurrencyFromCents,
 } from "@/lib/money";
+import { useCartStore } from "@/store/cartStore";
+
+type PaymentInstruction = {
+  method: CheckoutPaymentMethod;
+  label: string;
+  shortDescription: string;
+  details: Array<{ label: string; value: string }>;
+  helperText: string;
+};
 
 type Props = {
   products: AllProducts[];
   usdToVesRate: number | null;
   deliveryFeeCents: number;
   freeDeliveryMinCents: number;
+  paymentInstructions: PaymentInstruction[];
 };
+
+type CheckoutStep = "DETAILS" | "PAYMENT";
 
 export default function CheckoutForm({
   products,
   usdToVesRate,
   deliveryFeeCents,
   freeDeliveryMinCents,
+  paymentInstructions,
 }: Props) {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
@@ -33,6 +48,7 @@ export default function CheckoutForm({
   const hydrateFromServer = useCartStore((state) => state.hydrateFromServer);
   const isHydratedFromServer = useCartStore((state) => state.isHydratedFromServer);
 
+  const [step, setStep] = useState<CheckoutStep>("DETAILS");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -42,6 +58,12 @@ export default function CheckoutForm({
   const [address2, setAddress2] = useState("");
   const [city, setCity] = useState("");
   const [addressNotes, setAddressNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod | null>(null);
+  const [paymentReference, setPaymentReference] = useState("");
+  const [paymentProofUrl, setPaymentProofUrl] = useState("");
+  const [paymentProofPath, setPaymentProofPath] = useState("");
+  const [paymentProofName, setPaymentProofName] = useState("");
+  const [uploadingProof, setUploadingProof] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +77,7 @@ export default function CheckoutForm({
     return items
       .map((item) => {
         const productId = item.productId ?? item.id;
-        const product = products.find((p) => p.id === productId);
+        const product = products.find((productEntry) => productEntry.id === productId);
         if (!product) return null;
 
         return {
@@ -97,7 +119,12 @@ export default function CheckoutForm({
       : 0;
   const totalCents = subtotalCents + taxCents + deliveryFeeToApply;
 
-  const formatUsd = (cents: number) => formatCurrencyFromCents(cents, "USD", "en-US");
+  const selectedInstruction =
+    paymentInstructions.find((instruction) => instruction.method === paymentMethod) ??
+    null;
+
+  const formatUsd = (cents: number) =>
+    formatCurrencyFromCents(cents, "USD", "en-US");
   const formatVes = (cents: number) =>
     usdToVesRate
       ? formatCurrencyFromCents(
@@ -107,14 +134,74 @@ export default function CheckoutForm({
         )
       : null;
 
+  function validateDetailsStep() {
+    if (customerName.trim().length < 2) {
+      return "Indica el nombre de quien recibe el pedido.";
+    }
+
+    if (!customerPhone.trim() && !customerEmail.trim()) {
+      return "Debes indicar telefono o email para contactarte.";
+    }
+
+    if (fulfillmentType === "DELIVERY" && address1.trim().length < 3) {
+      return "Debes indicar una direccion valida para delivery.";
+    }
+
+    return null;
+  }
+
+  function validatePaymentStep() {
+    if (!paymentMethod) {
+      return "Debes seleccionar un metodo de pago para continuar.";
+    }
+
+    return null;
+  }
+
+  async function handleProofUpload(file: File) {
+    setUploadingProof(true);
+    setError(null);
+
+    try {
+      const uploaded = await uploadCheckoutProofToStorage({ file });
+      setPaymentProofUrl(uploaded.url);
+      setPaymentProofPath(uploaded.path);
+      setPaymentProofName(file.name);
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "No se pudo subir el comprobante.",
+      );
+    } finally {
+      setUploadingProof(false);
+    }
+  }
+
+  function handleGoToPaymentStep() {
+    const validationMessage = validateDetailsStep();
+    if (validationMessage) {
+      setError(validationMessage);
+      return;
+    }
+
+    setError(null);
+    setStep("PAYMENT");
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
     try {
-      if (!customerPhone.trim() && !customerEmail.trim()) {
-        throw new Error("Debes indicar telefono o email para contactarte.");
+      const validationMessage = validateDetailsStep();
+      if (validationMessage) {
+        throw new Error(validationMessage);
+      }
+      const paymentValidationMessage = validatePaymentStep();
+      if (paymentValidationMessage) {
+        throw new Error(paymentValidationMessage);
       }
 
       const payload = {
@@ -123,6 +210,10 @@ export default function CheckoutForm({
         customerEmail: customerEmail.trim() || undefined,
         fulfillmentType,
         notes: orderNotes.trim() || undefined,
+        paymentMethod,
+        paymentReference: paymentReference.trim() || undefined,
+        paymentProofUrl: paymentProofUrl || undefined,
+        paymentProofPath: paymentProofPath || undefined,
         deliveryAddress:
           fulfillmentType === "DELIVERY"
             ? {
@@ -154,9 +245,11 @@ export default function CheckoutForm({
       clearCart();
       router.push(`/checkout/success?order=${body.data.orderNumber}`);
       router.refresh();
-    } catch (err) {
+    } catch (submitError) {
       setError(
-        err instanceof Error ? err.message : "Error inesperado al finalizar compra.",
+        submitError instanceof Error
+          ? submitError.message
+          : "Error inesperado al finalizar compra.",
       );
     } finally {
       setSubmitting(false);
@@ -182,98 +275,260 @@ export default function CheckoutForm({
     <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
       <section className="space-y-4 lg:col-span-2">
         <div className="rounded-lg border p-4">
-          <h2 className="mb-3 text-lg font-semibold">Datos del cliente</h2>
-          <p className="mb-3 text-xs text-slate-500">
-            Completa al menos un medio de contacto: telefono o email.
-          </p>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1.5 md:col-span-2">
-              <label className="text-sm font-medium">Nombre</label>
-              <Input
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                required
-              />
+          <div className="flex flex-wrap gap-3">
+            <div
+              className={`rounded-full px-4 py-2 text-sm font-medium ${
+                step === "DETAILS"
+                  ? "bg-primary-600 text-white"
+                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              }`}
+            >
+              1. Datos del pedido
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Telefono</label>
-              <Input
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Email</label>
-              <Input
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-              />
+            <div
+              className={`rounded-full px-4 py-2 text-sm font-medium ${
+                step === "PAYMENT"
+                  ? "bg-primary-600 text-white"
+                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              }`}
+            >
+              2. Metodo de pago
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border p-4">
-          <h2 className="mb-3 text-lg font-semibold">Entrega</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="flex items-center gap-2 rounded-md border px-3 py-2">
-              <input
-                type="radio"
-                checked={fulfillmentType === "PICKUP"}
-                onChange={() => setFulfillmentType("PICKUP")}
-              />
-              Retiro en tienda
-            </label>
-            <label className="flex items-center gap-2 rounded-md border px-3 py-2">
-              <input
-                type="radio"
-                checked={fulfillmentType === "DELIVERY"}
-                onChange={() => setFulfillmentType("DELIVERY")}
-              />
-              Delivery
-            </label>
-          </div>
-
-          {fulfillmentType === "DELIVERY" ? (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-sm font-medium">Direccion</label>
-                <Input
-                  value={address1}
-                  onChange={(e) => setAddress1(e.target.value)}
-                  required={fulfillmentType === "DELIVERY"}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Apto/Piso (opcional)</label>
-                <Input value={address2} onChange={(e) => setAddress2(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Ciudad (opcional)</label>
-                <Input value={city} onChange={(e) => setCity(e.target.value)} />
-              </div>
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-sm font-medium">Notas de direccion</label>
-                <textarea
-                  value={addressNotes}
-                  onChange={(e) => setAddressNotes(e.target.value)}
-                  rows={3}
-                  className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-                />
+        {step === "DETAILS" ? (
+          <>
+            <div className="rounded-lg border p-4">
+              <h2 className="mb-3 text-lg font-semibold">Datos del cliente</h2>
+              <p className="mb-3 text-xs text-slate-500">
+                Completa al menos un medio de contacto: telefono o email.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-sm font-medium">Nombre</label>
+                  <Input
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Telefono</label>
+                  <Input
+                    value={customerPhone}
+                    onChange={(event) => setCustomerPhone(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input
+                    type="email"
+                    value={customerEmail}
+                    onChange={(event) => setCustomerEmail(event.target.value)}
+                  />
+                </div>
               </div>
             </div>
-          ) : null}
-        </div>
 
-        <div className="rounded-lg border p-4">
-          <label className="mb-1 block text-sm font-medium">Notas del pedido</label>
-          <textarea
-            value={orderNotes}
-            onChange={(e) => setOrderNotes(e.target.value)}
-            rows={3}
-            className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-          />
-        </div>
+            <div className="rounded-lg border p-4">
+              <h2 className="mb-3 text-lg font-semibold">Entrega</h2>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="flex items-center gap-2 rounded-md border px-3 py-2">
+                  <input
+                    type="radio"
+                    checked={fulfillmentType === "PICKUP"}
+                    onChange={() => setFulfillmentType("PICKUP")}
+                  />
+                  Retiro en tienda
+                </label>
+                <label className="flex items-center gap-2 rounded-md border px-3 py-2">
+                  <input
+                    type="radio"
+                    checked={fulfillmentType === "DELIVERY"}
+                    onChange={() => setFulfillmentType("DELIVERY")}
+                  />
+                  Delivery
+                </label>
+              </div>
+
+              {fulfillmentType === "DELIVERY" ? (
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-sm font-medium">Direccion</label>
+                    <Input
+                      value={address1}
+                      onChange={(event) => setAddress1(event.target.value)}
+                      required={fulfillmentType === "DELIVERY"}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      Apto/Piso (opcional)
+                    </label>
+                    <Input
+                      value={address2}
+                      onChange={(event) => setAddress2(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Ciudad (opcional)</label>
+                    <Input value={city} onChange={(event) => setCity(event.target.value)} />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-sm font-medium">Notas de direccion</label>
+                    <textarea
+                      value={addressNotes}
+                      onChange={(event) => setAddressNotes(event.target.value)}
+                      rows={3}
+                      className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <label className="mb-1 block text-sm font-medium">Notas del pedido</label>
+              <textarea
+                value={orderNotes}
+                onChange={(event) => setOrderNotes(event.target.value)}
+                rows={3}
+                className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="button" onClick={handleGoToPaymentStep}>
+                Continuar al pago
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="rounded-lg border p-4">
+              <h2 className="mb-3 text-lg font-semibold">Elige tu metodo de pago</h2>
+              <div className="grid gap-3 md:grid-cols-2">
+                {paymentInstructions.map((instruction) => (
+                  <label
+                    key={instruction.method}
+                    className={`cursor-pointer rounded-xl border p-4 transition ${
+                      paymentMethod === instruction.method
+                        ? "border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-950/30"
+                        : "border-slate-200 dark:border-slate-700"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      className="sr-only"
+                      checked={paymentMethod === instruction.method}
+                      onChange={() => setPaymentMethod(instruction.method)}
+                    />
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      {instruction.label}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                      {instruction.shortDescription}
+                    </p>
+                  </label>
+                ))}
+              </div>
+              {!paymentMethod ? (
+                <p className="mt-3 text-sm text-amber-700 dark:text-amber-400">
+                  Selecciona un metodo de pago para ver las instrucciones.
+                </p>
+              ) : null}
+            </div>
+
+            {selectedInstruction ? (
+              <div className="rounded-lg border p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-semibold">{selectedInstruction.label}</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                      {selectedInstruction.helperText}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {selectedInstruction.details.map((detail) => (
+                    <div
+                      key={`${selectedInstruction.method}-${detail.label}`}
+                      className="rounded-lg border border-dashed p-3"
+                    >
+                      <p className="text-xs uppercase tracking-wide text-slate-500">
+                        {detail.label}
+                      </p>
+                      <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                        {detail.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="rounded-lg border p-4">
+              <h3 className="mb-3 text-lg font-semibold">Soporte del pago</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">
+                    Referencia (opcional)
+                  </label>
+                  <Input
+                    value={paymentReference}
+                    onChange={(event) => setPaymentReference(event.target.value)}
+                    placeholder="Ej: 845221"
+                    maxLength={120}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">
+                    Adjuntar comprobante
+                  </label>
+                  <Input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,application/pdf"
+                    disabled={uploadingProof}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      void handleProofUpload(file);
+                    }}
+                  />
+                  <p className="text-xs text-slate-500">
+                    Acepta JPG, PNG, WEBP o PDF hasta 6 MB.
+                  </p>
+                </div>
+              </div>
+
+              {uploadingProof ? (
+                <p className="mt-3 text-sm text-slate-600">Subiendo comprobante...</p>
+              ) : null}
+              {paymentProofName ? (
+                <p className="mt-3 text-sm text-green-700 dark:text-green-400">
+                  Comprobante cargado: {paymentProofName}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap justify-between gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep("DETAILS")}
+              >
+                Volver
+              </Button>
+              <Button type="submit" disabled={submitting || uploadingProof}>
+                {submitting ? "Procesando..." : "Finalizar compra"}
+              </Button>
+            </div>
+          </>
+        )}
       </section>
 
       <aside className="space-y-4">
@@ -327,9 +582,13 @@ export default function CheckoutForm({
               <div className="flex justify-between">
                 <span>Envio</span>
                 <div className="text-right">
-                  <p>{deliveryFeeToApply === 0 ? "Gratis" : formatUsd(deliveryFeeToApply)}</p>
+                  <p>
+                    {deliveryFeeToApply === 0 ? "Gratis" : formatUsd(deliveryFeeToApply)}
+                  </p>
                   {deliveryFeeToApply > 0 && formatVes(deliveryFeeToApply) ? (
-                    <p className="text-xs text-slate-500">{formatVes(deliveryFeeToApply)}</p>
+                    <p className="text-xs text-slate-500">
+                      {formatVes(deliveryFeeToApply)}
+                    </p>
                   ) : null}
                 </div>
               </div>
@@ -346,11 +605,21 @@ export default function CheckoutForm({
           </div>
         </div>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {step === "PAYMENT" && selectedInstruction ? (
+          <div className="rounded-lg border border-primary-200 bg-primary-50/60 p-4 dark:border-primary-900 dark:bg-primary-950/20">
+            <h3 className="mb-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+              Metodo seleccionado
+            </h3>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              {selectedInstruction.label}
+            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Puedes finalizar sin comprobante, pero adjuntarlo ayuda a validar el pago mas rapido.
+            </p>
+          </div>
+        ) : null}
 
-        <Button type="submit" className="w-full" disabled={submitting}>
-          {submitting ? "Procesando..." : "Confirmar pedido"}
-        </Button>
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </aside>
     </form>
   );

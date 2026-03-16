@@ -2,6 +2,7 @@ import CheckoutForm from "@/components/CheckoutForm";
 import { getAllProducts } from "@/lib/data/productsData";
 import { getActiveUsdVesRate } from "@/lib/data/exchange-rate";
 import { getDeliverySettings } from "@/lib/data/store-settings";
+import { getCheckoutPaymentInstructions } from "@/lib/payment-config";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ async function CheckoutPage() {
     getActiveUsdVesRate(),
     getDeliverySettings(),
   ]);
+  const paymentInstructions = getCheckoutPaymentInstructions();
 
   return (
     <section className="bg-neutral-50 py-10 dark:bg-slate-900 md:py-16">
@@ -29,6 +31,7 @@ async function CheckoutPage() {
           usdToVesRate={activeRate?.rate ?? null}
           deliveryFeeCents={deliverySettings.deliveryFeeCents}
           freeDeliveryMinCents={deliverySettings.freeDeliveryMinCents}
+          paymentInstructions={paymentInstructions}
         />
       </div>
     </section>

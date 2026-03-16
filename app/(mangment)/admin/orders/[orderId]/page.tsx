@@ -55,6 +55,19 @@ function paymentToLabel(status: string) {
   }
 }
 
+function paymentMethodToLabel(method: string | null) {
+  switch (method) {
+    case "MOBILE_PAYMENT":
+      return "Pago movil";
+    case "BANK_TRANSFER":
+      return "Transferencia bancaria";
+    case "IN_STORE":
+      return "Pagar en tienda fisica";
+    default:
+      return "No indicado";
+  }
+}
+
 async function OrderDetailPage({ params }: Props) {
   const { orderId } = await params;
 
@@ -65,6 +78,9 @@ async function OrderDetailPage({ params }: Props) {
       orderNumber: true,
       status: true,
       paymentStatus: true,
+      paymentMethod: true,
+      paymentReference: true,
+      paymentProofUrl: true,
       fulfillmentType: true,
       customerName: true,
       customerPhone: true,
@@ -229,6 +245,28 @@ async function OrderDetailPage({ params }: Props) {
               {order.notes ? (
                 <p className="mt-2 text-sm text-slate-600">Notas: {order.notes}</p>
               ) : null}
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <h3 className="mb-3 text-base font-semibold">Pago</h3>
+              <p className="text-sm">{paymentMethodToLabel(order.paymentMethod)}</p>
+              {order.paymentReference ? (
+                <p className="text-sm text-slate-600">
+                  Referencia: {order.paymentReference}
+                </p>
+              ) : null}
+              {order.paymentProofUrl ? (
+                <Link
+                  href={order.paymentProofUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex text-sm text-primary-700 hover:underline"
+                >
+                  Ver comprobante
+                </Link>
+              ) : (
+                <p className="text-sm text-slate-600">Sin comprobante adjunto.</p>
+              )}
             </div>
 
             {order.fulfillmentType === "DELIVERY" && order.address ? (

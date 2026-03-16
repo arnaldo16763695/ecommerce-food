@@ -9,6 +9,7 @@ type UploadResponse = {
 export async function uploadImageToStorage(params: {
   file: File;
   folderSuffix?: string;
+  endpoint?: string;
 }) {
   const formData = new FormData();
   formData.append("file", params.file);
@@ -16,7 +17,7 @@ export async function uploadImageToStorage(params: {
     formData.append("folderSuffix", params.folderSuffix);
   }
 
-  const res = await fetch("/api/admin/uploads/storage", {
+  const res = await fetch(params.endpoint ?? "/api/admin/uploads/storage", {
     method: "POST",
     body: formData,
   });
@@ -28,4 +29,12 @@ export async function uploadImageToStorage(params: {
   }
 
   return body.data;
+}
+
+export async function uploadCheckoutProofToStorage(params: { file: File }) {
+  return uploadImageToStorage({
+    file: params.file,
+    folderSuffix: "checkout-proofs",
+    endpoint: "/api/uploads/payment-proof",
+  });
 }
