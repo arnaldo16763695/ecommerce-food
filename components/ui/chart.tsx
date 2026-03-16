@@ -38,7 +38,10 @@ function ChartContainer({
       <div
         data-slot="chart"
         data-chart={containerId}
-        className={cn("h-64 w-full text-xs [&_.recharts-cartesian-axis-tick_text]:fill-slate-500", className)}
+        className={cn(
+          "h-64 w-full text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border",
+          className,
+        )}
       >
         <ChartStyle id={containerId} config={config} />
         <RechartsPrimitive.ResponsiveContainer>{children}</RechartsPrimitive.ResponsiveContainer>
@@ -83,7 +86,7 @@ function ChartTooltipContent({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-lg border bg-white px-3 py-2 text-xs shadow-sm dark:bg-slate-900">
+    <div className="rounded-lg border bg-card px-3 py-2 text-xs text-card-foreground shadow-sm">
       {!hideLabel ? <p className="mb-2 font-medium">{label}</p> : null}
       <div className="space-y-1">
         {payload.map((item: { dataKey?: string; value?: number | string }) => {
@@ -91,7 +94,7 @@ function ChartTooltipContent({
           const itemConfig = config[key];
           return (
             <div key={key} className="flex items-center justify-between gap-3">
-              <span className="text-slate-600 dark:text-slate-300">
+              <span className="text-muted-foreground">
                 {itemConfig?.label ?? key}
               </span>
               <span className="font-medium">{item.value}</span>

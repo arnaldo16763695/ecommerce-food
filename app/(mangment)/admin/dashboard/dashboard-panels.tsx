@@ -160,7 +160,6 @@ export default function DashboardPanels() {
     PICKUP: { label: "Retiro", color: "var(--color-success-500)" },
     DELIVERY: { label: "Delivery", color: "var(--color-warning-500)" },
   } satisfies ChartConfig;
-  const pieColors = ["var(--color-success-500)", "var(--color-warning-500)"];
 
   const topProductsChartConfig = {
     quantity: { label: "Unidades", color: "var(--color-secondary-500)" },
@@ -278,10 +277,13 @@ export default function DashboardPanels() {
                   innerRadius={50}
                   outerRadius={84}
                 >
-                  {metrics.fulfillmentDistribution.map((item, idx) => (
+                  {metrics.fulfillmentDistribution.map((item) => (
                     <Cell
                       key={item.fulfillmentType}
-                      fill={pieColors[idx % pieColors.length]}
+                      fill={
+                        fulfillmentChartConfig[item.fulfillmentType].color ??
+                        "var(--color-chart-4)"
+                      }
                       data-chart-key={item.fulfillmentType}
                     />
                   ))}
