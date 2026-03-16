@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { randomBytes, createHash } from "crypto";
 import {
@@ -49,6 +50,19 @@ export async function POST(req: Request) {
 
     const verifyUrl = buildVerificationUrl(email, rawToken);
     await sendVerificationEmail({ to: email, verifyUrl });
+
+    await createAuditLog({
+      actor: { id: user.id, role: "CUSTOMER" },
+      action: "ACCOUNT_REGISTERED",
+      entityType: "USER",
+      entityId: user.id,
+      entityLabel: user.email,
+      summary: `Se registro una nueva cuenta para ${user.email}.`,
+      request: req,
+      metadata: {
+        email: user.email,
+      },
+    });
 
     return NextResponse.json({ user }, { status: 201 });
   } catch {

@@ -63,6 +63,13 @@ const actionOptions = [
   "RELEASE",
   "MARK_PREPARED",
   "ACCOUNT_UPDATE",
+  "ACCOUNT_REGISTERED",
+  "LOGIN_SUCCESS",
+  "LOGIN_FAILED",
+  "PASSWORD_RESET_REQUESTED",
+  "PASSWORD_RESET_COMPLETED",
+  "EMAIL_VERIFICATION_SENT",
+  "EMAIL_VERIFIED",
 ] as const;
 
 const entityTypeOptions = [
@@ -78,6 +85,7 @@ const entityTypeOptions = [
   "STORE_SETTINGS",
   "ACCOUNT",
   "FILE_UPLOAD",
+  "AUTH",
 ] as const;
 
 export default function AuditTable() {

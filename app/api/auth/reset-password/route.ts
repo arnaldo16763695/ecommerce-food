@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createHash } from "crypto";
@@ -49,6 +50,26 @@ export async function POST(req: Request) {
       }),
       prisma.verificationToken.deleteMany({ where: { identifier } }),
     ]);
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, role: true },
+    });
+
+    if (user) {
+      await createAuditLog({
+        actor: { id: user.id, role: user.role },
+        action: "PASSWORD_RESET_COMPLETED",
+        entityType: "USER",
+        entityId: user.id,
+        entityLabel: user.email,
+        summary: `Se actualizo la contrasena de ${user.email}.`,
+        request: req,
+        metadata: {
+          email: user.email,
+        },
+      });
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {

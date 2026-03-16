@@ -5,6 +5,8 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { CredentialsSignin } from "next-auth";
 
+import type { Prisma } from "@/app/generated/prisma";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -18,6 +20,26 @@ class NotAdminError extends CredentialsSignin {
 
 const LONG_SESSION_SECONDS = 60 * 60 * 24 * 30; // 30 days
 const SHORT_SESSION_SECONDS = 60 * 60 * 24; // 1 day
+
+async function logAuthEvent(input: {
+  action: string;
+  summary: string;
+  request?: Request;
+  actor?: { id?: string; role?: "CUSTOMER" | "ADMIN" | "PREPARER" | null } | null;
+  entityLabel?: string | null;
+  metadata?: Prisma.InputJsonValue;
+}) {
+  await createAuditLog({
+    actor: input.actor,
+    action: input.action,
+    entityType: "AUTH",
+    entityId: input.actor?.id ?? null,
+    entityLabel: input.entityLabel ?? input.actor?.id ?? null,
+    summary: input.summary,
+    request: input.request,
+    metadata: input.metadata,
+  });
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -85,7 +107,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         portal: { label: "Portal", type: "text" },
         rememberMe: { label: "Remember me", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = credentials?.email;
         const password = credentials?.password;
         const portal = credentials?.portal;
@@ -95,8 +117,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (typeof email !== "string" || typeof password !== "string")
           return null;
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         const user = await prisma.user.findUnique({
-          where: { email },
+          where: { email: normalizedEmail },
           select: {
             id: true,
             role: true,
@@ -108,13 +132,48 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           },
         });
 
-        if (!user?.passwordHash) return null;
+        if (!user?.passwordHash) {
+          await logAuthEvent({
+            action: "LOGIN_FAILED",
+            summary: `Fallo el inicio de sesion para ${normalizedEmail}.`,
+            request,
+            entityLabel: normalizedEmail,
+            metadata: {
+              reason: "USER_NOT_FOUND_OR_PASSWORDLESS",
+              portal: portal ?? "storefront",
+            },
+          });
+          return null;
+        }
 
         const ok = await bcrypt.compare(password, user.passwordHash);
-        if (!ok) return null;
+        if (!ok) {
+          await logAuthEvent({
+            action: "LOGIN_FAILED",
+            summary: `Fallo el inicio de sesion para ${user.email ?? normalizedEmail}.`,
+            request,
+            actor: { id: user.id, role: user.role },
+            entityLabel: user.email ?? normalizedEmail,
+            metadata: {
+              reason: "INVALID_PASSWORD",
+              portal: portal ?? "storefront",
+            },
+          });
+          return null;
+        }
 
-        
         if (!user.emailVerified) {
+          await logAuthEvent({
+            action: "LOGIN_FAILED",
+            summary: `Bloqueo de login por email no verificado para ${user.email ?? normalizedEmail}.`,
+            request,
+            actor: { id: user.id, role: user.role },
+            entityLabel: user.email ?? normalizedEmail,
+            metadata: {
+              reason: "EMAIL_NOT_VERIFIED",
+              portal: portal ?? "storefront",
+            },
+          });
           throw new EmailNotVerifiedError();
         }
 
@@ -123,8 +182,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.role !== "ADMIN" &&
           user.role !== "PREPARER"
         ) {
+          await logAuthEvent({
+            action: "LOGIN_FAILED",
+            summary: `Bloqueo de acceso administrativo para ${user.email ?? normalizedEmail}.`,
+            request,
+            actor: { id: user.id, role: user.role },
+            entityLabel: user.email ?? normalizedEmail,
+            metadata: {
+              reason: "ROLE_NOT_ALLOWED_FOR_ADMIN_PORTAL",
+              portal: "admin",
+            },
+          });
           throw new NotAdminError();
         }
+
+        await logAuthEvent({
+          action: "LOGIN_SUCCESS",
+          summary: `Inicio de sesion exitoso para ${user.email ?? normalizedEmail}.`,
+          request,
+          actor: { id: user.id, role: user.role },
+          entityLabel: user.email ?? normalizedEmail,
+          metadata: {
+            portal: portal ?? "storefront",
+            rememberMe: rememberSession,
+          },
+        });
 
         return {
           id: user.id,

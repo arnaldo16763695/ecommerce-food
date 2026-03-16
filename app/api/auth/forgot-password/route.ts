@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { randomBytes, createHash } from "crypto";
 import {
@@ -43,6 +44,19 @@ export async function POST(req: Request) {
 
     const resetUrl = buildPasswordResetUrl(email, rawToken);
     await sendPasswordResetEmail({ to: email, resetUrl });
+
+    await createAuditLog({
+      actor: { id: user.id, role: "CUSTOMER" },
+      action: "PASSWORD_RESET_REQUESTED",
+      entityType: "USER",
+      entityId: user.id,
+      entityLabel: email,
+      summary: `Se solicito reinicio de contrasena para ${email}.`,
+      request: req,
+      metadata: {
+        email,
+      },
+    });
 
     return okResponse;
   } catch (error) {

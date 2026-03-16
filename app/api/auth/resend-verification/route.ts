@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { randomBytes, createHash } from "crypto";
 import {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { emailVerified: true },
+      select: { id: true, role: true, emailVerified: true },
     });
 
     // If user does not exist or is already verified, keep generic response.
@@ -40,6 +41,19 @@ export async function POST(req: Request) {
 
     const verifyUrl = buildVerificationUrl(email, rawToken);
     await sendVerificationEmail({ to: email, verifyUrl });
+
+    await createAuditLog({
+      actor: { id: user.id, role: user.role },
+      action: "EMAIL_VERIFICATION_SENT",
+      entityType: "USER",
+      entityId: user.id,
+      entityLabel: email,
+      summary: `Se reenvio la verificacion de email para ${email}.`,
+      request: req,
+      metadata: {
+        email,
+      },
+    });
 
     return okResponse;
   } catch {

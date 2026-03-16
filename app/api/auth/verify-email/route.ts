@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { createHash } from "crypto";
 
@@ -36,6 +37,26 @@ export async function GET(req: Request) {
     }),
     prisma.verificationToken.deleteMany({ where: { identifier: email } }),
   ]);
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, email: true, role: true },
+  });
+
+  if (user) {
+    await createAuditLog({
+      actor: { id: user.id, role: user.role },
+      action: "EMAIL_VERIFIED",
+      entityType: "USER",
+      entityId: user.id,
+      entityLabel: user.email,
+      summary: `Se verifico el email de ${user.email}.`,
+      request: req,
+      metadata: {
+        email: user.email,
+      },
+    });
+  }
 
   return NextResponse.redirect(redirectOk);
 }
