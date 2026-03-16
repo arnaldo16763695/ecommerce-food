@@ -15,6 +15,7 @@ export type CartItem = {
   id: string;
   // Base product id. For legacy local data this may be missing.
   productId?: string;
+  name?: string;
   quantity: number;
   unitPriceCents?: number;
   notes?: string;

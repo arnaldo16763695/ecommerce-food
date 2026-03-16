@@ -41,6 +41,7 @@ function normalizeCartItemInput(
   return {
     id: lineKey,
     productId: input.productId,
+    name: undefined,
     quantity,
     unitPriceCents: input.unitPriceCents,
     notes: input.notes?.trim() || undefined,
@@ -195,12 +196,22 @@ export const useCartStore = create<CartStore>()(
         if (typeof window === "undefined") return;
 
         try {
-          await fetch("/api/cart", {
+          const response = await fetch("/api/cart", {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ items: get().items }),
+          });
+
+          if (!response.ok) {
+            return;
+          }
+
+          const data = (await response.json()) as { items?: CartItem[] };
+
+          set({
+            items: normalizeHydratedItems(data.items),
           });
         } catch {
           // Keep local cart if sync fails.

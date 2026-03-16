@@ -249,6 +249,7 @@ async function readCartItems(cartId: string): Promise<CartItem[]> {
     select: {
       lineKey: true,
       productId: true,
+      nameSnapshot: true,
       quantity: true,
       unitPriceCents: true,
       notes: true,
@@ -268,6 +269,7 @@ async function readCartItems(cartId: string): Promise<CartItem[]> {
     .map((item) => ({
       id: item.lineKey,
       productId: item.productId as string,
+      name: item.nameSnapshot,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
       notes: item.notes ?? undefined,
