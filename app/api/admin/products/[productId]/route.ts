@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { slugify } from "@/lib/slug";
@@ -80,7 +81,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existing = await prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true, name: true },
+    select: { id: true, name: true, slug: true, basePriceCents: true },
   });
 
   if (!existing) {
@@ -234,6 +235,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         },
       },
     });
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "UPDATE",
+    entityType: "PRODUCT",
+    entityId: updated.id,
+    entityLabel: updated.name,
+    summary: `Actualizo el producto ${updated.name}.`,
+    request: req,
+    metadata: {
+      previousName: existing.name,
+      previousSlug: existing.slug,
+      nextSlug: updated.slug,
+      previousBasePriceCents: existing.basePriceCents,
+      nextBasePriceCents: updated.basePriceCents,
+      categoryId: updated.category?.id ?? null,
+      isActive: updated.isActive,
+      isFeatured: updated.isFeatured,
+    },
   });
 
   return NextResponse.json({ data: updated });

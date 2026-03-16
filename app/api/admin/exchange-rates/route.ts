@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
@@ -98,6 +99,23 @@ export async function POST(req: NextRequest) {
         updatedAt: true,
       },
     });
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "CREATE",
+    entityType: "EXCHANGE_RATE",
+    entityId: created.id,
+    entityLabel: "USD/VES",
+    summary: `Registro una nueva tasa USD/VES en ${Number(created.rate).toFixed(4)}.`,
+    request: req,
+    metadata: {
+      baseCurrency: created.baseCurrency,
+      quoteCurrency: created.quoteCurrency,
+      rate: Number(created.rate),
+      source: created.source,
+      effectiveAt: created.effectiveAt.toISOString(),
+    },
   });
 
   return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
@@ -41,6 +42,10 @@ async function ensureAdmin() {
 export async function PATCH(req: NextRequest, { params }: Params) {
   const guard = await ensureAdmin();
   if (guard) return guard;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { groupId } = await params;
   if (!groupId) {
@@ -55,7 +60,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existing = await prisma.optionGroup.findUnique({
     where: { id: groupId },
-    select: { id: true, minSelect: true, maxSelect: true },
+    select: { id: true, name: true, minSelect: true, maxSelect: true },
   });
   if (!existing) {
     return NextResponse.json({ error: "Option group not found" }, { status: 404 });
@@ -109,6 +114,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           products: true,
         },
       },
+    },
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "UPDATE",
+    entityType: "OPTION_GROUP",
+    entityId: updated.id,
+    entityLabel: updated.name,
+    summary: `Actualizo el grupo de opciones ${updated.name}.`,
+    request: req,
+    metadata: {
+      previousName: existing.name,
+      nextMinSelect: updated.minSelect,
+      nextMaxSelect: updated.maxSelect,
+      sortOrder: updated.sortOrder,
+      isActive: updated.isActive,
     },
   });
 

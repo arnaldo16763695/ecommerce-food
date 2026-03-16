@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { slugify } from "@/lib/slug";
@@ -247,6 +248,23 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "CREATE",
+    entityType: "PRODUCT",
+    entityId: created.id,
+    entityLabel: created.name,
+    summary: `Creo el producto ${created.name}.`,
+    request: req,
+    metadata: {
+      slug: created.slug,
+      basePriceCents: created.basePriceCents,
+      categoryId: created.category?.id ?? null,
+      isActive: created.isActive,
+      isFeatured: created.isFeatured,
+    },
   });
 
   return NextResponse.json({ data: created }, { status: 201 });

@@ -21,6 +21,8 @@ vi.mock("next/link", () => ({
     React.createElement("a", { href, ...props }, children),
 }));
 
+vi.mock("server-only", () => ({}));
+
 if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}

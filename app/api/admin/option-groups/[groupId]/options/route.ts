@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
@@ -61,6 +62,10 @@ export async function GET(_: NextRequest, { params }: Params) {
 export async function POST(req: NextRequest, { params }: Params) {
   const guard = await ensureAdmin();
   if (guard) return guard;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { groupId } = await params;
   if (!groupId) {
@@ -129,6 +134,22 @@ export async function POST(req: NextRequest, { params }: Params) {
       priceDeltaCents: true,
       isActive: true,
       sortOrder: true,
+    },
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "CREATE",
+    entityType: "OPTION",
+    entityId: created.id,
+    entityLabel: created.name,
+    summary: `Creo la opcion ${created.name}.`,
+    request: req,
+    metadata: {
+      groupId: created.groupId,
+      priceDeltaCents: created.priceDeltaCents,
+      sortOrder: created.sortOrder,
+      isActive: created.isActive,
     },
   });
 

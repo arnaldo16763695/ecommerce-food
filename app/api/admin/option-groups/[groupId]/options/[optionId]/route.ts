@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
@@ -37,6 +38,10 @@ async function ensureAdmin() {
 export async function PATCH(req: NextRequest, { params }: Params) {
   const guard = await ensureAdmin();
   if (guard) return guard;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { groupId, optionId } = await params;
   if (!groupId || !optionId) {
@@ -51,7 +56,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existing = await prisma.option.findFirst({
     where: { id: optionId, groupId },
-    select: { id: true },
+    select: { id: true, name: true, priceDeltaCents: true },
   });
   if (!existing) {
     return NextResponse.json({ error: "Option not found" }, { status: 404 });
@@ -111,12 +116,34 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     },
   });
 
+  await createAuditLog({
+    actor: session.user,
+    action: "UPDATE",
+    entityType: "OPTION",
+    entityId: updated.id,
+    entityLabel: updated.name,
+    summary: `Actualizo la opcion ${updated.name}.`,
+    request: req,
+    metadata: {
+      groupId: updated.groupId,
+      previousName: existing.name,
+      previousPriceDeltaCents: existing.priceDeltaCents,
+      nextPriceDeltaCents: updated.priceDeltaCents,
+      sortOrder: updated.sortOrder,
+      isActive: updated.isActive,
+    },
+  });
+
   return NextResponse.json({ data: updated });
 }
 
-export async function DELETE(_: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const guard = await ensureAdmin();
   if (guard) return guard;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { groupId, optionId } = await params;
   if (!groupId || !optionId) {
@@ -125,13 +152,26 @@ export async function DELETE(_: NextRequest, { params }: Params) {
 
   const existing = await prisma.option.findFirst({
     where: { id: optionId, groupId },
-    select: { id: true },
+    select: { id: true, name: true },
   });
   if (!existing) {
     return NextResponse.json({ error: "Option not found" }, { status: 404 });
   }
 
   await prisma.option.delete({ where: { id: optionId } });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "DELETE",
+    entityType: "OPTION",
+    entityId: existing.id,
+    entityLabel: existing.name,
+    summary: `Elimino la opcion ${existing.name}.`,
+    request: req,
+    metadata: {
+      groupId,
+    },
+  });
 
   return NextResponse.json({ data: { id: optionId } });
 }

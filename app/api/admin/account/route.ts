@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
@@ -58,6 +59,20 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
+  const existing = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
   const updated = await prisma.user.update({
     where: { id: session.user.id },
     data: {
@@ -70,6 +85,22 @@ export async function PATCH(req: NextRequest) {
       email: true,
       image: true,
       role: true,
+    },
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "ACCOUNT_UPDATE",
+    entityType: "ACCOUNT",
+    entityId: updated.id,
+    entityLabel: updated.name ?? updated.email ?? updated.id,
+    summary: "Actualizo su perfil administrativo.",
+    request: req,
+    metadata: {
+      previousName: existing.name,
+      nextName: updated.name,
+      previousImage: existing.image,
+      nextImage: updated.image,
     },
   });
 

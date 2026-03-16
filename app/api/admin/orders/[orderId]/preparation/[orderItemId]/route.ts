@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { publishKitchenEvent } from "@/lib/kitchen-events";
 import { z } from "zod";
@@ -40,11 +41,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     where: { id: orderId },
     select: {
       id: true,
+      orderNumber: true,
       status: true,
       assignedPreparerId: true,
       items: {
         where: { id: orderItemId },
-        select: { id: true },
+        select: { id: true, nameSnapshot: true },
       },
     },
   });
@@ -102,6 +104,24 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   publishKitchenEvent({
     type: "ORDER_ITEM_PREPARATION_CHANGED",
     orderId,
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "MARK_PREPARED",
+    entityType: "ORDER_ITEM",
+    entityId: updated.orderItemId,
+    entityLabel: order.items[0]?.nameSnapshot ?? updated.orderItemId,
+    summary: parsed.data.isPrepared
+      ? `Marco como preparado un item del pedido #${order.orderNumber}.`
+      : `Revirtio la preparacion de un item del pedido #${order.orderNumber}.`,
+    request: req,
+    metadata: {
+      orderId,
+      orderNumber: order.orderNumber,
+      isPrepared: updated.isPrepared,
+      preparedByUserId: updated.preparedByUser?.id ?? null,
+    },
   });
 
   return NextResponse.json({ data: updated });

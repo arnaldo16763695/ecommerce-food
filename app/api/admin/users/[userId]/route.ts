@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 
 const updateRoleSchema = z.object({
@@ -42,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existingUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true },
+    select: { id: true, role: true, name: true, email: true },
   });
   if (!existingUser) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -58,6 +59,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       role: true,
       emailVerified: true,
       image: true,
+    },
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "UPDATE",
+    entityType: "USER",
+    entityId: updated.id,
+    entityLabel: updated.name ?? updated.email ?? updated.id,
+    summary: `Actualizo el rol del usuario a ${updated.role}.`,
+    request: req,
+    metadata: {
+      field: "role",
+      previousRole: existingUser.role,
+      nextRole: updated.role,
     },
   });
 

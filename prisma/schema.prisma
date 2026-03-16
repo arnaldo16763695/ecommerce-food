@@ -59,8 +59,34 @@ model User {
   orders       Order[]
   assignedOrders Order[] @relation("OrderAssignedPreparer")
   preparedOrderItems OrderPreparationItem[] @relation("OrderPreparationBy")
+  auditLogs     AuditLog[] @relation("AuditLogActor")
 
   @@map("users")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?  @map("actor_user_id")
+  actorRole   Roles?   @map("actor_role")
+  action      String   @db.VarChar(80)
+  entityType  String   @map("entity_type") @db.VarChar(80)
+  entityId    String?  @map("entity_id")
+  entityLabel String?  @map("entity_label") @db.VarChar(160)
+  summary     String   @db.VarChar(240)
+  routePath   String?  @map("route_path") @db.VarChar(200)
+  method      String?  @db.VarChar(12)
+  ipAddress   String?  @map("ip_address") @db.VarChar(100)
+  userAgent   String?  @map("user_agent") @db.VarChar(500)
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actorUser User? @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([entityType, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
 }
 
 model VerificationToken {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { publishKitchenEvent } from "@/lib/kitchen-events";
 import {
@@ -239,6 +240,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         orderId: updated.id,
         orderNumber: updated.orderNumber,
       });
+
+      await createAuditLog({
+        actor: session.user,
+        action: "ASSIGN",
+        entityType: "ORDER",
+        entityId: updated.id,
+        entityLabel: `Pedido #${updated.orderNumber}`,
+        summary: `Tomo el pedido #${updated.orderNumber} para preparacion.`,
+        request: req,
+        metadata: {
+          orderNumber: updated.orderNumber,
+          previousStatus: existing.status,
+          nextStatus: updated.status,
+          assignedPreparerId: updated.assignedPreparer?.id ?? session.user.id,
+        },
+      });
     }
 
     return NextResponse.json({ data: updated });
@@ -295,6 +312,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         type: "ORDER_STATUS_CHANGED",
         orderId: updated.id,
         orderNumber: updated.orderNumber,
+      });
+
+      await createAuditLog({
+        actor: session.user,
+        action: "RELEASE",
+        entityType: "ORDER",
+        entityId: updated.id,
+        entityLabel: `Pedido #${updated.orderNumber}`,
+        summary: `Libero el pedido #${updated.orderNumber}.`,
+        request: req,
+        metadata: {
+          orderNumber: updated.orderNumber,
+          previousStatus: "PREPARING",
+          nextStatus: updated.status,
+        },
       });
     }
 
@@ -372,6 +404,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           orderId: updated.id,
           orderNumber: updated.orderNumber,
         });
+
+        await createAuditLog({
+          actor: session.user,
+          action: "ASSIGN",
+          entityType: "ORDER",
+          entityId: updated.id,
+          entityLabel: `Pedido #${updated.orderNumber}`,
+          summary: `Tomo el pedido #${updated.orderNumber} desde el flujo de cocina.`,
+          request: req,
+          metadata: {
+            orderNumber: updated.orderNumber,
+            previousStatus: existing.status,
+            nextStatus: updated.status,
+            assignedPreparerId: updated.assignedPreparer?.id ?? session.user.id,
+          },
+        });
       }
 
       return NextResponse.json({ data: updated });
@@ -431,6 +479,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         type: "ORDER_STATUS_CHANGED",
         orderId: updated.id,
         orderNumber: updated.orderNumber,
+      });
+
+      await createAuditLog({
+        actor: session.user,
+        action: "STATUS_CHANGE",
+        entityType: "ORDER",
+        entityId: updated.id,
+        entityLabel: `Pedido #${updated.orderNumber}`,
+        summary: `Marco el pedido #${updated.orderNumber} como READY.`,
+        request: req,
+        metadata: {
+          orderNumber: updated.orderNumber,
+          previousStatus: existing.status,
+          nextStatus: updated.status,
+        },
       });
     }
 
@@ -504,6 +567,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     type: "ORDER_STATUS_CHANGED",
     orderId: updated.id,
     orderNumber: updated.orderNumber,
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "STATUS_CHANGE",
+    entityType: "ORDER",
+    entityId: updated.id,
+    entityLabel: `Pedido #${updated.orderNumber}`,
+    summary: `Actualizo el pedido #${updated.orderNumber}.`,
+    request: req,
+    metadata: {
+      orderNumber: updated.orderNumber,
+      previousStatus: existing.status,
+      nextStatus: updated.status,
+      previousPaymentStatus: existing.paymentStatus,
+      nextPaymentStatus: updated.paymentStatus,
+    },
   });
 
   return NextResponse.json({ data: updated });

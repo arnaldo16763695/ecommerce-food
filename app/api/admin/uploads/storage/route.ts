@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 
 function getRequiredEnv(name: string) {
   const value = process.env[name];
@@ -86,6 +87,22 @@ export async function POST(req: NextRequest) {
     }
 
     const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${objectPath}`;
+
+    await createAuditLog({
+      actor: session.user,
+      action: "CREATE",
+      entityType: "FILE_UPLOAD",
+      entityId: objectPath,
+      entityLabel: maybeFile.name,
+      summary: `Subio un archivo a storage: ${maybeFile.name}.`,
+      request: req,
+      metadata: {
+        bucket,
+        objectPath,
+        mimeType: maybeFile.type,
+        size: maybeFile.size,
+      },
+    });
 
     return NextResponse.json({
       data: {

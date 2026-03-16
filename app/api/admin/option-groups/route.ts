@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
@@ -91,6 +92,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const guard = await ensureAdmin();
   if (guard) return guard;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = createGroupSchema.safeParse(body);
@@ -147,6 +152,22 @@ export async function POST(req: NextRequest) {
           products: true,
         },
       },
+    },
+  });
+
+  await createAuditLog({
+    actor: session.user,
+    action: "CREATE",
+    entityType: "OPTION_GROUP",
+    entityId: created.id,
+    entityLabel: created.name,
+    summary: `Creo el grupo de opciones ${created.name}.`,
+    request: req,
+    metadata: {
+      minSelect: created.minSelect,
+      maxSelect: created.maxSelect,
+      sortOrder: created.sortOrder,
+      isActive: created.isActive,
     },
   });
 
