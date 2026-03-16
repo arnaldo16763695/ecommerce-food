@@ -5,31 +5,59 @@ import {
   RiTwitterLine,
 } from "@remixicon/react";
 import Link from "next/link";
+
+const footerHrefMap: Record<string, string> = {
+  Inicio: "/",
+  Tienda: "/shop",
+  "Sobre nosotros": "/",
+  Contacto: "/",
+  "Preguntas frecuentes": "/orders",
+  "Envios y devoluciones": "/shop",
+  "Política de privacidad": "/",
+  "Términos y condiciones": "/",
+};
+
 export const Footer = () => {
   return (
-    <footer className="bg-neutral-900 text-white pt-10 pb-6">
+    <footer className="bg-neutral-900 pt-10 pb-6 text-white">
       <div className="page-container space-y-6 divide-y divide-neutral-800">
-        {/* Footer top  */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 pb-11 sm:pb-16">
-          {/** Desc */}
+        {/* Footer top */}
+        <div className="grid gap-8 pb-8 sm:pb-12 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            {/* Logo  */}
-            <span className="text-2xl font-bold font-cuina inline-flex mb-4">
+            <span className="mb-4 inline-flex text-2xl font-bold font-cuina">
               Logo
             </span>
             <p className="text-gray-300">
-              Sabores frescos, pedidos rápidos y una experiencia simple para
-              disfrutar tu comida favorita todos los días.
+              Sabores frescos, pedidos rapidos y una experiencia simple para
+              disfrutar tu comida favorita todos los dias.
             </p>
           </div>
-          {/* Footer list  */}
+
+          <div className="space-y-3 sm:hidden">
+            <p className="text-xl font-cunia">Accesos rapidos</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-gray-300">
+              <Link href="/" className="hover:underline">
+                Inicio
+              </Link>
+              <Link href="/shop" className="hover:underline">
+                Tienda
+              </Link>
+              <Link href="/" className="hover:underline">
+                Contacto
+              </Link>
+            </div>
+          </div>
+
           {footerList.map((item) => (
-            <div key={item.id}>
+            <div key={item.id} className="hidden sm:block">
               <p className="text-xl font-cunia">{item.title}</p>
-              <ul className="space-y-2 mt-4">
+              <ul className="mt-4 space-y-2">
                 {item.links.map((link) => (
                   <li key={link}>
-                    <Link href={""} className="text-gray-300 hover:underline">
+                    <Link
+                      href={footerHrefMap[link] ?? "/"}
+                      className="text-gray-300 hover:underline"
+                    >
                       {link}
                     </Link>
                   </li>
@@ -38,9 +66,8 @@ export const Footer = () => {
             </div>
           ))}
 
-          {/* Get in touch  */}
           <div>
-            <p className="text-xl font-cunia mb-3">Contáctanos</p>
+            <p className="mb-3 text-xl font-cunia">Contactanos</p>
             <p>
               Correo:
               <a
@@ -51,7 +78,7 @@ export const Footer = () => {
               </a>
             </p>
             <p>
-              Teléfono:
+              Telefono:
               <a
                 href="tel:+1234567890"
                 className="text-gray-300 hover:underline"
@@ -60,16 +87,15 @@ export const Footer = () => {
               </a>
             </p>
 
-            {/* Social links  */}
-            <div className="flex items-center gap-2 mt-7">
+            <div className="mt-7 flex items-center gap-2">
               {[RiFacebookFill, RiInstagramLine, RiTwitterLine].map(
                 (Icon, index) => (
                   <a
                     key={index}
                     href="#"
-                    className="text-gray-300 hover:text-primary-500 focus:text-primary-500 transition-colors"
+                    className="text-gray-300 transition-colors hover:text-primary-500 focus:text-primary-500"
                   >
-                    <Icon className="" />
+                    <Icon />
                   </a>
                 ),
               )}
@@ -78,7 +104,9 @@ export const Footer = () => {
         </div>
 
         {/* Footer bottom */}
-        <p>&copy; 2025 Foodie. Todos los derechos reservados.</p>
+        <p className="text-center sm:text-left">
+          &copy; 2025 Foodie. Todos los derechos reservados.
+        </p>
       </div>
     </footer>
   );
