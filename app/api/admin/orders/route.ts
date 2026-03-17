@@ -29,12 +29,17 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(rawLimit, MAX_LIMIT);
   const q = (searchParams.get("q") ?? "").trim();
   const status = (searchParams.get("status") ?? "ALL").trim();
+  const paymentReviewStatus = (searchParams.get("paymentReviewStatus") ?? "ALL").trim();
   const skip = (page - 1) * limit;
 
   const andConditions: Array<Record<string, unknown>> = [];
 
   if (status !== "ALL") {
     andConditions.push({ status });
+  }
+
+  if (paymentReviewStatus !== "ALL") {
+    andConditions.push({ paymentReviewStatus });
   }
 
   if (q) {
@@ -63,6 +68,8 @@ export async function GET(req: NextRequest) {
         orderNumber: true,
         status: true,
         paymentStatus: true,
+        paymentMethod: true,
+        paymentReviewStatus: true,
         fulfillmentType: true,
         customerName: true,
         totalCents: true,

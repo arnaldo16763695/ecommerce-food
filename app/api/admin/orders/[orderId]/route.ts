@@ -11,7 +11,7 @@ import { z } from "zod";
 
 const updateOrderSchema = z
   .object({
-    action: z.enum(["TAKE", "RELEASE"]).optional(),
+    action: z.enum(["TAKE", "RELEASE", "APPROVE_PAYMENT", "REJECT_PAYMENT_REVIEW"]).optional(),
     status: z
       .enum([
         "PENDING",
@@ -24,6 +24,7 @@ const updateOrderSchema = z
       ])
       .optional(),
     paymentStatus: z.enum(["UNPAID", "PAID", "REFUNDED"]).optional(),
+    reviewNote: z.string().trim().max(1000).optional(),
   })
   .refine(
     (value) =>
@@ -44,6 +45,8 @@ const orderSummarySelect = {
   orderNumber: true,
   status: true,
   paymentStatus: true,
+  paymentReviewStatus: true,
+  paymentMethod: true,
   fulfillmentType: true,
   customerName: true,
   totalCents: true,
@@ -85,10 +88,20 @@ export async function GET(_req: NextRequest, { params }: Params) {
       orderNumber: true,
       status: true,
       paymentStatus: true,
+      paymentReviewStatus: true,
       paymentMethod: true,
       paymentReference: true,
       paymentProofUrl: true,
       paymentProofPath: true,
+      paymentReviewNotes: true,
+      paymentReviewedAt: true,
+      paymentReviewedByUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
       fulfillmentType: true,
       customerName: true,
       customerPhone: true,
@@ -205,6 +218,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       status: true,
       fulfillmentType: true,
       paymentStatus: true,
+      paymentReviewStatus: true,
+      paymentMethod: true,
+      paymentProofUrl: true,
       assignedPreparerId: true,
     },
   });
@@ -333,6 +349,125 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         },
       });
     }
+
+    return NextResponse.json({ data: updated });
+  }
+
+  if (parsed.data.action === "APPROVE_PAYMENT") {
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "Solo ADMIN puede aprobar pagos." },
+        { status: 403 },
+      );
+    }
+
+    if (existing.paymentMethod === "IN_STORE") {
+      return NextResponse.json(
+        { error: "Los pagos en tienda fisica no requieren revision manual." },
+        { status: 409 },
+      );
+    }
+
+    if (!existing.paymentProofUrl) {
+      return NextResponse.json(
+        { error: "Este pedido no tiene comprobante adjunto para revisar." },
+        { status: 409 },
+      );
+    }
+
+    if (existing.paymentStatus === "REFUNDED") {
+      return NextResponse.json(
+        { error: "No se puede aprobar un pago ya reembolsado." },
+        { status: 409 },
+      );
+    }
+
+    const updated = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: "PAID",
+        paymentReviewStatus: "APPROVED",
+        paymentReviewNotes: parsed.data.reviewNote?.trim() || null,
+        paymentReviewedAt: new Date(),
+        paymentReviewedByUserId: session.user.id,
+      },
+      select: orderSummarySelect,
+    });
+
+    await createAuditLog({
+      actor: session.user,
+      action: "PAYMENT_REVIEW_APPROVE",
+      entityType: "ORDER",
+      entityId: updated.id,
+      entityLabel: `Pedido #${updated.orderNumber}`,
+      summary: `Aprobo manualmente el pago del pedido #${updated.orderNumber}.`,
+      request: req,
+      metadata: {
+        orderNumber: updated.orderNumber,
+        previousPaymentStatus: existing.paymentStatus,
+        nextPaymentStatus: updated.paymentStatus,
+        previousPaymentReviewStatus: existing.paymentReviewStatus,
+        nextPaymentReviewStatus: updated.paymentReviewStatus,
+        reviewNote: parsed.data.reviewNote?.trim() || null,
+      },
+    });
+
+    return NextResponse.json({ data: updated });
+  }
+
+  if (parsed.data.action === "REJECT_PAYMENT_REVIEW") {
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "Solo ADMIN puede rechazar revisiones de pago." },
+        { status: 403 },
+      );
+    }
+
+    if (existing.paymentMethod === "IN_STORE") {
+      return NextResponse.json(
+        { error: "Los pagos en tienda fisica no requieren revision manual." },
+        { status: 409 },
+      );
+    }
+
+    if (!existing.paymentProofUrl) {
+      return NextResponse.json(
+        { error: "Este pedido no tiene comprobante adjunto para rechazar." },
+        { status: 409 },
+      );
+    }
+
+    const updated = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: "UNPAID",
+        paymentReviewStatus: "REJECTED",
+        paymentReviewNotes:
+          parsed.data.reviewNote?.trim() || "Comprobante rechazado en revision manual.",
+        paymentReviewedAt: new Date(),
+        paymentReviewedByUserId: session.user.id,
+      },
+      select: orderSummarySelect,
+    });
+
+    await createAuditLog({
+      actor: session.user,
+      action: "PAYMENT_REVIEW_REJECT",
+      entityType: "ORDER",
+      entityId: updated.id,
+      entityLabel: `Pedido #${updated.orderNumber}`,
+      summary: `Rechazo la revision de pago del pedido #${updated.orderNumber}.`,
+      request: req,
+      metadata: {
+        orderNumber: updated.orderNumber,
+        previousPaymentStatus: existing.paymentStatus,
+        nextPaymentStatus: updated.paymentStatus,
+        previousPaymentReviewStatus: existing.paymentReviewStatus,
+        nextPaymentReviewStatus: updated.paymentReviewStatus,
+        reviewNote:
+          parsed.data.reviewNote?.trim() || "Comprobante rechazado en revision manual.",
+      },
+    });
 
     return NextResponse.json({ data: updated });
   }

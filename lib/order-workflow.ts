@@ -8,6 +8,11 @@ export type OrderStatus =
   | "CANCELED";
 
 export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
+export type PaymentReviewStatus =
+  | "NOT_REQUIRED"
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED";
 export type FulfillmentType = "PICKUP" | "DELIVERY";
 
 export function getAllowedOrderStatusTransitions(

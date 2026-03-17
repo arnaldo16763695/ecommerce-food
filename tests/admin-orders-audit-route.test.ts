@@ -137,4 +137,91 @@ describe("admin orders audit integration", () => {
       }),
     });
   });
+
+  it("writes an audit log when admin approves a payment review", async () => {
+    authMock.mockResolvedValueOnce({
+      user: { id: "admin_1", role: "ADMIN" },
+    });
+
+    orderFindUniqueMock.mockResolvedValueOnce({
+      id: "order_2",
+      status: "PENDING",
+      fulfillmentType: "PICKUP",
+      paymentStatus: "UNPAID",
+      paymentReviewStatus: "PENDING",
+      paymentMethod: "MOBILE_PAYMENT",
+      paymentProofUrl: "https://example.com/proof.png",
+      assignedPreparerId: null,
+    });
+
+    orderUpdateMock.mockResolvedValueOnce({
+      id: "order_2",
+      orderNumber: 84,
+      status: "PENDING",
+      paymentStatus: "PAID",
+      paymentReviewStatus: "APPROVED",
+      paymentMethod: "MOBILE_PAYMENT",
+      fulfillmentType: "PICKUP",
+      customerName: "Jose",
+      totalCents: 3200,
+      createdAt: new Date("2026-03-17T10:00:00.000Z"),
+      assignedPreparer: null,
+      _count: {
+        items: 1,
+      },
+    });
+
+    auditLogCreateMock.mockResolvedValueOnce({ id: "log_2" });
+
+    const mod = await import("../app/api/admin/orders/[orderId]/route");
+    const req = new Request("http://localhost/api/admin/orders/order_2", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "user-agent": "vitest",
+        "x-forwarded-for": "127.0.0.1",
+      },
+      body: JSON.stringify({
+        action: "APPROVE_PAYMENT",
+        reviewNote: "Comprobante validado manualmente.",
+      }),
+    });
+
+    const res = await mod.PATCH(req as never, {
+      params: Promise.resolve({ orderId: "order_2" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.paymentStatus).toBe("PAID");
+    expect(orderUpdateMock).toHaveBeenCalledWith({
+      where: { id: "order_2" },
+      data: expect.objectContaining({
+        paymentStatus: "PAID",
+        paymentReviewStatus: "APPROVED",
+        paymentReviewNotes: "Comprobante validado manualmente.",
+        paymentReviewedByUserId: "admin_1",
+        paymentReviewedAt: expect.any(Date),
+      }),
+      select: expect.any(Object),
+    });
+    expect(auditLogCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorUserId: "admin_1",
+        action: "PAYMENT_REVIEW_APPROVE",
+        entityType: "ORDER",
+        entityId: "order_2",
+        entityLabel: "Pedido #84",
+        summary: "Aprobo manualmente el pago del pedido #84.",
+        metadata: {
+          orderNumber: 84,
+          previousPaymentStatus: "UNPAID",
+          nextPaymentStatus: "PAID",
+          previousPaymentReviewStatus: "PENDING",
+          nextPaymentReviewStatus: "APPROVED",
+          reviewNote: "Comprobante validado manualmente.",
+        },
+      }),
+    });
+  });
 });

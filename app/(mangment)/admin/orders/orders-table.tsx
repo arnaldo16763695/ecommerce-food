@@ -26,6 +26,7 @@ import {
   getSelectableOrderStatuses,
   type FulfillmentType,
   type OrderStatus,
+  type PaymentReviewStatus,
   type PaymentStatus,
 } from "@/lib/order-workflow";
 
@@ -34,6 +35,8 @@ type AdminOrder = {
   orderNumber: number;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod: "MOBILE_PAYMENT" | "BANK_TRANSFER" | "IN_STORE" | null;
+  paymentReviewStatus: PaymentReviewStatus;
   fulfillmentType: FulfillmentType;
   customerName: string;
   totalCents: number;
@@ -93,12 +96,28 @@ function paymentToLabel(status: PaymentStatus) {
   }
 }
 
+function paymentReviewToLabel(status: PaymentReviewStatus) {
+  switch (status) {
+    case "NOT_REQUIRED":
+      return "No requiere revision";
+    case "PENDING":
+      return "Pendiente de revision";
+    case "APPROVED":
+      return "Revision aprobada";
+    case "REJECTED":
+      return "Revision rechazada";
+    default:
+      return status;
+  }
+}
+
 export default function OrdersTable() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | OrderStatus>("ALL");
+  const [paymentReviewFilter, setPaymentReviewFilter] = useState<"ALL" | PaymentReviewStatus>("ALL");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -119,6 +138,7 @@ export default function OrdersTable() {
         page: String(page),
         limit: String(LIMIT),
         status: statusFilter,
+        paymentReviewStatus: paymentReviewFilter,
       });
       if (query) params.set("q", query);
 
@@ -157,7 +177,7 @@ export default function OrdersTable() {
         setLoading(false);
       }
     }
-  }, [page, query, statusFilter, toast]);
+  }, [page, paymentReviewFilter, query, statusFilter, toast]);
 
   useEffect(() => {
     void loadOrders();
@@ -334,6 +354,24 @@ export default function OrdersTable() {
             <SelectItem value="CANCELED">Cancelado</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={paymentReviewFilter}
+          onValueChange={(value) => {
+            setPage(1);
+            setPaymentReviewFilter(value as "ALL" | PaymentReviewStatus);
+          }}
+        >
+          <SelectTrigger className="w-[240px]">
+            <SelectValue placeholder="Revision de pago" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Todas las revisiones</SelectItem>
+            <SelectItem value="PENDING">Pendiente de revision</SelectItem>
+            <SelectItem value="APPROVED">Revision aprobada</SelectItem>
+            <SelectItem value="REJECTED">Revision rechazada</SelectItem>
+            <SelectItem value="NOT_REQUIRED">No requiere revision</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {error ? (
@@ -351,6 +389,7 @@ export default function OrdersTable() {
             <TableHead>Items</TableHead>
             <TableHead>Total</TableHead>
             <TableHead>Pago</TableHead>
+            <TableHead>Revision</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead>Acciones</TableHead>
@@ -359,13 +398,13 @@ export default function OrdersTable() {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-muted-foreground py-8 text-center">
+              <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                 Cargando pedidos...
               </TableCell>
             </TableRow>
           ) : orders.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-muted-foreground py-8 text-center">
+              <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                 No hay pedidos para mostrar
               </TableCell>
             </TableRow>
@@ -415,6 +454,21 @@ export default function OrdersTable() {
                       </SelectContent>
                     </Select>
                   </div>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      order.paymentReviewStatus === "APPROVED"
+                        ? "success"
+                        : order.paymentReviewStatus === "REJECTED"
+                          ? "warning"
+                          : order.paymentReviewStatus === "PENDING"
+                            ? "secondary"
+                            : "outline"
+                    }
+                  >
+                    {paymentReviewToLabel(order.paymentReviewStatus)}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

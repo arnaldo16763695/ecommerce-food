@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import prisma from "@/lib/prisma";
+import PaymentReviewPanel from "./payment-review-panel";
 
 type Props = {
   params: Promise<{ orderId: string }>;
@@ -68,6 +69,21 @@ function paymentMethodToLabel(method: string | null) {
   }
 }
 
+function paymentReviewToLabel(status: string) {
+  switch (status) {
+    case "NOT_REQUIRED":
+      return "No requiere revision";
+    case "PENDING":
+      return "Pendiente de revision";
+    case "APPROVED":
+      return "Revision aprobada";
+    case "REJECTED":
+      return "Revision rechazada";
+    default:
+      return status;
+  }
+}
+
 async function OrderDetailPage({ params }: Props) {
   const { orderId } = await params;
 
@@ -78,9 +94,19 @@ async function OrderDetailPage({ params }: Props) {
       orderNumber: true,
       status: true,
       paymentStatus: true,
+      paymentReviewStatus: true,
       paymentMethod: true,
       paymentReference: true,
       paymentProofUrl: true,
+      paymentReviewNotes: true,
+      paymentReviewedAt: true,
+      paymentReviewedByUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
       fulfillmentType: true,
       customerName: true,
       customerPhone: true,
@@ -186,6 +212,19 @@ async function OrderDetailPage({ params }: Props) {
                   <Badge variant={order.fulfillmentType === "DELIVERY" ? "secondary" : "outline"}>
                     {order.fulfillmentType === "DELIVERY" ? "Delivery" : "Retiro"}
                   </Badge>
+                  <Badge
+                    variant={
+                      order.paymentReviewStatus === "APPROVED"
+                        ? "success"
+                        : order.paymentReviewStatus === "REJECTED"
+                          ? "warning"
+                          : order.paymentReviewStatus === "PENDING"
+                            ? "secondary"
+                            : "outline"
+                    }
+                  >
+                    {paymentReviewToLabel(order.paymentReviewStatus)}
+                  </Badge>
                 </div>
               </div>
               <p className="text-sm text-slate-600">
@@ -267,7 +306,37 @@ async function OrderDetailPage({ params }: Props) {
               ) : (
                 <p className="text-sm text-slate-600">Sin comprobante adjunto.</p>
               )}
+              {order.paymentReviewNotes ? (
+                <p className="mt-2 text-sm text-slate-600">
+                  Revision: {order.paymentReviewNotes}
+                </p>
+              ) : null}
+              {order.paymentReviewedAt ? (
+                <p className="mt-2 text-sm text-slate-600">
+                  Revisado el{" "}
+                  {new Date(order.paymentReviewedAt).toLocaleString("es-VE", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {order.paymentReviewedByUser?.name
+                    ? ` por ${order.paymentReviewedByUser.name}`
+                    : ""}
+                </p>
+              ) : null}
             </div>
+
+            <PaymentReviewPanel
+              orderId={order.id}
+              orderNumber={order.orderNumber}
+              paymentMethod={order.paymentMethod}
+              paymentStatus={order.paymentStatus}
+              paymentReviewStatus={order.paymentReviewStatus}
+              paymentProofUrl={order.paymentProofUrl}
+              initialReviewNote={order.paymentReviewNotes}
+            />
 
             {order.fulfillmentType === "DELIVERY" && order.address ? (
               <div className="rounded-lg border p-4">

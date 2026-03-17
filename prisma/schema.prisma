@@ -58,6 +58,7 @@ model User {
   cart         Cart[]
   orders       Order[]
   assignedOrders Order[] @relation("OrderAssignedPreparer")
+  paymentReviewedOrders Order[] @relation("OrderPaymentReviewedBy")
   preparedOrderItems OrderPreparationItem[] @relation("OrderPreparationBy")
   auditLogs     AuditLog[] @relation("AuditLogActor")
 
@@ -132,6 +133,13 @@ enum PaymentMethod {
   MOBILE_PAYMENT
   BANK_TRANSFER
   IN_STORE
+}
+
+enum PaymentReviewStatus {
+  NOT_REQUIRED
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // =========================
@@ -310,9 +318,13 @@ model Order {
   fulfillmentType FulfillmentType @map("fulfillment_type")
   paymentStatus   PaymentStatus   @default(UNPAID) @map("payment_status")
   paymentMethod   PaymentMethod?  @map("payment_method")
+  paymentReviewStatus PaymentReviewStatus @default(NOT_REQUIRED) @map("payment_review_status")
   paymentReference String?        @map("payment_reference") @db.VarChar(120)
   paymentProofUrl String?         @map("payment_proof_url") @db.VarChar(500)
   paymentProofPath String?        @map("payment_proof_path") @db.VarChar(500)
+  paymentReviewNotes String?      @map("payment_review_notes") @db.VarChar(1000)
+  paymentReviewedAt DateTime?     @map("payment_reviewed_at")
+  paymentReviewedByUserId String? @map("payment_reviewed_by_user_id")
 
   customerName  String  @map("customer_name")
   customerPhone String? @map("customer_phone")
@@ -332,6 +344,7 @@ model Order {
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
   assignedPreparer User? @relation("OrderAssignedPreparer", fields: [assignedPreparerId], references: [id], onDelete: SetNull)
+  paymentReviewedByUser User? @relation("OrderPaymentReviewedBy", fields: [paymentReviewedByUserId], references: [id], onDelete: SetNull)
 
   address OrderAddress?
   items   OrderItem[]
@@ -340,6 +353,7 @@ model Order {
   @@index([createdAt])
   @@index([userId])
   @@index([assignedPreparerId])
+  @@index([paymentReviewStatus, createdAt])
   @@index([status, createdAt])
   @@index([paymentStatus, createdAt])
   @@map("orders")

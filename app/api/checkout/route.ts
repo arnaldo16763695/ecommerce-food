@@ -259,6 +259,8 @@ export async function POST(req: Request) {
           : deliverySettings.deliveryFeeCents
         : 0;
     const totalCents = subtotalCents + taxCents + deliveryFeeCents;
+    const paymentReviewStatus =
+      parsed.data.paymentMethod === "IN_STORE" ? "NOT_REQUIRED" : "PENDING";
 
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.order.create({
@@ -268,6 +270,7 @@ export async function POST(req: Request) {
           fulfillmentType: parsed.data.fulfillmentType,
           paymentStatus: "UNPAID",
           paymentMethod: parsed.data.paymentMethod,
+          paymentReviewStatus,
           paymentReference: parsed.data.paymentReference?.trim() || null,
           paymentProofUrl: parsed.data.paymentProofUrl?.trim() || null,
           paymentProofPath: parsed.data.paymentProofPath?.trim() || null,
