@@ -4,6 +4,10 @@ import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import { publishKitchenEvent } from "@/lib/kitchen-events";
 import {
+  sendPaymentApprovedToCustomer,
+  sendPaymentRejectedToCustomer,
+} from "@/lib/notifications/order-notifications";
+import {
   canTransitionOrderStatus,
   canTransitionPaymentStatus,
 } from "@/lib/order-workflow";
@@ -49,6 +53,7 @@ const orderSummarySelect = {
   paymentMethod: true,
   fulfillmentType: true,
   customerName: true,
+  customerEmail: true,
   totalCents: true,
   createdAt: true,
   assignedPreparer: {
@@ -221,6 +226,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       paymentReviewStatus: true,
       paymentMethod: true,
       paymentProofUrl: true,
+      customerName: true,
+      customerEmail: true,
       assignedPreparerId: true,
     },
   });
@@ -412,6 +419,24 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       },
     });
 
+    const approvalNotification = await Promise.allSettled([
+      sendPaymentApprovedToCustomer({
+        orderNumber: updated.orderNumber,
+        customerName: existing.customerName,
+        customerEmail: existing.customerEmail,
+        reviewNote: parsed.data.reviewNote?.trim() || null,
+      }),
+    ]);
+
+    approvalNotification.forEach((result) => {
+      if (result.status !== "rejected") return;
+      console.error("[admin-order-review] failed to send payment approval email", {
+        orderId: updated.id,
+        orderNumber: updated.orderNumber,
+        error: result.reason instanceof Error ? result.reason.message : "unknown_error",
+      });
+    });
+
     return NextResponse.json({ data: updated });
   }
 
@@ -467,6 +492,25 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         reviewNote:
           parsed.data.reviewNote?.trim() || "Comprobante rechazado en revision manual.",
       },
+    });
+
+    const rejectionNotification = await Promise.allSettled([
+      sendPaymentRejectedToCustomer({
+        orderNumber: updated.orderNumber,
+        customerName: existing.customerName,
+        customerEmail: existing.customerEmail,
+        reviewNote:
+          parsed.data.reviewNote?.trim() || "Comprobante rechazado en revision manual.",
+      }),
+    ]);
+
+    rejectionNotification.forEach((result) => {
+      if (result.status !== "rejected") return;
+      console.error("[admin-order-review] failed to send payment rejection email", {
+        orderId: updated.id,
+        orderNumber: updated.orderNumber,
+        error: result.reason instanceof Error ? result.reason.message : "unknown_error",
+      });
     });
 
     return NextResponse.json({ data: updated });

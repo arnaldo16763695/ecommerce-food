@@ -44,6 +44,13 @@ type CustomerOrderConfirmationInput = {
   itemsCount: number;
 };
 
+type PaymentReviewCustomerInput = {
+  orderNumber: number;
+  customerName: string;
+  customerEmail: string | null;
+  reviewNote?: string | null;
+};
+
 export async function sendNewOrderInternalAlert(input: NewOrderAlertInput) {
   const { apiKey, from } = getResendConfig();
   const to = process.env.ORDERS_ALERT_EMAIL;
@@ -110,6 +117,72 @@ export async function sendOrderConfirmationToCustomer(
   if (result.error) {
     throw new Error(
       `Resend customer confirmation failed: ${result.error.message ?? "unknown_error"}`,
+    );
+  }
+}
+
+export async function sendPaymentApprovedToCustomer(
+  input: PaymentReviewCustomerInput,
+) {
+  if (!input.customerEmail) return;
+
+  const { apiKey, from } = getResendConfig();
+
+  const subject = `Pago aprobado para tu pedido #${input.orderNumber}`;
+  const text = [
+    `Hola ${input.customerName},`,
+    "",
+    `Confirmamos el pago de tu pedido #${input.orderNumber}.`,
+    "Tu comprobante fue validado correctamente y tu pedido seguira su flujo normal.",
+    "",
+    "Gracias por tu compra.",
+  ].join("\n");
+
+  const resend = new Resend(apiKey);
+  const result = await resend.emails.send({
+    from,
+    to: input.customerEmail,
+    subject,
+    text,
+  });
+
+  if (result.error) {
+    throw new Error(
+      `Resend payment approved failed: ${result.error.message ?? "unknown_error"}`,
+    );
+  }
+}
+
+export async function sendPaymentRejectedToCustomer(
+  input: PaymentReviewCustomerInput,
+) {
+  if (!input.customerEmail) return;
+
+  const { apiKey, from } = getResendConfig();
+
+  const subject = `Revisa el comprobante de tu pedido #${input.orderNumber}`;
+  const text = [
+    `Hola ${input.customerName},`,
+    "",
+    `No pudimos validar el comprobante de tu pedido #${input.orderNumber}.`,
+    input.reviewNote
+      ? `Motivo de revision: ${input.reviewNote}`
+      : "Por favor revisa la informacion enviada y vuelve a compartir un comprobante valido.",
+    "",
+    "Si lo deseas, puedes contactar al negocio para completar el pago.",
+  ].join("\n");
+
+  const resend = new Resend(apiKey);
+  const result = await resend.emails.send({
+    from,
+    to: input.customerEmail,
+    subject,
+    text,
+  });
+
+  if (result.error) {
+    throw new Error(
+      `Resend payment rejected failed: ${result.error.message ?? "unknown_error"}`,
     );
   }
 }

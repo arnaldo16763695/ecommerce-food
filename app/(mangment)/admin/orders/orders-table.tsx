@@ -5,6 +5,14 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Select,
@@ -41,6 +49,8 @@ type AdminOrder = {
   customerName: string;
   totalCents: number;
   createdAt: string;
+  paymentReference?: string | null;
+  paymentProofUrl?: string | null;
   _count: {
     items: number;
   };
@@ -53,6 +63,12 @@ type OrdersResponse = {
     limit: number;
     total: number;
     totalPages: number;
+    reviewCounts: {
+      pending: number;
+      approved: number;
+      rejected: number;
+      notRequired: number;
+    };
   };
 };
 
@@ -99,13 +115,13 @@ function paymentToLabel(status: PaymentStatus) {
 function paymentReviewToLabel(status: PaymentReviewStatus) {
   switch (status) {
     case "NOT_REQUIRED":
-      return "No requiere revision";
+      return "No requiere revisión";
     case "PENDING":
-      return "Pendiente de revision";
+      return "Pendiente de revisión";
     case "APPROVED":
-      return "Revision aprobada";
+      return "Revisión aprobada";
     case "REJECTED":
-      return "Revision rechazada";
+      return "Revisión rechazada";
     default:
       return status;
   }
@@ -124,6 +140,13 @@ export default function OrdersTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
+  const [reviewingOrder, setReviewingOrder] = useState<AdminOrder | null>(null);
+  const [reviewCounts, setReviewCounts] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    notRequired: 0,
+  });
 
   const loadOrders = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
@@ -158,6 +181,14 @@ export default function OrdersTable() {
       setOrders(payload.data ?? []);
       setTotal(payload.meta?.total ?? 0);
       setTotalPages(Math.max(1, payload.meta?.totalPages ?? 1));
+      setReviewCounts(
+        payload.meta?.reviewCounts ?? {
+          pending: 0,
+          approved: 0,
+          rejected: 0,
+          notRequired: 0,
+        },
+      );
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error inesperado al cargar pedidos";
@@ -172,6 +203,12 @@ export default function OrdersTable() {
       setOrders([]);
       setTotal(0);
       setTotalPages(1);
+      setReviewCounts({
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        notRequired: 0,
+      });
     } finally {
       if (!silent) {
         setLoading(false);
@@ -313,6 +350,53 @@ export default function OrdersTable() {
     }
   }
 
+  async function handleApprovePayment(order: AdminOrder) {
+    setSavingOrderId(order.id);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "APPROVE_PAYMENT" }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? "No se pudo aprobar el pago.");
+      }
+
+      const body = (await res.json()) as { data: AdminOrder };
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === body.data.id ? { ...order, ...body.data } : order,
+        ),
+      );
+      toast({
+        title: "Pago aprobado",
+        description: `Pedido #${body.data.orderNumber} aprobado correctamente.`,
+      });
+      setReviewingOrder(null);
+      await loadOrders({ silent: true });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error al aprobar el pago";
+      setError(message);
+      toast({
+        title: "No se pudo aprobar el pago",
+        description: message,
+        variant: "destructive",
+      });
+      await loadOrders();
+    } finally {
+      setSavingOrderId(null);
+    }
+  }
+
   function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPage(1);
@@ -362,14 +446,14 @@ export default function OrdersTable() {
           }}
         >
           <SelectTrigger className="w-[240px]">
-            <SelectValue placeholder="Revision de pago" />
+            <SelectValue placeholder="Revisión de pago" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Todas las revisiones</SelectItem>
-            <SelectItem value="PENDING">Pendiente de revision</SelectItem>
-            <SelectItem value="APPROVED">Revision aprobada</SelectItem>
-            <SelectItem value="REJECTED">Revision rechazada</SelectItem>
-            <SelectItem value="NOT_REQUIRED">No requiere revision</SelectItem>
+            <SelectItem value="PENDING">Pendiente de revisión</SelectItem>
+            <SelectItem value="APPROVED">Revisión aprobada</SelectItem>
+            <SelectItem value="REJECTED">Revisión rechazada</SelectItem>
+            <SelectItem value="NOT_REQUIRED">No requiere revisión</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -379,6 +463,54 @@ export default function OrdersTable() {
       ) : (
         <p className="text-muted-foreground text-sm">{visibleRangeLabel}</p>
       )}
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <button
+          type="button"
+          onClick={() => {
+            setPage(1);
+            setPaymentReviewFilter("PENDING");
+          }}
+          className="rounded-lg border p-4 text-left transition hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-primary-950/20"
+        >
+          <p className="text-xs uppercase tracking-wide text-slate-500">
+            Pendientes
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            {reviewCounts.pending}
+          </p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            Pagos por revisar
+          </p>
+        </button>
+        <div className="rounded-lg border p-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Aprobados</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            {reviewCounts.approved}
+          </p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            Revisiones aprobadas
+          </p>
+        </div>
+        <div className="rounded-lg border p-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Rechazados</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            {reviewCounts.rejected}
+          </p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            Comprobantes rechazados
+          </p>
+        </div>
+        <div className="rounded-lg border p-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Sin revisión</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            {reviewCounts.notRequired}
+          </p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            Pago en tienda física
+          </p>
+        </div>
+      </div>
 
       <Table>
         <TableHeader>
@@ -516,9 +648,26 @@ export default function OrdersTable() {
                   })}
                 </TableCell>
                 <TableCell>
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/orders/${order.id}`}>Ver detalle</Link>
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    {order.paymentReviewStatus === "PENDING" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={savingOrderId === order.id}
+                        onClick={() => setReviewingOrder(order)}
+                      >
+                        Revisar pago
+                      </Button>
+                    ) : null}
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/admin/orders/${order.id}`}>
+                        {order.paymentReviewStatus === "PENDING"
+                          ? "Revisar"
+                          : "Ver detalle"}
+                      </Link>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -547,6 +696,105 @@ export default function OrdersTable() {
           Siguiente
         </Button>
       </div>
+
+      <Dialog
+        open={Boolean(reviewingOrder)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReviewingOrder(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {reviewingOrder
+                ? `Revisión rápida del pedido #${reviewingOrder.orderNumber}`
+                : "Revisión rápida"}
+            </DialogTitle>
+            <DialogDescription>
+              Antes de aprobar, revisa la referencia y el comprobante del pago.
+            </DialogDescription>
+          </DialogHeader>
+
+          {reviewingOrder ? (
+            <div className="space-y-3 text-sm">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">
+                    Cliente
+                  </p>
+                  <p className="mt-1 font-medium">{reviewingOrder.customerName}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">
+                    Total
+                  </p>
+                  <p className="mt-1 font-medium">
+                    {formatMoney(reviewingOrder.totalCents)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">
+                    Referencia
+                  </p>
+                  <p className="mt-1 font-medium">
+                    {reviewingOrder.paymentReference || "Sin referencia"}
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">
+                    Revisión actual
+                  </p>
+                  <p className="mt-1 font-medium">
+                    {paymentReviewToLabel(reviewingOrder.paymentReviewStatus)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Comprobante
+                </p>
+                {reviewingOrder.paymentProofUrl ? (
+                  <Link
+                    href={reviewingOrder.paymentProofUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-flex font-medium text-primary-700 hover:underline"
+                  >
+                    Abrir comprobante
+                  </Link>
+                ) : (
+                  <p className="mt-1 font-medium">Sin comprobante adjunto</p>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReviewingOrder(null)}
+            >
+              Cerrar
+            </Button>
+            <Button
+              type="button"
+              disabled={!reviewingOrder || savingOrderId === reviewingOrder.id}
+              onClick={() => reviewingOrder && void handleApprovePayment(reviewingOrder)}
+            >
+              {reviewingOrder && savingOrderId === reviewingOrder.id
+                ? "Aprobando..."
+                : "Aprobar pago"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

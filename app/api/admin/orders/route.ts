@@ -70,6 +70,8 @@ export async function GET(req: NextRequest) {
         paymentStatus: true,
         paymentMethod: true,
         paymentReviewStatus: true,
+        paymentReference: true,
+        paymentProofUrl: true,
         fulfillmentType: true,
         customerName: true,
         totalCents: true,
@@ -90,6 +92,35 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
+  const reviewCounts = await prisma.order.groupBy({
+    by: ["paymentReviewStatus"],
+    _count: {
+      _all: true,
+    },
+  });
+
+  const reviewCountMap = {
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    notRequired: 0,
+  };
+
+  reviewCounts.forEach((entry) => {
+    if (entry.paymentReviewStatus === "PENDING") {
+      reviewCountMap.pending = entry._count._all;
+    }
+    if (entry.paymentReviewStatus === "APPROVED") {
+      reviewCountMap.approved = entry._count._all;
+    }
+    if (entry.paymentReviewStatus === "REJECTED") {
+      reviewCountMap.rejected = entry._count._all;
+    }
+    if (entry.paymentReviewStatus === "NOT_REQUIRED") {
+      reviewCountMap.notRequired = entry._count._all;
+    }
+  });
+
   return NextResponse.json({
     data: orders,
     meta: {
@@ -97,6 +128,7 @@ export async function GET(req: NextRequest) {
       limit,
       total,
       totalPages: Math.max(1, Math.ceil(total / limit)),
+      reviewCounts: reviewCountMap,
     },
   });
 }

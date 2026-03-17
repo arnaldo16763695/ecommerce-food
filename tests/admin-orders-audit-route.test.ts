@@ -11,6 +11,8 @@ const auditLogCreateMock = vi.fn();
 const publishKitchenEventMock = vi.fn();
 const canTransitionOrderStatusMock = vi.fn();
 const canTransitionPaymentStatusMock = vi.fn();
+const sendPaymentApprovedToCustomerMock = vi.fn();
+const sendPaymentRejectedToCustomerMock = vi.fn();
 
 vi.mock("@/auth", () => ({
   auth: authMock,
@@ -23,6 +25,11 @@ vi.mock("@/lib/kitchen-events", () => ({
 vi.mock("@/lib/order-workflow", () => ({
   canTransitionOrderStatus: canTransitionOrderStatusMock,
   canTransitionPaymentStatus: canTransitionPaymentStatusMock,
+}));
+
+vi.mock("@/lib/notifications/order-notifications", () => ({
+  sendPaymentApprovedToCustomer: sendPaymentApprovedToCustomerMock,
+  sendPaymentRejectedToCustomer: sendPaymentRejectedToCustomerMock,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -50,6 +57,8 @@ describe("admin orders audit integration", () => {
     vi.clearAllMocks();
     canTransitionOrderStatusMock.mockReturnValue(true);
     canTransitionPaymentStatusMock.mockReturnValue(true);
+    sendPaymentApprovedToCustomerMock.mockResolvedValue(undefined);
+    sendPaymentRejectedToCustomerMock.mockResolvedValue(undefined);
     transactionMock.mockImplementation(async (items: Array<Promise<unknown>>) =>
       Promise.all(items),
     );
@@ -151,6 +160,8 @@ describe("admin orders audit integration", () => {
       paymentReviewStatus: "PENDING",
       paymentMethod: "MOBILE_PAYMENT",
       paymentProofUrl: "https://example.com/proof.png",
+      customerName: "Jose",
+      customerEmail: "jose@example.com",
       assignedPreparerId: null,
     });
 
@@ -204,6 +215,12 @@ describe("admin orders audit integration", () => {
         paymentReviewedAt: expect.any(Date),
       }),
       select: expect.any(Object),
+    });
+    expect(sendPaymentApprovedToCustomerMock).toHaveBeenCalledWith({
+      orderNumber: 84,
+      customerName: "Jose",
+      customerEmail: "jose@example.com",
+      reviewNote: "Comprobante validado manualmente.",
     });
     expect(auditLogCreateMock).toHaveBeenCalledWith({
       data: expect.objectContaining({
