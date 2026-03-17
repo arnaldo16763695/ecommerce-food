@@ -166,4 +166,141 @@ describe("checkout route", () => {
       orderNumber: 101,
     });
   });
+
+  it("stores bank transfer orders with payment review pending", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user_1", role: "CUSTOMER" },
+    });
+
+    cartFindFirstMock.mockResolvedValue({ id: "cart_1" });
+    cartFindUniqueMock.mockResolvedValue({
+      id: "cart_1",
+      userId: "user_1",
+      items: [
+        {
+          lineKey: "line_1",
+          productId: "prod_1",
+          quantity: 1,
+          unitPriceCents: 3000,
+          nameSnapshot: "Combo lunch",
+          notes: null,
+          options: [],
+        },
+      ],
+    });
+    productFindManyMock.mockResolvedValue([
+      {
+        id: "prod_1",
+        basePriceCents: 3000,
+      },
+    ]);
+    optionFindManyMock.mockResolvedValue([]);
+    productOptionGroupFindManyMock.mockResolvedValue([]);
+    orderCreateMock.mockResolvedValue({
+      id: "order_2",
+      orderNumber: 102,
+      totalCents: 3300,
+      fulfillmentType: "PICKUP",
+      createdAt: new Date("2026-03-16T13:00:00.000Z"),
+    });
+    cartUpdateMock.mockResolvedValue({ id: "cart_1" });
+
+    const mod = await import("../app/api/checkout/route");
+    const req = new Request("http://localhost/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerName: "Luis Perez",
+        customerPhone: "04141230000",
+        fulfillmentType: "PICKUP",
+        paymentMethod: "BANK_TRANSFER",
+        paymentReference: "TRF-456",
+        paymentProofUrl: "https://cdn.example.com/checkout-proofs/transfer.png",
+        paymentProofPath: "checkout-proofs/transfer.png",
+      }),
+    });
+
+    const res = await mod.POST(req);
+
+    expect(res.status).toBe(201);
+    expect(orderCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        paymentMethod: "BANK_TRANSFER",
+        paymentReviewStatus: "PENDING",
+        paymentReference: "TRF-456",
+        paymentProofUrl: "https://cdn.example.com/checkout-proofs/transfer.png",
+        paymentProofPath: "checkout-proofs/transfer.png",
+      }),
+      select: expect.any(Object),
+    });
+  });
+
+  it("marks in-store payments as not requiring manual review", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user_1", role: "CUSTOMER" },
+    });
+
+    cartFindFirstMock.mockResolvedValue({ id: "cart_1" });
+    cartFindUniqueMock.mockResolvedValue({
+      id: "cart_1",
+      userId: "user_1",
+      items: [
+        {
+          lineKey: "line_1",
+          productId: "prod_1",
+          quantity: 1,
+          unitPriceCents: 1800,
+          nameSnapshot: "Empanada",
+          notes: null,
+          options: [],
+        },
+      ],
+    });
+    productFindManyMock.mockResolvedValue([
+      {
+        id: "prod_1",
+        basePriceCents: 1800,
+      },
+    ]);
+    optionFindManyMock.mockResolvedValue([]);
+    productOptionGroupFindManyMock.mockResolvedValue([]);
+    orderCreateMock.mockResolvedValue({
+      id: "order_3",
+      orderNumber: 103,
+      totalCents: 1980,
+      fulfillmentType: "PICKUP",
+      createdAt: new Date("2026-03-16T14:00:00.000Z"),
+    });
+    cartUpdateMock.mockResolvedValue({ id: "cart_1" });
+
+    const mod = await import("../app/api/checkout/route");
+    const req = new Request("http://localhost/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerName: "Carla Perez",
+        customerPhone: "04140001111",
+        fulfillmentType: "PICKUP",
+        paymentMethod: "IN_STORE",
+      }),
+    });
+
+    const res = await mod.POST(req);
+
+    expect(res.status).toBe(201);
+    expect(orderCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        paymentMethod: "IN_STORE",
+        paymentReviewStatus: "NOT_REQUIRED",
+        paymentReference: null,
+        paymentProofUrl: null,
+        paymentProofPath: null,
+      }),
+      select: expect.any(Object),
+    });
+  });
 });

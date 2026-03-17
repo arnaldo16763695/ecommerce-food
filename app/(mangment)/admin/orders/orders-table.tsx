@@ -141,6 +141,7 @@ export default function OrdersTable() {
   const [error, setError] = useState<string | null>(null);
   const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
   const [reviewingOrder, setReviewingOrder] = useState<AdminOrder | null>(null);
+  const [reviewNote, setReviewNote] = useState("");
   const [reviewCounts, setReviewCounts] = useState({
     pending: 0,
     approved: 0,
@@ -351,6 +352,7 @@ export default function OrdersTable() {
   }
 
   async function handleApprovePayment(order: AdminOrder) {
+    const trimmedNote = reviewNote.trim();
     setSavingOrderId(order.id);
     setError(null);
 
@@ -360,7 +362,10 @@ export default function OrdersTable() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "APPROVE_PAYMENT" }),
+        body: JSON.stringify({
+          action: "APPROVE_PAYMENT",
+          ...(trimmedNote ? { reviewNote: trimmedNote } : {}),
+        }),
       });
 
       if (!res.ok) {
@@ -380,6 +385,7 @@ export default function OrdersTable() {
         title: "Pago aprobado",
         description: `Pedido #${body.data.orderNumber} aprobado correctamente.`,
       });
+      setReviewNote("");
       setReviewingOrder(null);
       await loadOrders({ silent: true });
     } catch (err) {
@@ -397,10 +403,80 @@ export default function OrdersTable() {
     }
   }
 
+  async function handleRejectPayment(order: AdminOrder) {
+    const trimmedNote = reviewNote.trim();
+
+    if (!trimmedNote) {
+      toast({
+        title: "Falta el motivo del rechazo",
+        description: "Debes indicar un motivo para rechazar el comprobante.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingOrderId(order.id);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "REJECT_PAYMENT_REVIEW",
+          reviewNote: trimmedNote,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? "No se pudo rechazar el comprobante.");
+      }
+
+      const body = (await res.json()) as { data: AdminOrder };
+      setOrders((prev) =>
+        prev.map((currentOrder) =>
+          currentOrder.id === body.data.id ? { ...currentOrder, ...body.data } : currentOrder,
+        ),
+      );
+      toast({
+        title: "Comprobante rechazado",
+        description: `Pedido #${body.data.orderNumber} actualizado correctamente.`,
+      });
+      setReviewNote("");
+      setReviewingOrder(null);
+      await loadOrders({ silent: true });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error al rechazar el comprobante";
+      setError(message);
+      toast({
+        title: "No se pudo rechazar el comprobante",
+        description: message,
+        variant: "destructive",
+      });
+      await loadOrders();
+    } finally {
+      setSavingOrderId(null);
+    }
+  }
+
   function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPage(1);
     setQuery(searchInput.trim());
+  }
+
+  function shouldHighlightConfirmation(order: AdminOrder) {
+    return (
+      order.paymentStatus === "PAID" &&
+      order.paymentReviewStatus === "APPROVED" &&
+      order.status === "PENDING"
+    );
   }
 
   return (
@@ -603,39 +679,46 @@ export default function OrdersTable() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={
-                        order.status === "COMPLETED"
-                          ? "success"
-                          : order.status === "CANCELED"
-                            ? "warning"
-                            : "outline"
-                      }
-                    >
-                      {statusToLabel(order.status)}
-                    </Badge>
-                    <Select
-                      value={order.status}
-                      disabled={savingOrderId === order.id}
-                      onValueChange={(value) =>
-                        handleStatusChange(order.id, value as OrderStatus)
-                      }
-                    >
-                      <SelectTrigger className="w-[170px]">
-                        <SelectValue placeholder="Estado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getSelectableOrderStatuses(
-                          order.status,
-                          order.fulfillmentType,
-                        ).map((nextStatus) => (
-                          <SelectItem key={nextStatus} value={nextStatus}>
-                            {statusToLabel(nextStatus)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          order.status === "COMPLETED"
+                            ? "success"
+                            : order.status === "CANCELED"
+                              ? "warning"
+                              : "outline"
+                        }
+                      >
+                        {statusToLabel(order.status)}
+                      </Badge>
+                      <Select
+                        value={order.status}
+                        disabled={savingOrderId === order.id}
+                        onValueChange={(value) =>
+                          handleStatusChange(order.id, value as OrderStatus)
+                        }
+                      >
+                        <SelectTrigger className="w-[170px]">
+                          <SelectValue placeholder="Estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getSelectableOrderStatuses(
+                            order.status,
+                            order.fulfillmentType,
+                          ).map((nextStatus) => (
+                            <SelectItem key={nextStatus} value={nextStatus}>
+                              {statusToLabel(nextStatus)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {shouldHighlightConfirmation(order) ? (
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        Pago aprobado. Falta confirmar el pedido.
+                      </p>
+                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -664,7 +747,9 @@ export default function OrdersTable() {
                       <Link href={`/admin/orders/${order.id}`}>
                         {order.paymentReviewStatus === "PENDING"
                           ? "Revisar"
-                          : "Ver detalle"}
+                          : shouldHighlightConfirmation(order)
+                            ? "Confirmar pedido"
+                            : "Ver detalle"}
                       </Link>
                     </Button>
                   </div>
@@ -702,6 +787,7 @@ export default function OrdersTable() {
         onOpenChange={(open) => {
           if (!open) {
             setReviewingOrder(null);
+            setReviewNote("");
           }
         }}
       >
@@ -772,6 +858,23 @@ export default function OrdersTable() {
                   <p className="mt-1 font-medium">Sin comprobante adjunto</p>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <label htmlFor="payment-review-note" className="text-sm font-medium">
+                  Nota de revisión
+                </label>
+                <textarea
+                  id="payment-review-note"
+                  value={reviewNote}
+                  onChange={(event) => setReviewNote(event.target.value)}
+                  rows={4}
+                  placeholder="Indica por qué apruebas o rechazas el comprobante."
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[96px] w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <p className="text-muted-foreground text-xs">
+                  La nota es obligatoria para rechazar y opcional para aprobar.
+                </p>
+              </div>
             </div>
           ) : null}
 
@@ -782,6 +885,16 @@ export default function OrdersTable() {
               onClick={() => setReviewingOrder(null)}
             >
               Cerrar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!reviewingOrder || savingOrderId === reviewingOrder.id}
+              onClick={() => reviewingOrder && void handleRejectPayment(reviewingOrder)}
+            >
+              {reviewingOrder && savingOrderId === reviewingOrder.id
+                ? "Procesando..."
+                : "Rechazar comprobante"}
             </Button>
             <Button
               type="button"

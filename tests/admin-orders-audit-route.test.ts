@@ -241,4 +241,99 @@ describe("admin orders audit integration", () => {
       }),
     });
   });
+
+  it("writes an audit log when admin rejects a payment review", async () => {
+    authMock.mockResolvedValueOnce({
+      user: { id: "admin_1", role: "ADMIN" },
+    });
+
+    orderFindUniqueMock.mockResolvedValueOnce({
+      id: "order_3",
+      status: "PENDING",
+      fulfillmentType: "DELIVERY",
+      paymentStatus: "UNPAID",
+      paymentReviewStatus: "PENDING",
+      paymentMethod: "BANK_TRANSFER",
+      paymentProofUrl: "https://example.com/proof-2.png",
+      customerName: "Maria",
+      customerEmail: "maria@example.com",
+      assignedPreparerId: null,
+    });
+
+    orderUpdateMock.mockResolvedValueOnce({
+      id: "order_3",
+      orderNumber: 96,
+      status: "PENDING",
+      paymentStatus: "UNPAID",
+      paymentReviewStatus: "REJECTED",
+      paymentMethod: "BANK_TRANSFER",
+      fulfillmentType: "DELIVERY",
+      customerName: "Maria",
+      totalCents: 4100,
+      createdAt: new Date("2026-03-17T11:00:00.000Z"),
+      assignedPreparer: null,
+      _count: {
+        items: 2,
+      },
+    });
+
+    auditLogCreateMock.mockResolvedValueOnce({ id: "log_3" });
+
+    const mod = await import("../app/api/admin/orders/[orderId]/route");
+    const req = new Request("http://localhost/api/admin/orders/order_3", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "user-agent": "vitest",
+        "x-forwarded-for": "127.0.0.1",
+      },
+      body: JSON.stringify({
+        action: "REJECT_PAYMENT_REVIEW",
+        reviewNote: "La referencia no coincide con el monto recibido.",
+      }),
+    });
+
+    const res = await mod.PATCH(req as never, {
+      params: Promise.resolve({ orderId: "order_3" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.paymentReviewStatus).toBe("REJECTED");
+    expect(orderUpdateMock).toHaveBeenCalledWith({
+      where: { id: "order_3" },
+      data: expect.objectContaining({
+        paymentStatus: "UNPAID",
+        paymentReviewStatus: "REJECTED",
+        paymentReviewNotes: "La referencia no coincide con el monto recibido.",
+        paymentReviewedByUserId: "admin_1",
+        paymentReviewedAt: expect.any(Date),
+      }),
+      select: expect.any(Object),
+    });
+    expect(sendPaymentRejectedToCustomerMock).toHaveBeenCalledWith({
+      orderNumber: 96,
+      customerName: "Maria",
+      customerEmail: "maria@example.com",
+      reviewNote: "La referencia no coincide con el monto recibido.",
+    });
+    expect(auditLogCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorUserId: "admin_1",
+        action: "PAYMENT_REVIEW_REJECT",
+        entityType: "ORDER",
+        entityId: "order_3",
+        entityLabel: "Pedido #96",
+        summary: "Rechazo la revision de pago del pedido #96.",
+        metadata: {
+          orderNumber: 96,
+          previousPaymentStatus: "UNPAID",
+          nextPaymentStatus: "UNPAID",
+          previousPaymentReviewStatus: "PENDING",
+          nextPaymentReviewStatus: "REJECTED",
+          reviewNote: "La referencia no coincide con el monto recibido.",
+        },
+      }),
+    });
+  });
 });

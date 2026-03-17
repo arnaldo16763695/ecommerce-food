@@ -84,6 +84,18 @@ function paymentReviewToLabel(status: string) {
   }
 }
 
+function shouldPromptConfirmation(order: {
+  status: string;
+  paymentStatus: string;
+  paymentReviewStatus: string;
+}) {
+  return (
+    order.status === "PENDING" &&
+    order.paymentStatus === "PAID" &&
+    order.paymentReviewStatus === "APPROVED"
+  );
+}
+
 async function OrderDetailPage({ params }: Props) {
   const { orderId } = await params;
 
@@ -327,6 +339,22 @@ async function OrderDetailPage({ params }: Props) {
                 </p>
               ) : null}
             </div>
+
+            {shouldPromptConfirmation(order) ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                <h3 className="mb-2 text-base font-semibold">Siguiente paso</h3>
+                <p className="text-sm">
+                  El pago ya fue aprobado, pero el pedido sigue pendiente. El siguiente paso
+                  operativo es confirmarlo desde la cola de pedidos.
+                </p>
+                <Link
+                  href="/admin/orders"
+                  className="mt-3 inline-flex text-sm font-medium text-amber-900 underline-offset-4 hover:underline"
+                >
+                  Ir a la cola de pedidos
+                </Link>
+              </div>
+            ) : null}
 
             <PaymentReviewPanel
               orderId={order.id}
