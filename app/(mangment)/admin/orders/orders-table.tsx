@@ -37,6 +37,11 @@ import {
   type PaymentReviewStatus,
   type PaymentStatus,
 } from "@/lib/order-workflow";
+import {
+  getAdminOrdersRealtimeEvent,
+  getAdminOrdersRealtimeTopic,
+} from "@/lib/realtime/admin-orders";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type AdminOrder = {
   id: string;
@@ -223,7 +228,7 @@ export default function OrdersTable() {
 
   useEffect(() => {
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-    const eventSource = new EventSource("/api/kitchen/events");
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
     const queueRefresh = () => {
       if (refreshTimer) clearTimeout(refreshTimer);
@@ -232,22 +237,44 @@ export default function OrdersTable() {
       }, 250);
     };
 
-    const onKitchenEvent = (event: MessageEvent<string>) => {
-      const payload = JSON.parse(event.data) as { type?: string };
-      if (
-        payload.type === "ORDER_CREATED" ||
-        payload.type === "ORDER_STATUS_CHANGED"
-      ) {
+    const supabase = getSupabaseBrowserClient();
+    const realtimeChannel = supabase
+      ?.channel(getAdminOrdersRealtimeTopic())
+      .on("broadcast", { event: getAdminOrdersRealtimeEvent() }, () => {
         queueRefresh();
+      });
+
+    if (realtimeChannel) {
+      void realtimeChannel.subscribe();
+    }
+
+    const refreshOnFocus = () => {
+      void loadOrders({ silent: true });
+    };
+
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadOrders({ silent: true });
       }
     };
 
-    eventSource.addEventListener("kitchen", onKitchenEvent as EventListener);
+    pollTimer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadOrders({ silent: true });
+      }
+    }, 30000);
+
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
 
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
-      eventSource.removeEventListener("kitchen", onKitchenEvent as EventListener);
-      eventSource.close();
+      if (pollTimer) clearInterval(pollTimer);
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
+      if (realtimeChannel && supabase) {
+        void supabase.removeChannel(realtimeChannel);
+      }
     };
   }, [loadOrders]);
 

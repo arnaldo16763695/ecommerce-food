@@ -1,3 +1,5 @@
+import { broadcastAdminOrdersChanged } from "@/lib/realtime/admin-orders";
+
 type KitchenEventType =
   | "ORDER_CREATED"
   | "ORDER_STATUS_CHANGED"
@@ -40,5 +42,7 @@ export function publishKitchenEvent(event: Omit<KitchenEvent, "at">) {
   getListeners().forEach((listener) => {
     listener(payload);
   });
+
+  void broadcastAdminOrdersChanged(event);
 }
 
