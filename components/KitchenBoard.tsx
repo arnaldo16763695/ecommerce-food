@@ -20,6 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  getAdminOrdersRealtimeEvent,
+  getAdminOrdersRealtimeTopic,
+} from "@/lib/realtime/admin-orders";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type OrderStatus =
   | "PENDING"
@@ -326,20 +331,66 @@ export default function KitchenBoard() {
   }
 
   useEffect(() => {
-    const eventSource = new EventSource("/api/kitchen/events");
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-    const onKitchenEvent = () => {
+    const queueRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void loadOrders();
+        if (activeOrderDetail?.id) {
+          void fetchOrderDetail(activeOrderDetail.id);
+        }
+      }, 250);
+    };
+
+    const supabase = getSupabaseBrowserClient();
+    const realtimeChannel = supabase
+      ?.channel(getAdminOrdersRealtimeTopic())
+      .on("broadcast", { event: getAdminOrdersRealtimeEvent() }, () => {
+        queueRefresh();
+      });
+
+    if (realtimeChannel) {
+      void realtimeChannel.subscribe();
+    }
+
+    const refreshOnFocus = () => {
       void loadOrders();
       if (activeOrderDetail?.id) {
         void fetchOrderDetail(activeOrderDetail.id);
       }
     };
 
-    eventSource.addEventListener("kitchen", onKitchenEvent);
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadOrders();
+        if (activeOrderDetail?.id) {
+          void fetchOrderDetail(activeOrderDetail.id);
+        }
+      }
+    };
+
+    pollTimer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadOrders();
+        if (activeOrderDetail?.id) {
+          void fetchOrderDetail(activeOrderDetail.id);
+        }
+      }
+    }, 30000);
+
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
 
     return () => {
-      eventSource.removeEventListener("kitchen", onKitchenEvent);
-      eventSource.close();
+      if (refreshTimer) clearTimeout(refreshTimer);
+      if (pollTimer) clearInterval(pollTimer);
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
+      if (realtimeChannel && supabase) {
+        void supabase.removeChannel(realtimeChannel);
+      }
     };
   }, [activeOrderDetail?.id, fetchOrderDetail, loadOrders]);
 
@@ -538,7 +589,7 @@ export default function KitchenBoard() {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-600 dark:text-slate-300">
-          Actualizacion en tiempo real (SSE) con respaldo cada 60 segundos.
+          Actualizacion en tiempo real con respaldo automatico cada 30 segundos.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Select
