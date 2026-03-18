@@ -362,6 +362,7 @@ async function OrderDetailPage({ params }: Props) {
               paymentMethod={order.paymentMethod}
               paymentStatus={order.paymentStatus}
               paymentReviewStatus={order.paymentReviewStatus}
+              paymentReference={order.paymentReference}
               paymentProofUrl={order.paymentProofUrl}
               initialReviewNote={order.paymentReviewNotes}
             />

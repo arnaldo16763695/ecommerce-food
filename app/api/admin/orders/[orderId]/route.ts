@@ -51,6 +51,8 @@ const orderSummarySelect = {
   paymentStatus: true,
   paymentReviewStatus: true,
   paymentMethod: true,
+  paymentReference: true,
+  paymentProofUrl: true,
   fulfillmentType: true,
   customerName: true,
   customerEmail: true,
@@ -225,6 +227,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       paymentStatus: true,
       paymentReviewStatus: true,
       paymentMethod: true,
+      paymentReference: true,
       paymentProofUrl: true,
       customerName: true,
       customerEmail: true,
@@ -375,9 +378,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       );
     }
 
-    if (!existing.paymentProofUrl) {
+    if (!existing.paymentProofUrl && !existing.paymentReference) {
       return NextResponse.json(
-        { error: "Este pedido no tiene comprobante adjunto para revisar." },
+        { error: "Este pedido no tiene comprobante ni referencia para revisar." },
         { status: 409 },
       );
     }
@@ -455,9 +458,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       );
     }
 
-    if (!existing.paymentProofUrl) {
+    if (!existing.paymentProofUrl && !existing.paymentReference) {
       return NextResponse.json(
-        { error: "Este pedido no tiene comprobante adjunto para rechazar." },
+        { error: "Este pedido no tiene comprobante ni referencia para rechazar." },
         { status: 409 },
       );
     }

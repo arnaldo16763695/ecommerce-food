@@ -336,4 +336,71 @@ describe("admin orders audit integration", () => {
       }),
     });
   });
+
+  it("allows approving a payment review with reference only", async () => {
+    authMock.mockResolvedValueOnce({
+      user: { id: "admin_1", role: "ADMIN" },
+    });
+
+    orderFindUniqueMock.mockResolvedValueOnce({
+      id: "order_4",
+      status: "PENDING",
+      fulfillmentType: "PICKUP",
+      paymentStatus: "UNPAID",
+      paymentReviewStatus: "PENDING",
+      paymentMethod: "MOBILE_PAYMENT",
+      paymentReference: "PM-7788",
+      paymentProofUrl: null,
+      customerName: "Laura",
+      customerEmail: "laura@example.com",
+      assignedPreparerId: null,
+    });
+
+    orderUpdateMock.mockResolvedValueOnce({
+      id: "order_4",
+      orderNumber: 97,
+      status: "PENDING",
+      paymentStatus: "PAID",
+      paymentReviewStatus: "APPROVED",
+      paymentMethod: "MOBILE_PAYMENT",
+      paymentReference: "PM-7788",
+      fulfillmentType: "PICKUP",
+      customerName: "Laura",
+      totalCents: 2900,
+      createdAt: new Date("2026-03-17T12:00:00.000Z"),
+      assignedPreparer: null,
+      _count: {
+        items: 1,
+      },
+    });
+
+    auditLogCreateMock.mockResolvedValueOnce({ id: "log_4" });
+
+    const mod = await import("../app/api/admin/orders/[orderId]/route");
+    const req = new Request("http://localhost/api/admin/orders/order_4", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "user-agent": "vitest",
+        "x-forwarded-for": "127.0.0.1",
+      },
+      body: JSON.stringify({
+        action: "APPROVE_PAYMENT",
+      }),
+    });
+
+    const res = await mod.PATCH(req as never, {
+      params: Promise.resolve({ orderId: "order_4" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.paymentStatus).toBe("PAID");
+    expect(sendPaymentApprovedToCustomerMock).toHaveBeenCalledWith({
+      orderNumber: 97,
+      customerName: "Laura",
+      customerEmail: "laura@example.com",
+      reviewNote: null,
+    });
+  });
 });

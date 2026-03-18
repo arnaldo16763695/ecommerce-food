@@ -122,6 +122,9 @@ export default function CheckoutForm({
   const selectedInstruction =
     paymentInstructions.find((instruction) => instruction.method === paymentMethod) ??
     null;
+  const requiresPaymentSupport =
+    paymentMethod === "MOBILE_PAYMENT" || paymentMethod === "BANK_TRANSFER";
+  const showsPaymentSupport = paymentMethod !== null && paymentMethod !== "IN_STORE";
 
   const formatUsd = (cents: number) =>
     formatCurrencyFromCents(cents, "USD", "en-US");
@@ -155,8 +158,21 @@ export default function CheckoutForm({
       return "Debes seleccionar un metodo de pago para continuar.";
     }
 
+    if (requiresPaymentSupport && !paymentReference.trim() && !paymentProofUrl) {
+      return "Para este metodo de pago debes adjuntar el comprobante o indicar el numero de referencia.";
+    }
+
     return null;
   }
+
+  useEffect(() => {
+    if (paymentMethod === "IN_STORE") {
+      setPaymentReference("");
+      setPaymentProofUrl("");
+      setPaymentProofPath("");
+      setPaymentProofName("");
+    }
+  }, [paymentMethod]);
 
   async function handleProofUpload(file: File) {
     setUploadingProof(true);
@@ -211,9 +227,12 @@ export default function CheckoutForm({
         fulfillmentType,
         notes: orderNotes.trim() || undefined,
         paymentMethod,
-        paymentReference: paymentReference.trim() || undefined,
-        paymentProofUrl: paymentProofUrl || undefined,
-        paymentProofPath: paymentProofPath || undefined,
+        paymentReference:
+          paymentMethod !== "IN_STORE" ? paymentReference.trim() || undefined : undefined,
+        paymentProofUrl:
+          paymentMethod !== "IN_STORE" ? paymentProofUrl || undefined : undefined,
+        paymentProofPath:
+          paymentMethod !== "IN_STORE" ? paymentProofPath || undefined : undefined,
         deliveryAddress:
           fulfillmentType === "DELIVERY"
             ? {
@@ -470,50 +489,59 @@ export default function CheckoutForm({
               </div>
             ) : null}
 
-            <div className="rounded-lg border p-4">
-              <h3 className="mb-3 text-lg font-semibold">Soporte del pago</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">
-                    Referencia (opcional)
-                  </label>
-                  <Input
-                    value={paymentReference}
-                    onChange={(event) => setPaymentReference(event.target.value)}
-                    placeholder="Ej: 845221"
-                    maxLength={120}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">
-                    Adjuntar comprobante
-                  </label>
-                  <Input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,application/pdf"
-                    disabled={uploadingProof}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      void handleProofUpload(file);
-                    }}
-                  />
-                  <p className="text-xs text-slate-500">
-                    Acepta JPG, PNG, WEBP o PDF hasta 6 MB.
-                  </p>
-                </div>
-              </div>
-
-              {uploadingProof ? (
-                <p className="mt-3 text-sm text-slate-600">Subiendo comprobante...</p>
-              ) : null}
-              {paymentProofName ? (
-                <p className="mt-3 text-sm text-green-700 dark:text-green-400">
-                  Comprobante cargado: {paymentProofName}
+            {showsPaymentSupport ? (
+              <div className="rounded-lg border p-4">
+                <h3 className="mb-3 text-lg font-semibold">Soporte del pago</h3>
+                <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
+                  {requiresPaymentSupport
+                    ? "Debes adjuntar el comprobante o indicar el numero de referencia para continuar."
+                    : "Puedes adjuntar un comprobante o indicar una referencia para agilizar la validacion."}
                 </p>
-              ) : null}
-            </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      {requiresPaymentSupport
+                        ? "Numero de referencia"
+                        : "Referencia (opcional)"}
+                    </label>
+                    <Input
+                      value={paymentReference}
+                      onChange={(event) => setPaymentReference(event.target.value)}
+                      placeholder="Ej: 845221"
+                      maxLength={120}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      Adjuntar comprobante
+                    </label>
+                    <Input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      disabled={uploadingProof}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        void handleProofUpload(file);
+                      }}
+                    />
+                    <p className="text-xs text-slate-500">
+                      Acepta JPG, PNG, WEBP o PDF hasta 6 MB.
+                    </p>
+                  </div>
+                </div>
+
+                {uploadingProof ? (
+                  <p className="mt-3 text-sm text-slate-600">Subiendo comprobante...</p>
+                ) : null}
+                {paymentProofName ? (
+                  <p className="mt-3 text-sm text-green-700 dark:text-green-400">
+                    Comprobante cargado: {paymentProofName}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap justify-between gap-3">
               <Button
@@ -614,7 +642,11 @@ export default function CheckoutForm({
               {selectedInstruction.label}
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Puedes finalizar sin comprobante, pero adjuntarlo ayuda a validar el pago mas rapido.
+              {paymentMethod === "IN_STORE"
+                ? "No necesitas referencia ni comprobante para pagar en tienda."
+                : requiresPaymentSupport
+                  ? "Debes adjuntar un comprobante o indicar una referencia para finalizar."
+                  : "Puedes adjuntar un comprobante o indicar una referencia para agilizar la validacion."}
             </p>
           </div>
         ) : null}

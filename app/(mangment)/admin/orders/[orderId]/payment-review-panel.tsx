@@ -12,6 +12,7 @@ type Props = {
   paymentMethod: "MOBILE_PAYMENT" | "BANK_TRANSFER" | "IN_STORE" | null;
   paymentStatus: "UNPAID" | "PAID" | "REFUNDED";
   paymentReviewStatus: "NOT_REQUIRED" | "PENDING" | "APPROVED" | "REJECTED";
+  paymentReference: string | null;
   paymentProofUrl: string | null;
   initialReviewNote: string | null;
 };
@@ -22,6 +23,7 @@ export default function PaymentReviewPanel({
   paymentMethod,
   paymentStatus,
   paymentReviewStatus,
+  paymentReference,
   paymentProofUrl,
   initialReviewNote,
 }: Props) {
@@ -31,7 +33,9 @@ export default function PaymentReviewPanel({
   const [saving, setSaving] = useState(false);
 
   const needsManualReview =
-    paymentMethod !== null && paymentMethod !== "IN_STORE" && Boolean(paymentProofUrl);
+    paymentMethod !== null &&
+    paymentMethod !== "IN_STORE" &&
+    Boolean(paymentProofUrl || paymentReference);
 
   async function submitReview(action: "APPROVE_PAYMENT" | "REJECT_PAYMENT_REVIEW") {
     setSaving(true);
@@ -83,7 +87,7 @@ export default function PaymentReviewPanel({
       <div className="rounded-lg border p-4">
         <h3 className="mb-2 text-base font-semibold">Revision manual</h3>
         <p className="text-sm text-slate-600">
-          Este pedido no requiere revision manual de comprobante.
+          Este pedido no requiere revision manual o no tiene soporte de pago para validar.
         </p>
       </div>
     );

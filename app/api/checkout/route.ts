@@ -60,6 +60,20 @@ const checkoutSchema = z
         path: ["paymentProofUrl"],
       });
     }
+
+    if (
+      (value.paymentMethod === "MOBILE_PAYMENT" ||
+        value.paymentMethod === "BANK_TRANSFER") &&
+      !value.paymentReference?.trim() &&
+      !value.paymentProofUrl
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Manual payment requires a payment reference or uploaded proof.",
+        path: ["paymentReference"],
+      });
+    }
   });
 
 async function getActiveCartIdForCheckout() {
@@ -261,6 +275,18 @@ export async function POST(req: Request) {
     const totalCents = subtotalCents + taxCents + deliveryFeeCents;
     const paymentReviewStatus =
       parsed.data.paymentMethod === "IN_STORE" ? "NOT_REQUIRED" : "PENDING";
+    const paymentReference =
+      parsed.data.paymentMethod === "IN_STORE"
+        ? null
+        : parsed.data.paymentReference?.trim() || null;
+    const paymentProofUrl =
+      parsed.data.paymentMethod === "IN_STORE"
+        ? null
+        : parsed.data.paymentProofUrl?.trim() || null;
+    const paymentProofPath =
+      parsed.data.paymentMethod === "IN_STORE"
+        ? null
+        : parsed.data.paymentProofPath?.trim() || null;
 
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.order.create({
@@ -271,9 +297,9 @@ export async function POST(req: Request) {
           paymentStatus: "UNPAID",
           paymentMethod: parsed.data.paymentMethod,
           paymentReviewStatus,
-          paymentReference: parsed.data.paymentReference?.trim() || null,
-          paymentProofUrl: parsed.data.paymentProofUrl?.trim() || null,
-          paymentProofPath: parsed.data.paymentProofPath?.trim() || null,
+          paymentReference,
+          paymentProofUrl,
+          paymentProofPath,
           customerName: parsed.data.customerName.trim(),
           customerPhone: parsed.data.customerPhone?.trim() || null,
           customerEmail: parsed.data.customerEmail?.trim() || null,

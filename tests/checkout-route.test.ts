@@ -286,6 +286,9 @@ describe("checkout route", () => {
         customerPhone: "04140001111",
         fulfillmentType: "PICKUP",
         paymentMethod: "IN_STORE",
+        paymentReference: "NO-DEBERIA-GUARDARSE",
+        paymentProofUrl: "https://cdn.example.com/checkout-proofs/in-store.png",
+        paymentProofPath: "checkout-proofs/in-store.png",
       }),
     });
 
@@ -302,5 +305,51 @@ describe("checkout route", () => {
       }),
       select: expect.any(Object),
     });
+  });
+
+  it("rejects mobile payment checkout when no reference or proof is provided", async () => {
+    const mod = await import("../app/api/checkout/route");
+    const req = new Request("http://localhost/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerName: "Pedro Perez",
+        customerPhone: "04140002222",
+        fulfillmentType: "PICKUP",
+        paymentMethod: "MOBILE_PAYMENT",
+      }),
+    });
+
+    const res = await mod.POST(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Invalid payload.");
+    expect(orderCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects bank transfer checkout when no reference or proof is provided", async () => {
+    const mod = await import("../app/api/checkout/route");
+    const req = new Request("http://localhost/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerName: "Julia Perez",
+        customerPhone: "04140003333",
+        fulfillmentType: "PICKUP",
+        paymentMethod: "BANK_TRANSFER",
+      }),
+    });
+
+    const res = await mod.POST(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Invalid payload.");
+    expect(orderCreateMock).not.toHaveBeenCalled();
   });
 });
