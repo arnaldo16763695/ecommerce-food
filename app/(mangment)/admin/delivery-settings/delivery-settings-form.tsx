@@ -10,6 +10,14 @@ type DeliverySettingsResponse = {
   data: {
     deliveryFeeCents: number;
     freeDeliveryMinCents: number;
+    paymentMobileBank: string;
+    paymentMobilePhone: string;
+    paymentMobileId: string;
+    paymentTransferBank: string;
+    paymentTransferAccountType: string;
+    paymentTransferAccountNumber: string;
+    paymentTransferId: string;
+    paymentBeneficiaryName: string;
   };
 };
 
@@ -33,6 +41,14 @@ export default function DeliverySettingsForm() {
 
   const [deliveryFeeInput, setDeliveryFeeInput] = useState("");
   const [freeDeliveryMinInput, setFreeDeliveryMinInput] = useState("");
+  const [paymentMobileBank, setPaymentMobileBank] = useState("");
+  const [paymentMobilePhone, setPaymentMobilePhone] = useState("");
+  const [paymentMobileId, setPaymentMobileId] = useState("");
+  const [paymentTransferBank, setPaymentTransferBank] = useState("");
+  const [paymentTransferAccountType, setPaymentTransferAccountType] = useState("");
+  const [paymentTransferAccountNumber, setPaymentTransferAccountNumber] = useState("");
+  const [paymentTransferId, setPaymentTransferId] = useState("");
+  const [paymentBeneficiaryName, setPaymentBeneficiaryName] = useState("");
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -54,6 +70,14 @@ export default function DeliverySettingsForm() {
       const payload = (await res.json()) as DeliverySettingsResponse;
       setDeliveryFeeInput(centsToInputValue(payload.data.deliveryFeeCents));
       setFreeDeliveryMinInput(centsToInputValue(payload.data.freeDeliveryMinCents));
+      setPaymentMobileBank(payload.data.paymentMobileBank);
+      setPaymentMobilePhone(payload.data.paymentMobilePhone);
+      setPaymentMobileId(payload.data.paymentMobileId);
+      setPaymentTransferBank(payload.data.paymentTransferBank);
+      setPaymentTransferAccountType(payload.data.paymentTransferAccountType);
+      setPaymentTransferAccountNumber(payload.data.paymentTransferAccountNumber);
+      setPaymentTransferId(payload.data.paymentTransferId);
+      setPaymentBeneficiaryName(payload.data.paymentBeneficiaryName);
     } catch (err) {
       const message =
         err instanceof Error
@@ -98,6 +122,14 @@ export default function DeliverySettingsForm() {
         body: JSON.stringify({
           deliveryFeeCents,
           freeDeliveryMinCents,
+          paymentMobileBank: paymentMobileBank.trim(),
+          paymentMobilePhone: paymentMobilePhone.trim(),
+          paymentMobileId: paymentMobileId.trim(),
+          paymentTransferBank: paymentTransferBank.trim(),
+          paymentTransferAccountType: paymentTransferAccountType.trim(),
+          paymentTransferAccountNumber: paymentTransferAccountNumber.trim(),
+          paymentTransferId: paymentTransferId.trim(),
+          paymentBeneficiaryName: paymentBeneficiaryName.trim(),
         }),
       });
 
@@ -110,7 +142,7 @@ export default function DeliverySettingsForm() {
 
       toast({
         title: "Configuracion guardada",
-        description: "Las reglas de delivery se actualizaron correctamente.",
+        description: "Los datos de la tienda se actualizaron correctamente.",
       });
       await loadSettings();
     } catch (err) {
@@ -132,48 +164,133 @@ export default function DeliverySettingsForm() {
   return (
     <section className="space-y-4">
       <div className="rounded-lg border p-4">
-        <h2 className="text-lg font-semibold">Reglas de delivery</h2>
+        <h2 className="text-lg font-semibold">Configuracion de la tienda</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Define el costo de delivery y el monto minimo para obtener delivery
-          gratis.
+          Administra el delivery y los datos bancarios del negocio para checkout.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="space-y-1">
-            <label htmlFor="delivery-fee" className="text-sm font-medium">
-              Costo delivery (USD)
-            </label>
-            <Input
-              id="delivery-fee"
-              type="text"
-              inputMode="decimal"
-              placeholder="Ej: 10.00"
-              value={deliveryFeeInput}
-              onChange={(event) => setDeliveryFeeInput(event.target.value)}
-              required
-              disabled={loading}
-            />
+        <form onSubmit={handleSubmit} className="mt-4 space-y-6">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="space-y-1">
+              <label htmlFor="delivery-fee" className="text-sm font-medium">
+                Costo delivery (USD)
+              </label>
+              <Input
+                id="delivery-fee"
+                type="text"
+                inputMode="decimal"
+                placeholder="Ej: 10.00"
+                value={deliveryFeeInput}
+                onChange={(event) => setDeliveryFeeInput(event.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="free-min" className="text-sm font-medium">
+                Minimo para delivery gratis (USD)
+              </label>
+              <Input
+                id="free-min"
+                type="text"
+                inputMode="decimal"
+                placeholder="Ej: 100.00"
+                value={freeDeliveryMinInput}
+                onChange={(event) => setFreeDeliveryMinInput(event.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="free-min" className="text-sm font-medium">
-              Minimo para delivery gratis (USD)
-            </label>
-            <Input
-              id="free-min"
-              type="text"
-              inputMode="decimal"
-              placeholder="Ej: 100.00"
-              value={freeDeliveryMinInput}
-              onChange={(event) => setFreeDeliveryMinInput(event.target.value)}
-              required
-              disabled={loading}
-            />
+          <div className="rounded-lg border p-4">
+            <h3 className="text-base font-semibold">Pago movil</h3>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Banco</label>
+                <Input
+                  value={paymentMobileBank}
+                  onChange={(event) => setPaymentMobileBank(event.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Telefono</label>
+                <Input
+                  value={paymentMobilePhone}
+                  onChange={(event) => setPaymentMobilePhone(event.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm font-medium">Cedula o RIF</label>
+                <Input
+                  value={paymentMobileId}
+                  onChange={(event) => setPaymentMobileId(event.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-end">
-            <Button type="submit" disabled={loading || saving} className="w-full">
-              {saving ? "Guardando..." : "Guardar"}
+          <div className="rounded-lg border p-4">
+            <h3 className="text-base font-semibold">Transferencia bancaria</h3>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Banco</label>
+                <Input
+                  value={paymentTransferBank}
+                  onChange={(event) => setPaymentTransferBank(event.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Tipo de cuenta</label>
+                <Input
+                  value={paymentTransferAccountType}
+                  onChange={(event) => setPaymentTransferAccountType(event.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm font-medium">Numero de cuenta</label>
+                <Input
+                  value={paymentTransferAccountNumber}
+                  onChange={(event) => setPaymentTransferAccountNumber(event.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Cedula o RIF</label>
+                <Input
+                  value={paymentTransferId}
+                  onChange={(event) => setPaymentTransferId(event.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Beneficiario</label>
+                <Input
+                  value={paymentBeneficiaryName}
+                  onChange={(event) => setPaymentBeneficiaryName(event.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={loading || saving}>
+              {saving ? "Guardando..." : "Guardar configuracion"}
             </Button>
           </div>
         </form>
@@ -192,6 +309,12 @@ export default function DeliverySettingsForm() {
             <strong>
               {formatCurrencyFromCents(parseAmountToCents(freeDeliveryMinInput) ?? 0, "USD", "en-US")}
             </strong>
+          </p>
+          <p>
+            Pago movil: <strong>{paymentMobileBank}</strong> / {paymentMobilePhone}
+          </p>
+          <p>
+            Transferencia: <strong>{paymentTransferBank}</strong> / {paymentTransferAccountNumber}
           </p>
         </div>
       ) : null}

@@ -1,3 +1,5 @@
+import { getStoreSettings } from "@/lib/data/store-settings";
+
 export type CheckoutPaymentMethod = "MOBILE_PAYMENT" | "BANK_TRANSFER" | "IN_STORE";
 
 type PaymentInstructions = {
@@ -8,12 +10,9 @@ type PaymentInstructions = {
   helperText: string;
 };
 
-function valueOrFallback(value: string | undefined, fallback: string) {
-  const normalized = value?.trim();
-  return normalized && normalized.length > 0 ? normalized : fallback;
-}
+export async function getCheckoutPaymentInstructions(): Promise<PaymentInstructions[]> {
+  const storeSettings = await getStoreSettings();
 
-export function getCheckoutPaymentInstructions(): PaymentInstructions[] {
   return [
     {
       method: "MOBILE_PAYMENT",
@@ -22,19 +21,19 @@ export function getCheckoutPaymentInstructions(): PaymentInstructions[] {
       details: [
         {
           label: "Banco",
-          value: valueOrFallback(process.env.PAYMENT_MOBILE_BANK, "Por configurar"),
+          value: storeSettings.paymentMobileBank,
         },
         {
           label: "Telefono",
-          value: valueOrFallback(process.env.PAYMENT_MOBILE_PHONE, "Por configurar"),
+          value: storeSettings.paymentMobilePhone,
         },
         {
           label: "Cedula/RIF",
-          value: valueOrFallback(process.env.PAYMENT_MOBILE_ID, "Por configurar"),
+          value: storeSettings.paymentMobileId,
         },
         {
           label: "Beneficiario",
-          value: valueOrFallback(process.env.PAYMENT_BENEFICIARY_NAME, "Por configurar"),
+          value: storeSettings.paymentBeneficiaryName,
         },
       ],
       helperText:
@@ -47,29 +46,23 @@ export function getCheckoutPaymentInstructions(): PaymentInstructions[] {
       details: [
         {
           label: "Banco",
-          value: valueOrFallback(process.env.PAYMENT_TRANSFER_BANK, "Por configurar"),
+          value: storeSettings.paymentTransferBank,
         },
         {
           label: "Tipo de cuenta",
-          value: valueOrFallback(
-            process.env.PAYMENT_TRANSFER_ACCOUNT_TYPE,
-            "Por configurar",
-          ),
+          value: storeSettings.paymentTransferAccountType,
         },
         {
           label: "Numero de cuenta",
-          value: valueOrFallback(
-            process.env.PAYMENT_TRANSFER_ACCOUNT_NUMBER,
-            "Por configurar",
-          ),
+          value: storeSettings.paymentTransferAccountNumber,
         },
         {
           label: "Titular",
-          value: valueOrFallback(process.env.PAYMENT_BENEFICIARY_NAME, "Por configurar"),
+          value: storeSettings.paymentBeneficiaryName,
         },
         {
           label: "Cedula/RIF",
-          value: valueOrFallback(process.env.PAYMENT_TRANSFER_ID, "Por configurar"),
+          value: storeSettings.paymentTransferId,
         },
       ],
       helperText:

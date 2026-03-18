@@ -12,7 +12,7 @@ async function CheckoutPage() {
     getActiveUsdVesRate(),
     getDeliverySettings(),
   ]);
-  const paymentInstructions = getCheckoutPaymentInstructions();
+  const paymentInstructions = await getCheckoutPaymentInstructions();
 
   return (
     <section className="bg-neutral-50 py-10 dark:bg-slate-900 md:py-16">

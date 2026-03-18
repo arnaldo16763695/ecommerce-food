@@ -28,7 +28,7 @@ function DeliverySettingsPage() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Configuracion de delivery</BreadcrumbPage>
+                <BreadcrumbPage>Configuracion de tienda</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
