@@ -231,35 +231,54 @@ export default function OrdersTable() {
     let pollTimer: ReturnType<typeof setInterval> | null = null;
 
     const queueRefresh = () => {
+      console.info("[admin-orders-realtime] queueing silent refresh");
       if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
+        console.info("[admin-orders-realtime] running silent refresh");
         void loadOrders({ silent: true });
       }, 250);
     };
 
     const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      console.warn("[admin-orders-realtime] supabase browser client unavailable");
+    }
+
     const realtimeChannel = supabase
       ?.channel(getAdminOrdersRealtimeTopic())
-      .on("broadcast", { event: getAdminOrdersRealtimeEvent() }, () => {
+      .on("broadcast", { event: getAdminOrdersRealtimeEvent() }, (payload) => {
+        console.info("[admin-orders-realtime] broadcast received", payload);
         queueRefresh();
       });
 
     if (realtimeChannel) {
-      void realtimeChannel.subscribe();
+      console.info("[admin-orders-realtime] subscribing to channel", {
+        topic: getAdminOrdersRealtimeTopic(),
+        event: getAdminOrdersRealtimeEvent(),
+      });
+      void realtimeChannel.subscribe((status, err) => {
+        console.info("[admin-orders-realtime] channel status changed", {
+          status,
+          error: err?.message ?? null,
+        });
+      });
     }
 
     const refreshOnFocus = () => {
+      console.info("[admin-orders-realtime] focus refresh");
       void loadOrders({ silent: true });
     };
 
     const refreshOnVisibility = () => {
       if (document.visibilityState === "visible") {
+        console.info("[admin-orders-realtime] visibility refresh");
         void loadOrders({ silent: true });
       }
     };
 
     pollTimer = setInterval(() => {
       if (document.visibilityState === "visible") {
+        console.info("[admin-orders-realtime] polling refresh");
         void loadOrders({ silent: true });
       }
     }, 30000);
@@ -273,6 +292,7 @@ export default function OrdersTable() {
       window.removeEventListener("focus", refreshOnFocus);
       document.removeEventListener("visibilitychange", refreshOnVisibility);
       if (realtimeChannel && supabase) {
+        console.info("[admin-orders-realtime] removing channel");
         void supabase.removeChannel(realtimeChannel);
       }
     };
