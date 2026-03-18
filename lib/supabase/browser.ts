@@ -17,17 +17,9 @@ export function getSupabaseBrowserClient() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!supabaseUrl || !publishableKey) {
-    console.warn("[admin-orders-realtime] missing browser env vars", {
-      hasSupabaseUrl: Boolean(supabaseUrl),
-      hasPublishableKey: Boolean(publishableKey),
-    });
     browserClient = null;
     return browserClient;
   }
-
-  console.info("[admin-orders-realtime] creating supabase browser client", {
-    supabaseUrl,
-  });
 
   browserClient = createClient(supabaseUrl, publishableKey, {
     auth: {

@@ -23,20 +23,8 @@ export async function broadcastAdminOrdersChanged(
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.warn("[admin-orders-realtime] missing server env vars for broadcast", {
-      hasSupabaseUrl: Boolean(supabaseUrl),
-      hasServiceRoleKey: Boolean(serviceRoleKey),
-    });
     return;
   }
-
-  console.info("[admin-orders-realtime] broadcasting admin orders update", {
-    topic: ADMIN_ORDERS_TOPIC,
-    event: ADMIN_ORDERS_EVENT,
-    type: payload.type,
-    orderId: payload.orderId,
-    orderNumber: payload.orderNumber,
-  });
 
   const response = await fetch(`${supabaseUrl}/realtime/v1/api/broadcast`, {
     method: "POST",
@@ -69,11 +57,4 @@ export async function broadcastAdminOrdersChanged(
     });
     return;
   }
-
-  console.info("[admin-orders-realtime] broadcast accepted", {
-    topic: ADMIN_ORDERS_TOPIC,
-    event: ADMIN_ORDERS_EVENT,
-    type: payload.type,
-    orderId: payload.orderId,
-  });
 }
