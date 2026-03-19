@@ -10,6 +10,9 @@ type DeliverySettingsResponse = {
   data: {
     deliveryFeeCents: number;
     freeDeliveryMinCents: number;
+    isStoreOpen: boolean;
+    storeStatusMessage: string;
+    storeStatusChangedAt: string | null;
     paymentMobileBank: string;
     paymentMobilePhone: string;
     paymentMobileId: string;
@@ -41,6 +44,9 @@ export default function DeliverySettingsForm() {
 
   const [deliveryFeeInput, setDeliveryFeeInput] = useState("");
   const [freeDeliveryMinInput, setFreeDeliveryMinInput] = useState("");
+  const [isStoreOpen, setIsStoreOpen] = useState(false);
+  const [storeStatusMessage, setStoreStatusMessage] = useState("");
+  const [storeStatusChangedAt, setStoreStatusChangedAt] = useState<string | null>(null);
   const [paymentMobileBank, setPaymentMobileBank] = useState("");
   const [paymentMobilePhone, setPaymentMobilePhone] = useState("");
   const [paymentMobileId, setPaymentMobileId] = useState("");
@@ -70,6 +76,9 @@ export default function DeliverySettingsForm() {
       const payload = (await res.json()) as DeliverySettingsResponse;
       setDeliveryFeeInput(centsToInputValue(payload.data.deliveryFeeCents));
       setFreeDeliveryMinInput(centsToInputValue(payload.data.freeDeliveryMinCents));
+      setIsStoreOpen(payload.data.isStoreOpen);
+      setStoreStatusMessage(payload.data.storeStatusMessage);
+      setStoreStatusChangedAt(payload.data.storeStatusChangedAt);
       setPaymentMobileBank(payload.data.paymentMobileBank);
       setPaymentMobilePhone(payload.data.paymentMobilePhone);
       setPaymentMobileId(payload.data.paymentMobileId);
@@ -122,6 +131,8 @@ export default function DeliverySettingsForm() {
         body: JSON.stringify({
           deliveryFeeCents,
           freeDeliveryMinCents,
+          isStoreOpen,
+          storeStatusMessage: storeStatusMessage.trim(),
           paymentMobileBank: paymentMobileBank.trim(),
           paymentMobilePhone: paymentMobilePhone.trim(),
           paymentMobileId: paymentMobileId.trim(),
@@ -166,10 +177,67 @@ export default function DeliverySettingsForm() {
       <div className="rounded-lg border p-4">
         <h2 className="text-lg font-semibold">Configuracion de la tienda</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Administra el delivery y los datos bancarios del negocio para checkout.
+          Administra el estado operativo, el delivery y los datos bancarios del negocio para checkout.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-6">
+          <div className="rounded-lg border p-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold">Estado operativo</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  La tienda solo acepta pedidos cuando este estado esta abierto.
+                </p>
+                {storeStatusChangedAt ? (
+                  <p className="text-xs text-slate-500">
+                    Ultimo cambio: {new Date(storeStatusChangedAt).toLocaleString("es-VE")}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={isStoreOpen ? "default" : "outline"}
+                  onClick={() => setIsStoreOpen(true)}
+                  disabled={loading}
+                >
+                  Abrir tienda
+                </Button>
+                <Button
+                  type="button"
+                  variant={!isStoreOpen ? "destructive" : "outline"}
+                  onClick={() => setIsStoreOpen(false)}
+                  disabled={loading}
+                >
+                  Cerrar tienda
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div className="space-y-1">
+                <label htmlFor="store-status-message" className="text-sm font-medium">
+                  Mensaje para clientes cuando la tienda este cerrada
+                </label>
+                <Input
+                  id="store-status-message"
+                  value={storeStatusMessage}
+                  onChange={(event) => setStoreStatusMessage(event.target.value)}
+                  required
+                  disabled={loading}
+                  maxLength={250}
+                />
+              </div>
+              <div className="rounded-md border px-3 py-2 text-sm">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Estado actual</p>
+                <p className={`mt-1 font-semibold ${isStoreOpen ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}>
+                  {isStoreOpen ? "Abierta para pedidos" : "Cerrada para pedidos"}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-1">
               <label htmlFor="delivery-fee" className="text-sm font-medium">
@@ -300,6 +368,10 @@ export default function DeliverySettingsForm() {
 
       {!loading ? (
         <div className="rounded-lg border p-4 text-sm text-slate-600 dark:text-slate-300">
+          <p>
+            Estado:{" "}
+            <strong>{isStoreOpen ? "Abierta para pedidos" : "Cerrada para pedidos"}</strong>
+          </p>
           <p>
             Costo actual:{" "}
             <strong>{formatCurrencyFromCents(parseAmountToCents(deliveryFeeInput) ?? 0, "USD", "en-US")}</strong>

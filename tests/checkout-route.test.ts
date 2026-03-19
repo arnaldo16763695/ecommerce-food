@@ -11,7 +11,7 @@ const cartUpdateMock = vi.fn();
 const orderCreateMock = vi.fn();
 const transactionMock = vi.fn();
 const validateCheckoutCartMock = vi.fn();
-const getDeliverySettingsMock = vi.fn();
+const getStoreSettingsMock = vi.fn();
 const publishKitchenEventMock = vi.fn();
 const sendNewOrderInternalAlertMock = vi.fn();
 const sendOrderConfirmationToCustomerMock = vi.fn();
@@ -49,7 +49,7 @@ vi.mock("@/lib/checkout-validation", () => ({
 }));
 
 vi.mock("@/lib/data/store-settings", () => ({
-  getDeliverySettings: getDeliverySettingsMock,
+  getStoreSettings: getStoreSettingsMock,
 }));
 
 vi.mock("@/lib/kitchen-events", () => ({
@@ -70,9 +70,11 @@ describe("checkout route", () => {
     });
 
     validateCheckoutCartMock.mockReturnValue({ ok: true });
-    getDeliverySettingsMock.mockResolvedValue({
+    getStoreSettingsMock.mockResolvedValue({
       deliveryFeeCents: 700,
       freeDeliveryMinCents: 10000,
+      isStoreOpen: true,
+      storeStatusMessage: "La tienda no esta aceptando pedidos en este momento.",
     });
     sendNewOrderInternalAlertMock.mockResolvedValue(undefined);
     sendOrderConfirmationToCustomerMock.mockResolvedValue(undefined);
@@ -350,6 +352,65 @@ describe("checkout route", () => {
 
     expect(res.status).toBe(400);
     expect(body.error).toBe("Invalid payload.");
+    expect(orderCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks checkout when the store is closed", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user_1", role: "CUSTOMER" },
+    });
+
+    getStoreSettingsMock.mockResolvedValueOnce({
+      deliveryFeeCents: 700,
+      freeDeliveryMinCents: 10000,
+      isStoreOpen: false,
+      storeStatusMessage: "Hoy abriremos mas tarde de lo habitual.",
+    });
+
+    cartFindFirstMock.mockResolvedValue({ id: "cart_1" });
+    cartFindUniqueMock.mockResolvedValue({
+      id: "cart_1",
+      userId: "user_1",
+      items: [
+        {
+          lineKey: "line_1",
+          productId: "prod_1",
+          quantity: 1,
+          unitPriceCents: 2200,
+          nameSnapshot: "Wrap",
+          notes: null,
+          options: [],
+        },
+      ],
+    });
+    productFindManyMock.mockResolvedValue([
+      {
+        id: "prod_1",
+        basePriceCents: 2200,
+      },
+    ]);
+    optionFindManyMock.mockResolvedValue([]);
+    productOptionGroupFindManyMock.mockResolvedValue([]);
+
+    const mod = await import("../app/api/checkout/route");
+    const req = new Request("http://localhost/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerName: "Mario Perez",
+        customerPhone: "04145556666",
+        fulfillmentType: "PICKUP",
+        paymentMethod: "IN_STORE",
+      }),
+    });
+
+    const res = await mod.POST(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body.error).toBe("Hoy abriremos mas tarde de lo habitual.");
     expect(orderCreateMock).not.toHaveBeenCalled();
   });
 });

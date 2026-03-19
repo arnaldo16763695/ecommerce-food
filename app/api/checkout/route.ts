@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { validateCheckoutCart } from "@/lib/checkout-validation";
 import { publishKitchenEvent } from "@/lib/kitchen-events";
-import { getDeliverySettings } from "@/lib/data/store-settings";
+import { getStoreSettings } from "@/lib/data/store-settings";
 import {
   sendNewOrderInternalAlert,
   sendOrderConfirmationToCustomer,
@@ -265,12 +265,18 @@ export async function POST(req: Request) {
       0,
     );
     const taxCents = Math.round(subtotalCents * 0.1);
-    const deliverySettings = await getDeliverySettings();
+    const storeSettings = await getStoreSettings();
+    if (!storeSettings.isStoreOpen) {
+      return NextResponse.json(
+        { error: storeSettings.storeStatusMessage },
+        { status: 409 },
+      );
+    }
     const deliveryFeeCents =
       parsed.data.fulfillmentType === "DELIVERY"
-        ? subtotalCents >= deliverySettings.freeDeliveryMinCents
+        ? subtotalCents >= storeSettings.freeDeliveryMinCents
           ? 0
-          : deliverySettings.deliveryFeeCents
+          : storeSettings.deliveryFeeCents
         : 0;
     const totalCents = subtotalCents + taxCents + deliveryFeeCents;
     const paymentReviewStatus =

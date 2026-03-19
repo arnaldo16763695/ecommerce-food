@@ -30,6 +30,8 @@ type Props = {
   usdToVesRate: number | null;
   deliveryFeeCents: number;
   freeDeliveryMinCents: number;
+  isStoreOpen: boolean;
+  storeStatusMessage: string;
   paymentInstructions: PaymentInstruction[];
 };
 
@@ -40,6 +42,8 @@ export default function CheckoutForm({
   usdToVesRate,
   deliveryFeeCents,
   freeDeliveryMinCents,
+  isStoreOpen,
+  storeStatusMessage,
   paymentInstructions,
 }: Props) {
   const router = useRouter();
@@ -139,6 +143,10 @@ export default function CheckoutForm({
       : null;
 
   function validateDetailsStep() {
+    if (!isStoreOpen) {
+      return storeStatusMessage;
+    }
+
     if (customerName.trim().length < 2) {
       return "Indica el nombre de quien recibe el pedido.";
     }
@@ -155,6 +163,10 @@ export default function CheckoutForm({
   }
 
   function validatePaymentStep() {
+    if (!isStoreOpen) {
+      return storeStatusMessage;
+    }
+
     if (!paymentMethod) {
       return "Debes seleccionar un metodo de pago para continuar.";
     }
@@ -294,6 +306,13 @@ export default function CheckoutForm({
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-6">
       <section className="space-y-3 pb-28 lg:col-span-2 lg:space-y-4 lg:pb-0">
+        {!isStoreOpen ? (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+            <p className="text-sm font-semibold">La tienda esta cerrada en este momento.</p>
+            <p className="mt-1 text-sm">{storeStatusMessage}</p>
+          </div>
+        ) : null}
+
         <div className="rounded-lg border p-3 lg:hidden">
           <button
             type="button"
@@ -461,7 +480,7 @@ export default function CheckoutForm({
             </div>
 
             <div className="hidden justify-end lg:flex">
-              <Button type="button" onClick={handleGoToPaymentStep}>
+              <Button type="button" onClick={handleGoToPaymentStep} disabled={!isStoreOpen}>
                 Siguiente
               </Button>
             </div>
@@ -594,7 +613,7 @@ export default function CheckoutForm({
               >
                 Volver
               </Button>
-              <Button type="submit" disabled={submitting || uploadingProof}>
+              <Button type="submit" disabled={submitting || uploadingProof || !isStoreOpen}>
                 {submitting ? "Procesando..." : "Finalizar compra"}
               </Button>
             </div>
@@ -710,7 +729,12 @@ export default function CheckoutForm({
           </div>
 
           {step === "DETAILS" ? (
-            <Button type="button" className="min-w-[140px]" onClick={handleGoToPaymentStep}>
+            <Button
+              type="button"
+              className="min-w-[140px]"
+              onClick={handleGoToPaymentStep}
+              disabled={!isStoreOpen}
+            >
               Siguiente
             </Button>
           ) : (
@@ -722,7 +746,7 @@ export default function CheckoutForm({
               >
                 Volver
               </Button>
-              <Button type="submit" disabled={submitting || uploadingProof}>
+              <Button type="submit" disabled={submitting || uploadingProof || !isStoreOpen}>
                 {submitting ? "Procesando..." : "Finalizar"}
               </Button>
             </div>

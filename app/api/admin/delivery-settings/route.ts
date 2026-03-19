@@ -13,6 +13,8 @@ import { z } from "zod";
 const updateDeliverySettingsSchema = z.object({
   deliveryFeeCents: z.coerce.number().int().min(0).max(10_000_000),
   freeDeliveryMinCents: z.coerce.number().int().min(0).max(100_000_000),
+  isStoreOpen: z.coerce.boolean(),
+  storeStatusMessage: z.string().trim().min(5).max(250),
   paymentMobileBank: z.string().trim().min(2).max(120),
   paymentMobilePhone: z.string().trim().min(3).max(40),
   paymentMobileId: z.string().trim().min(3).max(40),
@@ -26,6 +28,9 @@ const updateDeliverySettingsSchema = z.object({
 function toResponseData(input: {
   deliveryFeeCents: number;
   freeDeliveryMinCents: number;
+  isStoreOpen: boolean;
+  storeStatusMessage: string | null;
+  storeStatusChangedAt: Date | null;
   paymentMobileBank: string | null;
   paymentMobilePhone: string | null;
   paymentMobileId: string | null;
@@ -38,6 +43,9 @@ function toResponseData(input: {
   return {
     deliveryFeeCents: input.deliveryFeeCents,
     freeDeliveryMinCents: input.freeDeliveryMinCents,
+    isStoreOpen: input.isStoreOpen,
+    storeStatusMessage: input.storeStatusMessage ?? "",
+    storeStatusChangedAt: input.storeStatusChangedAt?.toISOString() ?? null,
     paymentMobileBank: input.paymentMobileBank ?? "",
     paymentMobilePhone: input.paymentMobilePhone ?? "",
     paymentMobileId: input.paymentMobileId ?? "",
@@ -82,6 +90,9 @@ export async function PATCH(req: NextRequest) {
     select: {
       deliveryFeeCents: true,
       freeDeliveryMinCents: true,
+      isStoreOpen: true,
+      storeStatusMessage: true,
+      storeStatusChangedAt: true,
       paymentMobileBank: true,
       paymentMobilePhone: true,
       paymentMobileId: true,
@@ -98,6 +109,9 @@ export async function PATCH(req: NextRequest) {
     update: {
       deliveryFeeCents: parsed.data.deliveryFeeCents,
       freeDeliveryMinCents: parsed.data.freeDeliveryMinCents,
+      isStoreOpen: parsed.data.isStoreOpen,
+      storeStatusMessage: parsed.data.storeStatusMessage,
+      storeStatusChangedAt: new Date(),
       paymentMobileBank: parsed.data.paymentMobileBank,
       paymentMobilePhone: parsed.data.paymentMobilePhone,
       paymentMobileId: parsed.data.paymentMobileId,
@@ -111,6 +125,9 @@ export async function PATCH(req: NextRequest) {
       singletonKey: STORE_SETTINGS_KEY,
       deliveryFeeCents: parsed.data.deliveryFeeCents,
       freeDeliveryMinCents: parsed.data.freeDeliveryMinCents,
+      isStoreOpen: parsed.data.isStoreOpen,
+      storeStatusMessage: parsed.data.storeStatusMessage,
+      storeStatusChangedAt: new Date(),
       paymentMobileBank: parsed.data.paymentMobileBank,
       paymentMobilePhone: parsed.data.paymentMobilePhone,
       paymentMobileId: parsed.data.paymentMobileId,
@@ -123,6 +140,9 @@ export async function PATCH(req: NextRequest) {
     select: {
       deliveryFeeCents: true,
       freeDeliveryMinCents: true,
+      isStoreOpen: true,
+      storeStatusMessage: true,
+      storeStatusChangedAt: true,
       paymentMobileBank: true,
       paymentMobilePhone: true,
       paymentMobileId: true,
@@ -134,13 +154,26 @@ export async function PATCH(req: NextRequest) {
     },
   });
 
+  const previousStoreOpen = previous?.isStoreOpen ?? false;
+  const storeStatusChanged = previousStoreOpen !== parsed.data.isStoreOpen;
+  const auditAction = storeStatusChanged
+    ? parsed.data.isStoreOpen
+      ? "STORE_OPENED"
+      : "STORE_CLOSED"
+    : "UPDATE";
+  const auditSummary = storeStatusChanged
+    ? parsed.data.isStoreOpen
+      ? "Abre la tienda para aceptar pedidos."
+      : "Cierra la tienda para detener nuevos pedidos."
+    : "Actualizo la configuracion de tienda y datos de pago del negocio.";
+
   await createAuditLog({
     actor: session.user,
-    action: "UPDATE",
+    action: auditAction,
     entityType: "STORE_SETTINGS",
     entityId: STORE_SETTINGS_KEY,
     entityLabel: "Configuracion de tienda",
-    summary: "Actualizo la configuracion de tienda y datos de pago del negocio.",
+    summary: auditSummary,
     request: req,
     metadata: {
       previous: previous ? toResponseData(previous) : toResponseData(await getStoreSettings()),

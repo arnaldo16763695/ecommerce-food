@@ -1,3 +1,4 @@
+import type { StoreSettings } from "@/lib/data/store-settings";
 import { getStoreSettings } from "@/lib/data/store-settings";
 
 export type CheckoutPaymentMethod = "MOBILE_PAYMENT" | "BANK_TRANSFER" | "IN_STORE";
@@ -10,8 +11,10 @@ type PaymentInstructions = {
   helperText: string;
 };
 
-export async function getCheckoutPaymentInstructions(): Promise<PaymentInstructions[]> {
-  const storeSettings = await getStoreSettings();
+export async function getCheckoutPaymentInstructions(
+  existingStoreSettings?: StoreSettings,
+): Promise<PaymentInstructions[]> {
+  const storeSettings = existingStoreSettings ?? (await getStoreSettings());
 
   return [
     {

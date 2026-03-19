@@ -42,6 +42,9 @@ describe("admin delivery-settings route", () => {
     findUniqueMock.mockResolvedValueOnce({
       deliveryFeeCents: 1200,
       freeDeliveryMinCents: 15000,
+      isStoreOpen: false,
+      storeStatusMessage: "La tienda abrira mas tarde hoy.",
+      storeStatusChangedAt: new Date("2026-03-18T12:00:00.000Z"),
       paymentMobileBank: "Banesco",
       paymentMobilePhone: "04141234567",
       paymentMobileId: "J-12345678-9",
@@ -57,6 +60,8 @@ describe("admin delivery-settings route", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
+    expect(body.data.isStoreOpen).toBe(false);
+    expect(body.data.storeStatusMessage).toBe("La tienda abrira mas tarde hoy.");
     expect(body.data.paymentTransferAccountNumber).toBe("01050000000000000000");
     expect(body.data.paymentBeneficiaryName).toBe("Food Salad C.A.");
   });
@@ -66,6 +71,9 @@ describe("admin delivery-settings route", () => {
     findUniqueMock.mockResolvedValueOnce({
       deliveryFeeCents: 1000,
       freeDeliveryMinCents: 10000,
+      isStoreOpen: false,
+      storeStatusMessage: "La tienda aun no esta operativa.",
+      storeStatusChangedAt: new Date("2026-03-18T10:00:00.000Z"),
       paymentMobileBank: "Provincial",
       paymentMobilePhone: "04140000000",
       paymentMobileId: "V-12345678",
@@ -78,6 +86,9 @@ describe("admin delivery-settings route", () => {
     upsertMock.mockResolvedValueOnce({
       deliveryFeeCents: 1300,
       freeDeliveryMinCents: 18000,
+      isStoreOpen: true,
+      storeStatusMessage: "La tienda esta cerrada temporalmente.",
+      storeStatusChangedAt: new Date("2026-03-18T12:30:00.000Z"),
       paymentMobileBank: "Banesco",
       paymentMobilePhone: "04141234567",
       paymentMobileId: "J-12345678-9",
@@ -95,6 +106,8 @@ describe("admin delivery-settings route", () => {
       body: JSON.stringify({
         deliveryFeeCents: 1300,
         freeDeliveryMinCents: 18000,
+        isStoreOpen: true,
+        storeStatusMessage: "La tienda esta cerrada temporalmente.",
         paymentMobileBank: "Banesco",
         paymentMobilePhone: "04141234567",
         paymentMobileId: "J-12345678-9",
@@ -113,12 +126,15 @@ describe("admin delivery-settings route", () => {
     expect(upsertMock).toHaveBeenCalledWith({
       where: { singletonKey: "default" },
       update: expect.objectContaining({
+        isStoreOpen: true,
+        storeStatusMessage: "La tienda esta cerrada temporalmente.",
         paymentMobileBank: "Banesco",
         paymentTransferAccountNumber: "01050000000000000000",
         paymentBeneficiaryName: "Food Salad C.A.",
       }),
       create: expect.objectContaining({
         singletonKey: "default",
+        isStoreOpen: true,
         paymentMobileBank: "Banesco",
         paymentTransferAccountNumber: "01050000000000000000",
       }),
@@ -126,11 +142,11 @@ describe("admin delivery-settings route", () => {
     });
     expect(createAuditLogMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "UPDATE",
+        action: "STORE_OPENED",
         entityType: "STORE_SETTINGS",
         entityId: "default",
         entityLabel: "Configuracion de tienda",
-        summary: "Actualizo la configuracion de tienda y datos de pago del negocio.",
+        summary: "Abre la tienda para aceptar pedidos.",
       }),
     );
     expect(body.data.paymentMobilePhone).toBe("04141234567");
