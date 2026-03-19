@@ -66,6 +66,7 @@ export default function CheckoutForm({
   const [uploadingProof, setUploadingProof] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMobileSummary, setShowMobileSummary] = useState(false);
 
   useEffect(() => {
     if (!isHydratedFromServer) {
@@ -291,8 +292,50 @@ export default function CheckoutForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
-      <section className="space-y-4 lg:col-span-2">
+    <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+      <section className="space-y-3 pb-28 lg:col-span-2 lg:space-y-4 lg:pb-0">
+        <div className="rounded-lg border p-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setShowMobileSummary((current) => !current)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Resumen del pedido
+              </p>
+              <p className="text-xs text-slate-500">
+                {displayItems.length} items - {formatUsd(totalCents)}
+              </p>
+            </div>
+            <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+              {showMobileSummary ? "Ocultar" : "Ver"}
+            </span>
+          </button>
+
+          {showMobileSummary ? (
+            <div className="mt-3 space-y-3 border-t pt-3">
+              {displayItems.map((item) => (
+                <div key={item.lineKey} className="flex gap-3 rounded-md border p-2">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    width={44}
+                    height={44}
+                    className="rounded object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{item.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {item.quantity} x {formatUsd(item.unitPriceCents)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
         <div className="rounded-lg border p-4">
           <div className="flex flex-wrap gap-3">
             <div
@@ -417,9 +460,9 @@ export default function CheckoutForm({
               />
             </div>
 
-            <div className="flex justify-end">
+            <div className="hidden justify-end lg:flex">
               <Button type="button" onClick={handleGoToPaymentStep}>
-                Continuar al pago
+                Siguiente
               </Button>
             </div>
           </>
@@ -543,7 +586,7 @@ export default function CheckoutForm({
               </div>
             ) : null}
 
-            <div className="flex flex-wrap justify-between gap-3">
+            <div className="hidden flex-wrap justify-between gap-3 lg:flex">
               <Button
                 type="button"
                 variant="outline"
@@ -559,7 +602,7 @@ export default function CheckoutForm({
         )}
       </section>
 
-      <aside className="space-y-4">
+      <aside className="hidden space-y-4 lg:block">
         <div className="rounded-lg border p-4">
           <h3 className="mb-3 text-lg font-semibold">Resumen</h3>
           <div className="space-y-3">
@@ -653,6 +696,40 @@ export default function CheckoutForm({
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </aside>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 p-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 lg:hidden">
+        <div className="mx-auto flex max-w-3xl items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-slate-500">
+              {step === "DETAILS" ? "Total estimado" : "Total a pagar"}
+            </p>
+            <p className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
+              {formatUsd(totalCents)}
+              {formatVes(totalCents) ? ` / ${formatVes(totalCents)}` : ""}
+            </p>
+          </div>
+
+          {step === "DETAILS" ? (
+            <Button type="button" className="min-w-[140px]" onClick={handleGoToPaymentStep}>
+              Siguiente
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep("DETAILS")}
+              >
+                Volver
+              </Button>
+              <Button type="submit" disabled={submitting || uploadingProof}>
+                {submitting ? "Procesando..." : "Finalizar"}
+              </Button>
+            </div>
+          )}
+        </div>
+        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      </div>
     </form>
   );
 }

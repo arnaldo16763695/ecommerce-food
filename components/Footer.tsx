@@ -22,7 +22,7 @@ const footerHrefMap: Record<string, string> = {
 
 export const Footer = () => {
   const pathname = usePathname();
-  const hideOnMobile = pathname === "/shopping-cart";
+  const hideOnMobile = pathname === "/shopping-cart" || pathname === "/checkout";
 
   return (
     <footer
