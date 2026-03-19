@@ -13,6 +13,15 @@ type DeliverySettingsResponse = {
     isStoreOpen: boolean;
     storeStatusMessage: string;
     storeStatusChangedAt: string | null;
+    operatingHoursConfigured: boolean;
+    isAcceptingOrdersNow: boolean;
+    availabilityReason: string | null;
+    operatingHours: Array<{
+      dayOfWeek: number;
+      opensAt: string;
+      closesAt: string;
+      isEnabled: boolean;
+    }>;
     paymentMobileBank: string;
     paymentMobilePhone: string;
     paymentMobileId: string;
@@ -35,6 +44,16 @@ function centsToInputValue(cents: number) {
   return (cents / 100).toFixed(2);
 }
 
+const DAY_LABELS: Record<number, string> = {
+  0: "Domingo",
+  1: "Lunes",
+  2: "Martes",
+  3: "Miercoles",
+  4: "Jueves",
+  5: "Viernes",
+  6: "Sabado",
+};
+
 export default function DeliverySettingsForm() {
   const { toast } = useToast();
 
@@ -47,6 +66,12 @@ export default function DeliverySettingsForm() {
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [storeStatusMessage, setStoreStatusMessage] = useState("");
   const [storeStatusChangedAt, setStoreStatusChangedAt] = useState<string | null>(null);
+  const [operatingHoursConfigured, setOperatingHoursConfigured] = useState(false);
+  const [isAcceptingOrdersNow, setIsAcceptingOrdersNow] = useState(false);
+  const [availabilityReason, setAvailabilityReason] = useState<string | null>(null);
+  const [operatingHours, setOperatingHours] = useState<
+    DeliverySettingsResponse["data"]["operatingHours"]
+  >([]);
   const [paymentMobileBank, setPaymentMobileBank] = useState("");
   const [paymentMobilePhone, setPaymentMobilePhone] = useState("");
   const [paymentMobileId, setPaymentMobileId] = useState("");
@@ -79,6 +104,10 @@ export default function DeliverySettingsForm() {
       setIsStoreOpen(payload.data.isStoreOpen);
       setStoreStatusMessage(payload.data.storeStatusMessage);
       setStoreStatusChangedAt(payload.data.storeStatusChangedAt);
+      setOperatingHoursConfigured(payload.data.operatingHoursConfigured);
+      setIsAcceptingOrdersNow(payload.data.isAcceptingOrdersNow);
+      setAvailabilityReason(payload.data.availabilityReason);
+      setOperatingHours(payload.data.operatingHours);
       setPaymentMobileBank(payload.data.paymentMobileBank);
       setPaymentMobilePhone(payload.data.paymentMobilePhone);
       setPaymentMobileId(payload.data.paymentMobileId);
@@ -133,6 +162,7 @@ export default function DeliverySettingsForm() {
           freeDeliveryMinCents,
           isStoreOpen,
           storeStatusMessage: storeStatusMessage.trim(),
+          operatingHours,
           paymentMobileBank: paymentMobileBank.trim(),
           paymentMobilePhone: paymentMobilePhone.trim(),
           paymentMobileId: paymentMobileId.trim(),
@@ -170,6 +200,17 @@ export default function DeliverySettingsForm() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function updateOperatingHour(
+    dayOfWeek: number,
+    patch: Partial<DeliverySettingsResponse["data"]["operatingHours"][number]>,
+  ) {
+    setOperatingHours((current) =>
+      current.map((hour) =>
+        hour.dayOfWeek === dayOfWeek ? { ...hour, ...patch } : hour,
+      ),
+    );
   }
 
   return (
@@ -231,10 +272,89 @@ export default function DeliverySettingsForm() {
               </div>
               <div className="rounded-md border px-3 py-2 text-sm">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Estado actual</p>
-                <p className={`mt-1 font-semibold ${isStoreOpen ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}>
-                  {isStoreOpen ? "Abierta para pedidos" : "Cerrada para pedidos"}
+                <p className={`mt-1 font-semibold ${isAcceptingOrdersNow ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}>
+                  {isAcceptingOrdersNow ? "Abierta para pedidos" : "No disponible para pedidos"}
+                </p>
+                {availabilityReason ? (
+                  <p className="mt-1 text-xs text-slate-500">{availabilityReason}</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h3 className="text-base font-semibold">Horario de operacion</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  La tienda solo acepta pedidos dentro del horario configurado. Si dejas la tienda abierta, deberas volver a abrirla manualmente cada nuevo dia.
                 </p>
               </div>
+              <div className="rounded-md border px-3 py-2 text-xs text-slate-500">
+                {operatingHoursConfigured
+                  ? "Horario automatico activo"
+                  : "Aun no has guardado un horario; se mantiene la regla manual actual."}
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {operatingHours.map((hour) => (
+                <div
+                  key={hour.dayOfWeek}
+                  className="grid gap-3 rounded-lg border p-3 md:grid-cols-[140px_120px_120px_1fr]"
+                >
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{DAY_LABELS[hour.dayOfWeek]}</p>
+                    <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={hour.isEnabled}
+                        onChange={(event) =>
+                          updateOperatingHour(hour.dayOfWeek, {
+                            isEnabled: event.target.checked,
+                          })
+                        }
+                        disabled={loading}
+                      />
+                      Habilitado
+                    </label>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Abre</label>
+                    <Input
+                      type="time"
+                      value={hour.opensAt}
+                      onChange={(event) =>
+                        updateOperatingHour(hour.dayOfWeek, {
+                          opensAt: event.target.value,
+                        })
+                      }
+                      disabled={loading || !hour.isEnabled}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Cierra</label>
+                    <Input
+                      type="time"
+                      value={hour.closesAt}
+                      onChange={(event) =>
+                        updateOperatingHour(hour.dayOfWeek, {
+                          closesAt: event.target.value,
+                        })
+                      }
+                      disabled={loading || !hour.isEnabled}
+                    />
+                  </div>
+
+                  <div className="rounded-md border px-3 py-2 text-sm text-slate-600 dark:text-slate-300">
+                    {hour.isEnabled
+                      ? `Recibira pedidos entre ${hour.opensAt} y ${hour.closesAt}.`
+                      : "No recibira pedidos este dia."}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -370,7 +490,11 @@ export default function DeliverySettingsForm() {
         <div className="rounded-lg border p-4 text-sm text-slate-600 dark:text-slate-300">
           <p>
             Estado:{" "}
-            <strong>{isStoreOpen ? "Abierta para pedidos" : "Cerrada para pedidos"}</strong>
+            <strong>{isAcceptingOrdersNow ? "Abierta para pedidos" : "No disponible para pedidos"}</strong>
+          </p>
+          <p>
+            Horario automatico:{" "}
+            <strong>{operatingHoursConfigured ? "Configurado" : "Pendiente por configurar"}</strong>
           </p>
           <p>
             Costo actual:{" "}

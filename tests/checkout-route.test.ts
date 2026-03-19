@@ -48,9 +48,16 @@ vi.mock("@/lib/checkout-validation", () => ({
   validateCheckoutCart: validateCheckoutCartMock,
 }));
 
-vi.mock("@/lib/data/store-settings", () => ({
-  getStoreSettings: getStoreSettingsMock,
-}));
+vi.mock("@/lib/data/store-settings", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/data/store-settings")>(
+    "@/lib/data/store-settings",
+  );
+
+  return {
+    ...actual,
+    getStoreSettings: getStoreSettingsMock,
+  };
+});
 
 vi.mock("@/lib/kitchen-events", () => ({
   publishKitchenEvent: publishKitchenEventMock,
@@ -75,6 +82,9 @@ describe("checkout route", () => {
       freeDeliveryMinCents: 10000,
       isStoreOpen: true,
       storeStatusMessage: "La tienda no esta aceptando pedidos en este momento.",
+      storeStatusChangedAt: new Date("2026-03-19T08:30:00.000Z"),
+      operatingHoursConfigured: false,
+      operatingHours: [],
     });
     sendNewOrderInternalAlertMock.mockResolvedValue(undefined);
     sendOrderConfirmationToCustomerMock.mockResolvedValue(undefined);
@@ -365,6 +375,9 @@ describe("checkout route", () => {
       freeDeliveryMinCents: 10000,
       isStoreOpen: false,
       storeStatusMessage: "Hoy abriremos mas tarde de lo habitual.",
+      storeStatusChangedAt: new Date("2026-03-19T08:30:00.000Z"),
+      operatingHoursConfigured: false,
+      operatingHours: [],
     });
 
     cartFindFirstMock.mockResolvedValue({ id: "cart_1" });
@@ -411,6 +424,76 @@ describe("checkout route", () => {
 
     expect(res.status).toBe(409);
     expect(body.error).toBe("Hoy abriremos mas tarde de lo habitual.");
+    expect(orderCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks checkout when the store was opened on a previous day and schedule is already active", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user_1", role: "CUSTOMER" },
+    });
+
+    getStoreSettingsMock.mockResolvedValueOnce({
+      deliveryFeeCents: 700,
+      freeDeliveryMinCents: 10000,
+      isStoreOpen: true,
+      storeStatusMessage: "La tienda aun no ha sido abierta hoy.",
+      storeStatusChangedAt: new Date("2026-03-18T08:30:00.000Z"),
+      operatingHoursConfigured: true,
+      operatingHours: [
+        { dayOfWeek: 1, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+        { dayOfWeek: 2, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+        { dayOfWeek: 3, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+        { dayOfWeek: 4, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+        { dayOfWeek: 5, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+        { dayOfWeek: 6, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+        { dayOfWeek: 0, opensAt: "08:00", closesAt: "20:00", isEnabled: false },
+      ],
+    });
+
+    cartFindFirstMock.mockResolvedValue({ id: "cart_1" });
+    cartFindUniqueMock.mockResolvedValue({
+      id: "cart_1",
+      userId: "user_1",
+      items: [
+        {
+          lineKey: "line_1",
+          productId: "prod_1",
+          quantity: 1,
+          unitPriceCents: 2200,
+          nameSnapshot: "Wrap",
+          notes: null,
+          options: [],
+        },
+      ],
+    });
+    productFindManyMock.mockResolvedValue([
+      {
+        id: "prod_1",
+        basePriceCents: 2200,
+      },
+    ]);
+    optionFindManyMock.mockResolvedValue([]);
+    productOptionGroupFindManyMock.mockResolvedValue([]);
+
+    const mod = await import("../app/api/checkout/route");
+    const req = new Request("http://localhost/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerName: "Mario Perez",
+        customerPhone: "04145556666",
+        fulfillmentType: "PICKUP",
+        paymentMethod: "IN_STORE",
+      }),
+    });
+
+    const res = await mod.POST(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body.error).toBe("La tienda aun no ha sido abierta hoy.");
     expect(orderCreateMock).not.toHaveBeenCalled();
   });
 });

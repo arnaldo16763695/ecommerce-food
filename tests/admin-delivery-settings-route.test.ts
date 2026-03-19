@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const authMock = vi.fn();
 const findUniqueMock = vi.fn();
 const upsertMock = vi.fn();
+const findUniqueOrThrowMock = vi.fn();
+const deleteManyMock = vi.fn();
+const createManyMock = vi.fn();
+const transactionMock = vi.fn();
 const createAuditLogMock = vi.fn();
 
 vi.mock("@/auth", () => ({
@@ -18,13 +22,43 @@ vi.mock("@/lib/prisma", () => ({
     storeSettings: {
       findUnique: findUniqueMock,
       upsert: upsertMock,
+      findUniqueOrThrow: findUniqueOrThrowMock,
     },
+    storeOperatingHour: {
+      deleteMany: deleteManyMock,
+      createMany: createManyMock,
+    },
+    $transaction: transactionMock,
   },
 }));
+
+const operatingHoursPayload = [
+  { dayOfWeek: 1, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+  { dayOfWeek: 2, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+  { dayOfWeek: 3, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+  { dayOfWeek: 4, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+  { dayOfWeek: 5, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+  { dayOfWeek: 6, opensAt: "08:00", closesAt: "20:00", isEnabled: true },
+  { dayOfWeek: 0, opensAt: "08:00", closesAt: "20:00", isEnabled: false },
+];
 
 describe("admin delivery-settings route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    transactionMock.mockImplementation(
+      async (callback: (tx: unknown) => Promise<unknown>) =>
+        callback({
+          storeSettings: {
+            upsert: upsertMock,
+            findUniqueOrThrow: findUniqueOrThrowMock,
+          },
+          storeOperatingHour: {
+            deleteMany: deleteManyMock,
+            createMany: createManyMock,
+          },
+        }),
+    );
   });
 
   it("returns 403 on GET when user is not admin", async () => {
@@ -45,6 +79,7 @@ describe("admin delivery-settings route", () => {
       isStoreOpen: false,
       storeStatusMessage: "La tienda abrira mas tarde hoy.",
       storeStatusChangedAt: new Date("2026-03-18T12:00:00.000Z"),
+      operatingHours: operatingHoursPayload,
       paymentMobileBank: "Banesco",
       paymentMobilePhone: "04141234567",
       paymentMobileId: "J-12345678-9",
@@ -62,11 +97,13 @@ describe("admin delivery-settings route", () => {
     expect(res.status).toBe(200);
     expect(body.data.isStoreOpen).toBe(false);
     expect(body.data.storeStatusMessage).toBe("La tienda abrira mas tarde hoy.");
+    expect(body.data.operatingHoursConfigured).toBe(true);
+    expect(body.data.operatingHours).toHaveLength(7);
     expect(body.data.paymentTransferAccountNumber).toBe("01050000000000000000");
     expect(body.data.paymentBeneficiaryName).toBe("Food Salad C.A.");
   });
 
-  it("updates store payment settings and writes audit log", async () => {
+  it("updates store settings, operating hours, and writes audit log", async () => {
     authMock.mockResolvedValueOnce({ user: { id: "admin_1", role: "ADMIN" } });
     findUniqueMock.mockResolvedValueOnce({
       deliveryFeeCents: 1000,
@@ -74,6 +111,7 @@ describe("admin delivery-settings route", () => {
       isStoreOpen: false,
       storeStatusMessage: "La tienda aun no esta operativa.",
       storeStatusChangedAt: new Date("2026-03-18T10:00:00.000Z"),
+      operatingHours: operatingHoursPayload,
       paymentMobileBank: "Provincial",
       paymentMobilePhone: "04140000000",
       paymentMobileId: "V-12345678",
@@ -83,12 +121,14 @@ describe("admin delivery-settings route", () => {
       paymentTransferId: "V-12345678",
       paymentBeneficiaryName: "Antes C.A.",
     });
-    upsertMock.mockResolvedValueOnce({
+    upsertMock.mockResolvedValueOnce({ id: "settings_1" });
+    findUniqueOrThrowMock.mockResolvedValueOnce({
       deliveryFeeCents: 1300,
       freeDeliveryMinCents: 18000,
       isStoreOpen: true,
       storeStatusMessage: "La tienda esta cerrada temporalmente.",
       storeStatusChangedAt: new Date("2026-03-18T12:30:00.000Z"),
+      operatingHours: operatingHoursPayload,
       paymentMobileBank: "Banesco",
       paymentMobilePhone: "04141234567",
       paymentMobileId: "J-12345678-9",
@@ -116,6 +156,7 @@ describe("admin delivery-settings route", () => {
         paymentTransferAccountNumber: "01050000000000000000",
         paymentTransferId: "J-12345678-9",
         paymentBeneficiaryName: "Food Salad C.A.",
+        operatingHours: operatingHoursPayload,
       }),
     });
 
@@ -138,7 +179,21 @@ describe("admin delivery-settings route", () => {
         paymentMobileBank: "Banesco",
         paymentTransferAccountNumber: "01050000000000000000",
       }),
-      select: expect.any(Object),
+      select: { id: true },
+    });
+    expect(deleteManyMock).toHaveBeenCalledWith({
+      where: { storeSettingsId: "settings_1" },
+    });
+    expect(createManyMock).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          storeSettingsId: "settings_1",
+          dayOfWeek: 1,
+          opensAt: "08:00",
+          closesAt: "20:00",
+          isEnabled: true,
+        }),
+      ]),
     });
     expect(createAuditLogMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -150,5 +205,6 @@ describe("admin delivery-settings route", () => {
       }),
     );
     expect(body.data.paymentMobilePhone).toBe("04141234567");
+    expect(body.data.operatingHoursConfigured).toBe(true);
   });
 });

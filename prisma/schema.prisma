@@ -180,8 +180,25 @@ model StoreSettings {
   paymentBeneficiaryName String? @map("payment_beneficiary_name") @db.VarChar(160)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  operatingHours StoreOperatingHour[]
 
   @@map("store_settings")
+}
+
+model StoreOperatingHour {
+  id String @id @default(cuid())
+  storeSettingsId String @map("store_settings_id")
+  dayOfWeek Int @map("day_of_week")
+  opensAt String @map("opens_at") @db.VarChar(5)
+  closesAt String @map("closes_at") @db.VarChar(5)
+  isEnabled Boolean @default(false) @map("is_enabled")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  storeSettings StoreSettings @relation(fields: [storeSettingsId], references: [id], onDelete: Cascade)
+
+  @@unique([storeSettingsId, dayOfWeek])
+  @@map("store_operating_hours")
 }
 
 // =========================

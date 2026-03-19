@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { validateCheckoutCart } from "@/lib/checkout-validation";
 import { publishKitchenEvent } from "@/lib/kitchen-events";
-import { getStoreSettings } from "@/lib/data/store-settings";
+import { getStoreAvailability, getStoreSettings } from "@/lib/data/store-settings";
 import {
   sendNewOrderInternalAlert,
   sendOrderConfirmationToCustomer,
@@ -266,9 +266,14 @@ export async function POST(req: Request) {
     );
     const taxCents = Math.round(subtotalCents * 0.1);
     const storeSettings = await getStoreSettings();
-    if (!storeSettings.isStoreOpen) {
+    const storeAvailability = getStoreAvailability(storeSettings);
+    if (!storeAvailability.isAcceptingOrders) {
       return NextResponse.json(
-        { error: storeSettings.storeStatusMessage },
+        {
+          error:
+            storeAvailability.reason ??
+            "La tienda no esta aceptando pedidos en este momento.",
+        },
         { status: 409 },
       );
     }

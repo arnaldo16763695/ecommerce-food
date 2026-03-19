@@ -30,8 +30,8 @@ type Props = {
   usdToVesRate: number | null;
   deliveryFeeCents: number;
   freeDeliveryMinCents: number;
-  isStoreOpen: boolean;
-  storeStatusMessage: string;
+  canAcceptOrders: boolean;
+  storeClosedReason: string | null;
   paymentInstructions: PaymentInstruction[];
 };
 
@@ -42,8 +42,8 @@ export default function CheckoutForm({
   usdToVesRate,
   deliveryFeeCents,
   freeDeliveryMinCents,
-  isStoreOpen,
-  storeStatusMessage,
+  canAcceptOrders,
+  storeClosedReason,
   paymentInstructions,
 }: Props) {
   const router = useRouter();
@@ -143,8 +143,8 @@ export default function CheckoutForm({
       : null;
 
   function validateDetailsStep() {
-    if (!isStoreOpen) {
-      return storeStatusMessage;
+    if (!canAcceptOrders) {
+      return storeClosedReason ?? "La tienda no esta aceptando pedidos en este momento.";
     }
 
     if (customerName.trim().length < 2) {
@@ -163,8 +163,8 @@ export default function CheckoutForm({
   }
 
   function validatePaymentStep() {
-    if (!isStoreOpen) {
-      return storeStatusMessage;
+    if (!canAcceptOrders) {
+      return storeClosedReason ?? "La tienda no esta aceptando pedidos en este momento.";
     }
 
     if (!paymentMethod) {
@@ -306,10 +306,12 @@ export default function CheckoutForm({
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-6">
       <section className="space-y-3 pb-28 lg:col-span-2 lg:space-y-4 lg:pb-0">
-        {!isStoreOpen ? (
+        {!canAcceptOrders ? (
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
             <p className="text-sm font-semibold">La tienda esta cerrada en este momento.</p>
-            <p className="mt-1 text-sm">{storeStatusMessage}</p>
+            <p className="mt-1 text-sm">
+              {storeClosedReason ?? "La tienda no esta aceptando pedidos en este momento."}
+            </p>
           </div>
         ) : null}
 
@@ -480,7 +482,7 @@ export default function CheckoutForm({
             </div>
 
             <div className="hidden justify-end lg:flex">
-              <Button type="button" onClick={handleGoToPaymentStep} disabled={!isStoreOpen}>
+              <Button type="button" onClick={handleGoToPaymentStep} disabled={!canAcceptOrders}>
                 Siguiente
               </Button>
             </div>
@@ -613,7 +615,7 @@ export default function CheckoutForm({
               >
                 Volver
               </Button>
-              <Button type="submit" disabled={submitting || uploadingProof || !isStoreOpen}>
+              <Button type="submit" disabled={submitting || uploadingProof || !canAcceptOrders}>
                 {submitting ? "Procesando..." : "Finalizar compra"}
               </Button>
             </div>
@@ -733,7 +735,7 @@ export default function CheckoutForm({
               type="button"
               className="min-w-[140px]"
               onClick={handleGoToPaymentStep}
-              disabled={!isStoreOpen}
+              disabled={!canAcceptOrders}
             >
               Siguiente
             </Button>
@@ -746,7 +748,7 @@ export default function CheckoutForm({
               >
                 Volver
               </Button>
-              <Button type="submit" disabled={submitting || uploadingProof || !isStoreOpen}>
+              <Button type="submit" disabled={submitting || uploadingProof || !canAcceptOrders}>
                 {submitting ? "Procesando..." : "Finalizar"}
               </Button>
             </div>

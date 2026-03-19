@@ -3,12 +3,29 @@ import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit";
 import prisma from "@/lib/prisma";
 import {
-  DEFAULT_DELIVERY_FEE_CENTS,
-  DEFAULT_FREE_DELIVERY_MIN_CENTS,
   STORE_SETTINGS_KEY,
+  getDefaultOperatingHours,
+  getStoreAvailability,
   getStoreSettings,
 } from "@/lib/data/store-settings";
 import { z } from "zod";
+
+const operatingHourSchema = z
+  .object({
+    dayOfWeek: z.number().int().min(0).max(6),
+    opensAt: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    closesAt: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    isEnabled: z.boolean(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.isEnabled && value.opensAt >= value.closesAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La hora de cierre debe ser posterior a la de apertura.",
+        path: ["closesAt"],
+      });
+    }
+  });
 
 const updateDeliverySettingsSchema = z.object({
   deliveryFeeCents: z.coerce.number().int().min(0).max(10_000_000),
@@ -23,6 +40,16 @@ const updateDeliverySettingsSchema = z.object({
   paymentTransferAccountNumber: z.string().trim().min(6).max(80),
   paymentTransferId: z.string().trim().min(3).max(40),
   paymentBeneficiaryName: z.string().trim().min(2).max(160),
+  operatingHours: z.array(operatingHourSchema).length(7),
+}).superRefine((value, ctx) => {
+  const uniqueDays = new Set(value.operatingHours.map((hour) => hour.dayOfWeek));
+  if (uniqueDays.size !== 7) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Debes enviar la configuracion completa de los siete dias.",
+      path: ["operatingHours"],
+    });
+  }
 });
 
 function toResponseData(input: {
@@ -31,6 +58,13 @@ function toResponseData(input: {
   isStoreOpen: boolean;
   storeStatusMessage: string | null;
   storeStatusChangedAt: Date | null;
+  operatingHoursConfigured?: boolean;
+  operatingHours?: Array<{
+    dayOfWeek: number;
+    opensAt: string;
+    closesAt: string;
+    isEnabled: boolean;
+  }>;
   paymentMobileBank: string | null;
   paymentMobilePhone: string | null;
   paymentMobileId: string | null;
@@ -40,12 +74,26 @@ function toResponseData(input: {
   paymentTransferId: string | null;
   paymentBeneficiaryName: string | null;
 }) {
+  const availability = getStoreAvailability({
+    isStoreOpen: input.isStoreOpen,
+    storeStatusMessage: input.storeStatusMessage ?? "",
+    storeStatusChangedAt: input.storeStatusChangedAt,
+    operatingHoursConfigured:
+      input.operatingHoursConfigured ?? Boolean(input.operatingHours?.length),
+    operatingHours: input.operatingHours ?? getDefaultOperatingHours(),
+  });
+
   return {
     deliveryFeeCents: input.deliveryFeeCents,
     freeDeliveryMinCents: input.freeDeliveryMinCents,
     isStoreOpen: input.isStoreOpen,
     storeStatusMessage: input.storeStatusMessage ?? "",
     storeStatusChangedAt: input.storeStatusChangedAt?.toISOString() ?? null,
+    operatingHoursConfigured:
+      input.operatingHoursConfigured ?? Boolean(input.operatingHours?.length),
+    operatingHours: input.operatingHours ?? getDefaultOperatingHours(),
+    isAcceptingOrdersNow: availability.isAcceptingOrders,
+    availabilityReason: availability.reason,
     paymentMobileBank: input.paymentMobileBank ?? "",
     paymentMobilePhone: input.paymentMobilePhone ?? "",
     paymentMobileId: input.paymentMobileId ?? "",
@@ -93,6 +141,14 @@ export async function PATCH(req: NextRequest) {
       isStoreOpen: true,
       storeStatusMessage: true,
       storeStatusChangedAt: true,
+      operatingHours: {
+        select: {
+          dayOfWeek: true,
+          opensAt: true,
+          closesAt: true,
+          isEnabled: true,
+        },
+      },
       paymentMobileBank: true,
       paymentMobilePhone: true,
       paymentMobileId: true,
@@ -104,54 +160,83 @@ export async function PATCH(req: NextRequest) {
     },
   });
 
-  const saved = await prisma.storeSettings.upsert({
-    where: { singletonKey: STORE_SETTINGS_KEY },
-    update: {
-      deliveryFeeCents: parsed.data.deliveryFeeCents,
-      freeDeliveryMinCents: parsed.data.freeDeliveryMinCents,
-      isStoreOpen: parsed.data.isStoreOpen,
-      storeStatusMessage: parsed.data.storeStatusMessage,
-      storeStatusChangedAt: new Date(),
-      paymentMobileBank: parsed.data.paymentMobileBank,
-      paymentMobilePhone: parsed.data.paymentMobilePhone,
-      paymentMobileId: parsed.data.paymentMobileId,
-      paymentTransferBank: parsed.data.paymentTransferBank,
-      paymentTransferAccountType: parsed.data.paymentTransferAccountType,
-      paymentTransferAccountNumber: parsed.data.paymentTransferAccountNumber,
-      paymentTransferId: parsed.data.paymentTransferId,
-      paymentBeneficiaryName: parsed.data.paymentBeneficiaryName,
-    },
-    create: {
-      singletonKey: STORE_SETTINGS_KEY,
-      deliveryFeeCents: parsed.data.deliveryFeeCents,
-      freeDeliveryMinCents: parsed.data.freeDeliveryMinCents,
-      isStoreOpen: parsed.data.isStoreOpen,
-      storeStatusMessage: parsed.data.storeStatusMessage,
-      storeStatusChangedAt: new Date(),
-      paymentMobileBank: parsed.data.paymentMobileBank,
-      paymentMobilePhone: parsed.data.paymentMobilePhone,
-      paymentMobileId: parsed.data.paymentMobileId,
-      paymentTransferBank: parsed.data.paymentTransferBank,
-      paymentTransferAccountType: parsed.data.paymentTransferAccountType,
-      paymentTransferAccountNumber: parsed.data.paymentTransferAccountNumber,
-      paymentTransferId: parsed.data.paymentTransferId,
-      paymentBeneficiaryName: parsed.data.paymentBeneficiaryName,
-    },
-    select: {
-      deliveryFeeCents: true,
-      freeDeliveryMinCents: true,
-      isStoreOpen: true,
-      storeStatusMessage: true,
-      storeStatusChangedAt: true,
-      paymentMobileBank: true,
-      paymentMobilePhone: true,
-      paymentMobileId: true,
-      paymentTransferBank: true,
-      paymentTransferAccountType: true,
-      paymentTransferAccountNumber: true,
-      paymentTransferId: true,
-      paymentBeneficiaryName: true,
-    },
+  const saved = await prisma.$transaction(async (tx) => {
+    const storeSettings = await tx.storeSettings.upsert({
+      where: { singletonKey: STORE_SETTINGS_KEY },
+      update: {
+        deliveryFeeCents: parsed.data.deliveryFeeCents,
+        freeDeliveryMinCents: parsed.data.freeDeliveryMinCents,
+        isStoreOpen: parsed.data.isStoreOpen,
+        storeStatusMessage: parsed.data.storeStatusMessage,
+        storeStatusChangedAt: new Date(),
+        paymentMobileBank: parsed.data.paymentMobileBank,
+        paymentMobilePhone: parsed.data.paymentMobilePhone,
+        paymentMobileId: parsed.data.paymentMobileId,
+        paymentTransferBank: parsed.data.paymentTransferBank,
+        paymentTransferAccountType: parsed.data.paymentTransferAccountType,
+        paymentTransferAccountNumber: parsed.data.paymentTransferAccountNumber,
+        paymentTransferId: parsed.data.paymentTransferId,
+        paymentBeneficiaryName: parsed.data.paymentBeneficiaryName,
+      },
+      create: {
+        singletonKey: STORE_SETTINGS_KEY,
+        deliveryFeeCents: parsed.data.deliveryFeeCents,
+        freeDeliveryMinCents: parsed.data.freeDeliveryMinCents,
+        isStoreOpen: parsed.data.isStoreOpen,
+        storeStatusMessage: parsed.data.storeStatusMessage,
+        storeStatusChangedAt: new Date(),
+        paymentMobileBank: parsed.data.paymentMobileBank,
+        paymentMobilePhone: parsed.data.paymentMobilePhone,
+        paymentMobileId: parsed.data.paymentMobileId,
+        paymentTransferBank: parsed.data.paymentTransferBank,
+        paymentTransferAccountType: parsed.data.paymentTransferAccountType,
+        paymentTransferAccountNumber: parsed.data.paymentTransferAccountNumber,
+        paymentTransferId: parsed.data.paymentTransferId,
+        paymentBeneficiaryName: parsed.data.paymentBeneficiaryName,
+      },
+      select: { id: true },
+    });
+
+    await tx.storeOperatingHour.deleteMany({
+      where: { storeSettingsId: storeSettings.id },
+    });
+
+    await tx.storeOperatingHour.createMany({
+      data: parsed.data.operatingHours.map((hour) => ({
+        storeSettingsId: storeSettings.id,
+        dayOfWeek: hour.dayOfWeek,
+        opensAt: hour.opensAt,
+        closesAt: hour.closesAt,
+        isEnabled: hour.isEnabled,
+      })),
+    });
+
+    return tx.storeSettings.findUniqueOrThrow({
+      where: { singletonKey: STORE_SETTINGS_KEY },
+      select: {
+        deliveryFeeCents: true,
+        freeDeliveryMinCents: true,
+        isStoreOpen: true,
+        storeStatusMessage: true,
+        storeStatusChangedAt: true,
+        operatingHours: {
+          select: {
+            dayOfWeek: true,
+            opensAt: true,
+            closesAt: true,
+            isEnabled: true,
+          },
+        },
+        paymentMobileBank: true,
+        paymentMobilePhone: true,
+        paymentMobileId: true,
+        paymentTransferBank: true,
+        paymentTransferAccountType: true,
+        paymentTransferAccountNumber: true,
+        paymentTransferId: true,
+        paymentBeneficiaryName: true,
+      },
+    });
   });
 
   const previousStoreOpen = previous?.isStoreOpen ?? false;
