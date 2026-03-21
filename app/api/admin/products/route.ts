@@ -14,11 +14,11 @@ const createProductSchema = z.object({
   slug: z.string().trim().min(2).max(160).optional(),
   description: z.string().trim().max(3000).optional(),
   basePriceCents: z.number().int().min(0).max(9_999_999),
-  prepTimeMin: z.number().int().min(1).max(360).optional(),
+  prepTimeMin: z.number().int().min(1).max(360).nullable().optional(),
   trackStock: z.boolean().optional(),
   stockQuantity: z.number().int().min(0).max(999_999).optional(),
-  categoryId: z.string().trim().min(1).optional(),
-  coverImageUrl: z.string().url().optional(),
+  categoryId: z.string().trim().min(1).nullable().optional(),
+  coverImageUrl: z.string().url().nullable().optional(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   images: z
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
   }
 
   const imageInputs = (payload.images ?? []).filter((img) => img.url);
-  const coverImageUrl = payload.coverImageUrl ?? imageInputs[0]?.url;
+  const coverImageUrl = payload.coverImageUrl?.trim() || imageInputs[0]?.url;
 
   const optionGroups = payload.optionGroups ?? [];
   const uniqueGroupIds = new Set(optionGroups.map((item) => item.groupId));

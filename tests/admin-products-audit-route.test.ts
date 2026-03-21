@@ -133,4 +133,60 @@ describe("admin products audit integration", () => {
       }),
     });
   });
+
+  it("accepts nullable optional fields when creating a product", async () => {
+    authMock.mockResolvedValueOnce({
+      user: { id: "admin_1", role: "ADMIN" },
+    });
+
+    productFindUniqueMock.mockResolvedValueOnce(null);
+    productCreateMock.mockResolvedValueOnce({ id: "prod_2" });
+    productFindUniqueOrThrowMock.mockResolvedValueOnce({
+      id: "prod_2",
+      name: "Pepito",
+      slug: "pepito",
+      basePriceCents: 1800,
+      coverImageUrl: null,
+      isActive: true,
+      isFeatured: false,
+      trackStock: false,
+      stockQuantity: 0,
+      createdAt: new Date("2026-03-21T10:00:00.000Z"),
+      images: [],
+      category: null,
+    });
+    auditLogCreateMock.mockResolvedValueOnce({ id: "log_2" });
+
+    const mod = await import("../app/api/admin/products/route");
+    const req = new Request("http://localhost/api/admin/products", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Pepito",
+        slug: "pepito",
+        basePriceCents: 1800,
+        prepTimeMin: null,
+        categoryId: null,
+        coverImageUrl: null,
+        isActive: true,
+        isFeatured: false,
+      }),
+    });
+
+    const res = await mod.POST(req as never);
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(body.data.id).toBe("prod_2");
+    expect(productCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        prepTimeMin: null,
+        categoryId: null,
+        coverImageUrl: null,
+      }),
+      select: { id: true },
+    });
+  });
 });
