@@ -20,7 +20,7 @@ function ProductCard({ product }: Props) {
     product.description?.trim() || "Preparado al momento con ingredientes de calidad.";
   const prepTime =
     typeof product.prepTimeMin === "number"
-      ? `${product.prepTimeMin} min de preparación`
+      ? `${product.prepTimeMin} min de preparacion`
       : null;
   const customizationNames = product.optionGroups
     .slice(0, 2)
@@ -28,7 +28,7 @@ function ProductCard({ product }: Props) {
   const customizationText =
     customizationNames.length > 0
       ? `Personaliza: ${customizationNames.join(" - ")}`
-      : "Sin opciones de personalización";
+      : "Sin opciones de personalizacion";
 
   return (
     <>
@@ -41,6 +41,11 @@ function ProductCard({ product }: Props) {
             height={200}
             className="h-auto w-auto object-contain"
           />
+          {product.isSoldOut ? (
+            <span className="absolute left-3 top-3 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
+              Agotado
+            </span>
+          ) : null}
           <Link
             href={`/shop/product/${product.id}/details`}
             className="absolute right-0 top-0 gap-2 rounded-xs border border-primary-200 bg-white p-2 opacity-0 transition-all hover:text-primary-600 focus:text-primary-600 group-hover:opacity-100 dark:border-primary-300/40 dark:bg-slate-800 dark:text-slate-200"
@@ -51,17 +56,18 @@ function ProductCard({ product }: Props) {
         </div>
         <div className="mt-auto space-y-5">
           <button
-            className="btn-primary flex w-full items-center justify-center gap-1"
+            className="btn-primary flex w-full items-center justify-center gap-1 disabled:cursor-not-allowed disabled:opacity-70"
             aria-label={`Configurar ${product.name} y agregar al pedido`}
             onClick={() => {
               setQuickAddInstanceKey((prev) => prev + 1);
               setOpenQuickAdd(true);
             }}
+            disabled={product.isSoldOut}
           >
             <span>
               <RiShoppingBag2Line size={22} />
             </span>
-            Agregar al pedido
+            {product.isSoldOut ? "Producto agotado" : "Agregar al pedido"}
           </button>
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-4">
@@ -70,11 +76,11 @@ function ProductCard({ product }: Props) {
                 ${(product.basePriceCents / 100).toFixed(2)}
               </p>
             </div>
-            {prepTime && (
+            {prepTime ? (
               <p className="inline-flex rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-800 dark:bg-primary-400/15 dark:text-primary-300">
                 {prepTime}
               </p>
-            )}
+            ) : null}
             <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-300">
               {productDescription}
             </p>

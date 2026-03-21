@@ -1,5 +1,6 @@
 "use server";
 import prisma from "../prisma";
+import { isProductSoldOut } from "@/lib/product-stock";
 
 const productCardSelect = {
   id: true,
@@ -8,6 +9,8 @@ const productCardSelect = {
   description: true,
   basePriceCents: true,
   isFeatured: true,
+  trackStock: true,
+  stockQuantity: true,
   prepTimeMin: true,
   categoryId: true,
   images: {
@@ -46,7 +49,7 @@ const productCardSelect = {
 
 export async function getAllProducts() {
   try {
-    return await prisma.product.findMany({
+    const products = await prisma.product.findMany({
       where: {
         isActive: true,
         OR: [{ categoryId: null }, { category: { is: { isActive: true } } }],
@@ -54,6 +57,11 @@ export async function getAllProducts() {
       orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
       select: productCardSelect,
     });
+
+    return products.map((product) => ({
+      ...product,
+      isSoldOut: isProductSoldOut(product),
+    }));
   } catch (error) {
     console.error("Error fetching products:", error);
     throw error;
@@ -129,6 +137,8 @@ export async function getProductById(id: string) {
         description: true,
         basePriceCents: true,
         isFeatured: true,
+        trackStock: true,
+        stockQuantity: true,
         prepTimeMin: true,
         categoryId: true,
         category: {
@@ -169,7 +179,12 @@ export async function getProductById(id: string) {
         },
       },
     });
-    return product;
+    return product
+      ? {
+          ...product,
+          isSoldOut: isProductSoldOut(product),
+        }
+      : null;
   } catch (error) {
     console.error("Error fetching product by ID:", error);
     throw error;
@@ -194,6 +209,8 @@ export async function getAllProductsByCategory(
         categoryId: true,
         slug: true,
         description: true,
+        trackStock: true,
+        stockQuantity: true,
         prepTimeMin: true,
         images: {
           orderBy: { sortOrder: "asc" },
@@ -207,7 +224,10 @@ export async function getAllProductsByCategory(
         },
       },
     });
-    return productsByCategory;
+    return productsByCategory.map((product) => ({
+      ...product,
+      isSoldOut: isProductSoldOut(product),
+    }));
   } catch (error) {
     console.error("Error fetching products by category:", error);
     throw error;
@@ -240,7 +260,13 @@ export async function getProductsByCategorySlug(slug: string) {
       select: productCardSelect,
     });
 
-    return { category, products };
+    return {
+      category,
+      products: products.map((product) => ({
+        ...product,
+        isSoldOut: isProductSoldOut(product),
+      })),
+    };
   } catch (error) {
     console.error("Error fetching products by category slug:", error);
     throw error;

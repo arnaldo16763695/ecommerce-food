@@ -71,6 +71,8 @@ describe("admin products audit integration", () => {
       coverImageUrl: "https://example.com/burger.png",
       isActive: true,
       isFeatured: false,
+      trackStock: true,
+      stockQuantity: 12,
       createdAt: new Date("2026-03-16T10:00:00.000Z"),
       images: [{ url: "https://example.com/burger.png" }],
       category: {
@@ -92,6 +94,8 @@ describe("admin products audit integration", () => {
         name: "Burger",
         slug: "burger",
         basePriceCents: 2500,
+        trackStock: true,
+        stockQuantity: 12,
         categoryId: "cat_1",
         images: [{ url: "https://example.com/burger.png" }],
         optionGroups: [{ groupId: "grp_1" }],
@@ -123,6 +127,8 @@ describe("admin products audit integration", () => {
           categoryId: "cat_1",
           isActive: true,
           isFeatured: false,
+          trackStock: true,
+          stockQuantity: 12,
         },
       }),
     });

@@ -9,6 +9,8 @@ const optionFindManyMock = vi.fn();
 const productOptionGroupFindManyMock = vi.fn();
 const cartUpdateMock = vi.fn();
 const orderCreateMock = vi.fn();
+const txProductFindUniqueMock = vi.fn();
+const txProductUpdateMock = vi.fn();
 const transactionMock = vi.fn();
 const validateCheckoutCartMock = vi.fn();
 const getStoreSettingsMock = vi.fn();
@@ -92,6 +94,10 @@ describe("checkout route", () => {
     transactionMock.mockImplementation(
       async (callback: (tx: unknown) => Promise<unknown>) =>
         callback({
+          product: {
+            findUnique: txProductFindUniqueMock,
+            update: txProductUpdateMock,
+          },
           order: {
             create: orderCreateMock,
           },
@@ -100,6 +106,13 @@ describe("checkout route", () => {
           },
         }),
     );
+    txProductFindUniqueMock.mockResolvedValue({
+      id: "prod_1",
+      name: "Producto",
+      trackStock: false,
+      stockQuantity: 0,
+    });
+    txProductUpdateMock.mockResolvedValue({ id: "prod_1" });
   });
 
   it("stores phase 1 payment method data on order creation", async () => {
@@ -127,6 +140,8 @@ describe("checkout route", () => {
       {
         id: "prod_1",
         basePriceCents: 2500,
+        trackStock: false,
+        stockQuantity: 0,
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -204,6 +219,8 @@ describe("checkout route", () => {
       {
         id: "prod_1",
         basePriceCents: 3000,
+        trackStock: false,
+        stockQuantity: 0,
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -274,6 +291,8 @@ describe("checkout route", () => {
       {
         id: "prod_1",
         basePriceCents: 1800,
+        trackStock: false,
+        stockQuantity: 0,
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -400,6 +419,8 @@ describe("checkout route", () => {
       {
         id: "prod_1",
         basePriceCents: 2200,
+        trackStock: false,
+        stockQuantity: 0,
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -470,6 +491,8 @@ describe("checkout route", () => {
       {
         id: "prod_1",
         basePriceCents: 2200,
+        trackStock: false,
+        stockQuantity: 0,
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -494,6 +517,62 @@ describe("checkout route", () => {
 
     expect(res.status).toBe(409);
     expect(body.error).toBe("La tienda aun no ha sido abierta hoy.");
+    expect(orderCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks checkout when the requested quantity exceeds available stock", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user_1", role: "CUSTOMER" },
+    });
+
+    cartFindFirstMock.mockResolvedValue({ id: "cart_1" });
+    cartFindUniqueMock.mockResolvedValue({
+      id: "cart_1",
+      userId: "user_1",
+      items: [
+        {
+          lineKey: "line_1",
+          productId: "prod_1",
+          quantity: 2,
+          unitPriceCents: 2200,
+          nameSnapshot: "Wrap",
+          notes: null,
+          options: [],
+        },
+      ],
+    });
+    productFindManyMock.mockResolvedValue([
+      {
+        id: "prod_1",
+        basePriceCents: 2200,
+        trackStock: true,
+        stockQuantity: 1,
+      },
+    ]);
+    optionFindManyMock.mockResolvedValue([]);
+    productOptionGroupFindManyMock.mockResolvedValue([]);
+
+    const mod = await import("../app/api/checkout/route");
+    const req = new Request("http://localhost/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerName: "Mario Perez",
+        customerPhone: "04145556666",
+        fulfillmentType: "PICKUP",
+        paymentMethod: "IN_STORE",
+      }),
+    });
+
+    const res = await mod.POST(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body.error).toBe(
+      "Uno de los productos ya no tiene suficiente stock para completar la cantidad solicitada.",
+    );
     expect(orderCreateMock).not.toHaveBeenCalled();
   });
 });

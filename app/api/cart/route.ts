@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { getAvailableStock } from "@/lib/product-stock";
 import type { CartItem, CartItemOption } from "@/types/types";
 
 const GUEST_CART_COOKIE = "guest_cart_token";
@@ -369,6 +370,8 @@ export async function PUT(req: Request) {
           id: true,
           name: true,
           basePriceCents: true,
+          trackStock: true,
+          stockQuantity: true,
         },
       }),
       optionIds.length > 0
@@ -402,6 +405,9 @@ export async function PUT(req: Request) {
       for (const incoming of incomingItems) {
         const product = productById.get(incoming.productId);
         if (!product) continue;
+        const maxQuantity = getAvailableStock(product);
+        const quantity = Math.min(incoming.quantity, maxQuantity);
+        if (quantity <= 0) continue;
 
         const validOptions = incoming.options
           .map((option) => optionById.get(option.optionId))
@@ -417,7 +423,7 @@ export async function PUT(req: Request) {
             cartId: cart.id,
             productId: product.id,
             lineKey: incoming.lineKey,
-            quantity: incoming.quantity,
+            quantity,
             unitPriceCents: product.basePriceCents + optionDelta,
             nameSnapshot: product.name,
             notes: incoming.notes,

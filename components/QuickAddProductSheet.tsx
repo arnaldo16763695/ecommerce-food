@@ -75,6 +75,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
   }, {});
 
   const canAddToCart = Object.keys(groupErrors).length === 0;
+  const isSoldOut = product.isSoldOut;
 
   const handleSelectOption = (groupId: string, optionId: string, maxSelect: number) => {
     setSelectedOptions((prev) => {
@@ -108,7 +109,7 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
 
   const handleAddToCart = () => {
     setAttemptedAdd(true);
-    if (!canAddToCart) return;
+    if (!canAddToCart || isSoldOut) return;
 
     const normalizedNotes = notes.trim();
     const lineKey = buildCartLineKey({
@@ -153,6 +154,11 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
               />
             </div>
             <h3 className="text-xl text-slate-900 dark:text-slate-100">{product.name}</h3>
+            {isSoldOut ? (
+              <p className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-400/15 dark:text-amber-300">
+                Agotado temporalmente
+              </p>
+            ) : null}
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {product.description || "Preparado al momento con ingredientes de calidad."}
             </p>
@@ -271,11 +277,12 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
 
             <button
               type="button"
-              className="btn-primary flex w-full items-center justify-center gap-2"
+              className="btn-primary flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
               onClick={handleAddToCart}
+              disabled={isSoldOut}
             >
               <RiShoppingBag2Line size={20} aria-hidden="true" />
-              Agregar al pedido
+              {isSoldOut ? "Producto agotado" : "Agregar al pedido"}
             </button>
           </div>
         </div>

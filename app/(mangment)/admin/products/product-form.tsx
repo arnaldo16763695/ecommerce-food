@@ -38,6 +38,8 @@ type ProductFormInitialData = {
   coverImageUrl: string | null;
   isActive: boolean;
   isFeatured: boolean;
+  trackStock: boolean;
+  stockQuantity: number;
   optionGroups: Array<{
     groupId: string;
     sortOrder: number;
@@ -77,6 +79,10 @@ export default function ProductForm({
   const [coverImageUrl, setCoverImageUrl] = useState(initialData?.coverImageUrl ?? "");
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
   const [isFeatured, setIsFeatured] = useState(initialData?.isFeatured ?? false);
+  const [trackStock, setTrackStock] = useState(initialData?.trackStock ?? false);
+  const [stockQuantity, setStockQuantity] = useState(
+    initialData ? String(initialData.stockQuantity) : "0",
+  );
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<SelectedGroupState[]>(
@@ -150,6 +156,10 @@ export default function ProductForm({
       if (parsedBasePriceCents === null) {
         throw new Error("El precio base debe ser un numero valido con hasta 2 decimales.");
       }
+      const parsedStockQuantity = Number.parseInt(stockQuantity.trim() || "0", 10);
+      if (!Number.isFinite(parsedStockQuantity) || parsedStockQuantity < 0) {
+        throw new Error("El stock debe ser un numero entero igual o mayor a cero.");
+      }
 
       const payload = {
         name: name.trim(),
@@ -163,6 +173,8 @@ export default function ProductForm({
         coverImageUrl: coverImageUrl.trim() || null,
         isActive,
         isFeatured,
+        trackStock,
+        stockQuantity: trackStock ? parsedStockQuantity : 0,
         images: coverImageUrl.trim()
           ? [{ url: coverImageUrl.trim(), alt: name.trim() || undefined }]
           : [],
@@ -355,6 +367,37 @@ export default function ProductForm({
           />
           Destacar en tienda
         </label>
+      </div>
+
+      <div className="rounded-md border p-4 space-y-4">
+        <div className="flex items-center gap-2 text-sm">
+          <input
+            id="track-stock"
+            type="checkbox"
+            checked={trackStock}
+            onChange={(e) => setTrackStock(e.target.checked)}
+          />
+          <label htmlFor="track-stock" className="font-medium">
+            Controlar stock de este producto
+          </label>
+        </div>
+
+        <div className="space-y-1.5 md:max-w-xs">
+          <label htmlFor="stock-quantity" className="text-sm font-medium">
+            Stock disponible
+          </label>
+          <Input
+            id="stock-quantity"
+            type="number"
+            min={0}
+            value={stockQuantity}
+            onChange={(e) => setStockQuantity(e.target.value)}
+            disabled={!trackStock}
+          />
+          <p className="text-xs text-slate-500">
+            Si el stock llega a 0, el producto se mostrara como agotado y no se podra vender.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-3 rounded-md border p-4">

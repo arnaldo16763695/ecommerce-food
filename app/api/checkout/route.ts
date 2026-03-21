@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { validateCheckoutCart } from "@/lib/checkout-validation";
 import { publishKitchenEvent } from "@/lib/kitchen-events";
 import { getStoreAvailability, getStoreSettings } from "@/lib/data/store-settings";
+import { getAvailableStock } from "@/lib/product-stock";
 import {
   sendNewOrderInternalAlert,
   sendOrderConfirmationToCustomer,
@@ -177,6 +178,8 @@ export async function POST(req: Request) {
         select: {
           id: true,
           basePriceCents: true,
+          trackStock: true,
+          stockQuantity: true,
         },
       }),
       optionIds.length > 0
@@ -260,6 +263,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
 
+    for (const item of checkoutItems) {
+      const product = products.find((entry) => entry.id === item.productId);
+      if (!product) {
+        return NextResponse.json(
+          { error: "El carrito contiene productos inactivos o eliminados." },
+          { status: 400 },
+        );
+      }
+
+      const availableStock = getAvailableStock(product);
+      if (availableStock < item.quantity) {
+        return NextResponse.json(
+          {
+            error:
+              availableStock <= 0
+                ? "Uno de los productos de tu carrito se agoto antes de finalizar la compra."
+                : "Uno de los productos ya no tiene suficiente stock para completar la cantidad solicitada.",
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     const subtotalCents = cart.items.reduce(
       (sum, item) => sum + item.unitPriceCents * item.quantity,
       0,
@@ -300,6 +326,37 @@ export async function POST(req: Request) {
         : parsed.data.paymentProofPath?.trim() || null;
 
     const order = await prisma.$transaction(async (tx) => {
+      for (const item of checkoutItems) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          select: {
+            id: true,
+            name: true,
+            trackStock: true,
+            stockQuantity: true,
+          },
+        });
+
+        if (!product) {
+          throw new Error("PRODUCT_NOT_FOUND");
+        }
+
+        if (product.trackStock) {
+          if (product.stockQuantity < item.quantity) {
+            throw new Error("INSUFFICIENT_STOCK");
+          }
+
+          await tx.product.update({
+            where: { id: product.id },
+            data: {
+              stockQuantity: {
+                decrement: item.quantity,
+              },
+            },
+          });
+        }
+      }
+
       const createdOrder = await tx.order.create({
         data: {
           userId: cart.userId ?? null,
@@ -425,7 +482,26 @@ export async function POST(req: Request) {
     }
 
     return response;
-  } catch {
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "INSUFFICIENT_STOCK") {
+        return NextResponse.json(
+          {
+            error:
+              "Uno de los productos ya no tiene suficiente stock para completar la compra.",
+          },
+          { status: 409 },
+        );
+      }
+
+      if (error.message === "PRODUCT_NOT_FOUND") {
+        return NextResponse.json(
+          { error: "Uno de los productos de tu carrito ya no esta disponible." },
+          { status: 400 },
+        );
+      }
+    }
+
     return NextResponse.json({ error: "Unable to complete checkout." }, { status: 500 });
   }
 }

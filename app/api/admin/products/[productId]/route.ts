@@ -12,6 +12,8 @@ const updateProductSchema = z
     description: z.string().trim().max(3000).optional(),
     basePriceCents: z.number().int().min(0).max(9_999_999).optional(),
     prepTimeMin: z.number().int().min(1).max(360).nullable().optional(),
+    trackStock: z.boolean().optional(),
+    stockQuantity: z.number().int().min(0).max(999_999).optional(),
     categoryId: z.string().trim().min(1).nullable().optional(),
     isActive: z.boolean().optional(),
     isFeatured: z.boolean().optional(),
@@ -43,6 +45,8 @@ const updateProductSchema = z
       value.description !== undefined ||
       value.basePriceCents !== undefined ||
       value.prepTimeMin !== undefined ||
+      value.trackStock !== undefined ||
+      value.stockQuantity !== undefined ||
       value.categoryId !== undefined ||
       value.isActive !== undefined ||
       value.isFeatured !== undefined ||
@@ -81,7 +85,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existing = await prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true, name: true, slug: true, basePriceCents: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      basePriceCents: true,
+      trackStock: true,
+      stockQuantity: true,
+    },
   });
 
   if (!existing) {
@@ -153,6 +164,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           ? { basePriceCents: data.basePriceCents }
           : {}),
         ...(data.prepTimeMin !== undefined ? { prepTimeMin: data.prepTimeMin } : {}),
+        ...(data.trackStock !== undefined ? { trackStock: data.trackStock } : {}),
+        ...(data.stockQuantity !== undefined
+          ? { stockQuantity: data.stockQuantity }
+          : {}),
         ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
         ...(data.isFeatured !== undefined ? { isFeatured: data.isFeatured } : {}),
@@ -221,6 +236,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         coverImageUrl: true,
         isActive: true,
         isFeatured: true,
+        trackStock: true,
+        stockQuantity: true,
         createdAt: true,
         images: {
           orderBy: { sortOrder: "asc" },
@@ -251,6 +268,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       nextSlug: updated.slug,
       previousBasePriceCents: existing.basePriceCents,
       nextBasePriceCents: updated.basePriceCents,
+      previousTrackStock: existing.trackStock,
+      nextTrackStock: updated.trackStock,
+      previousStockQuantity: existing.stockQuantity,
+      nextStockQuantity: updated.stockQuantity,
       categoryId: updated.category?.id ?? null,
       isActive: updated.isActive,
       isFeatured: updated.isFeatured,

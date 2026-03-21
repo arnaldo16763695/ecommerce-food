@@ -33,6 +33,8 @@ type AdminProduct = {
   coverImageUrl: string | null;
   isActive: boolean;
   isFeatured: boolean;
+  trackStock: boolean;
+  stockQuantity: number;
   createdAt: string;
   images: { url: string }[];
   category: {
@@ -130,6 +132,8 @@ export default function ProductsTable() {
     payload: {
       isActive?: boolean;
       isFeatured?: boolean;
+      trackStock?: boolean;
+      stockQuantity?: number;
       imageUrl?: string;
       coverImageUrl?: string;
     },
@@ -247,6 +251,7 @@ export default function ProductsTable() {
             <TableHead>Producto</TableHead>
             <TableHead>Categoria</TableHead>
             <TableHead>Precio</TableHead>
+            <TableHead>Stock</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Destacado</TableHead>
             <TableHead>Acciones</TableHead>
@@ -255,13 +260,13 @@ export default function ProductsTable() {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
+              <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
                 Cargando productos...
               </TableCell>
             </TableRow>
           ) : products.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
+              <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
                 No hay productos para mostrar
               </TableCell>
             </TableRow>
@@ -309,6 +314,61 @@ export default function ProductsTable() {
                 </TableCell>
                 <TableCell>{product.category?.name ?? "-"}</TableCell>
                 <TableCell>{formatMoney(product.basePriceCents)}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={
+                        !product.trackStock
+                          ? "outline"
+                          : product.stockQuantity > 0
+                            ? "success"
+                            : "warning"
+                      }
+                    >
+                      {!product.trackStock
+                        ? "Sin control"
+                        : product.stockQuantity > 0
+                          ? `${product.stockQuantity} uds`
+                          : "Agotado"}
+                    </Badge>
+                    {product.trackStock ? null : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={savingProductId === product.id}
+                        onClick={() =>
+                          patchProduct(product.id, {
+                            trackStock: true,
+                            stockQuantity: Math.max(1, product.stockQuantity || 0),
+                          })
+                        }
+                      >
+                        Activar
+                      </Button>
+                    )}
+                    {product.trackStock ? (
+                      <Input
+                        type="number"
+                        min={0}
+                        defaultValue={product.stockQuantity}
+                        className="w-24"
+                        disabled={savingProductId === product.id}
+                        onBlur={(event) => {
+                          const nextValue = Number.parseInt(event.target.value || "0", 10);
+                          if (!Number.isFinite(nextValue) || nextValue < 0) {
+                            event.target.value = String(product.stockQuantity);
+                            return;
+                          }
+
+                          if (nextValue === product.stockQuantity) return;
+
+                          void patchProduct(product.id, { stockQuantity: nextValue });
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Badge variant={product.isActive ? "success" : "warning"}>

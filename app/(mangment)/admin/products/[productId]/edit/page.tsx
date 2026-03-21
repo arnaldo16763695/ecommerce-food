@@ -33,6 +33,8 @@ async function EditProductPage({ params }: Props) {
         coverImageUrl: true,
         isActive: true,
         isFeatured: true,
+        trackStock: true,
+        stockQuantity: true,
         optionGroups: {
           orderBy: { sortOrder: "asc" },
           select: {

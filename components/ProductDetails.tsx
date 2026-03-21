@@ -105,6 +105,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
   );
 
   const canAddToCart = Object.keys(groupErrors).length === 0;
+  const isSoldOut = product.isSoldOut;
 
   const handleSelectOption = (group: Group, optionId: string) => {
     setSelectedOptions((prev) => {
@@ -138,7 +139,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
 
   const handleAddToCart = () => {
     setAttemptedAdd(true);
-    if (!canAddToCart) return;
+    if (!canAddToCart || isSoldOut) return;
 
     const normalizedNotes = notes.trim();
     const lineKey = buildCartLineKey({
@@ -239,6 +240,12 @@ function ProductDetails({ product, relatedProducts }: Props) {
               <p className="font-cunia text-3xl text-primary-600">
                 ${formatMoney(unitPriceCents)}
               </p>
+
+              {isSoldOut ? (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  Este producto esta agotado por ahora. Puedes revisar mas tarde o elegir otra opcion disponible.
+                </div>
+              ) : null}
 
               <p className="text-gray-700 dark:text-slate-300">
                 {product.description}
@@ -369,10 +376,10 @@ function ProductDetails({ product, relatedProducts }: Props) {
                   className="btn-primary flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
                   aria-label={`Add ${product.name} to basket`}
                   onClick={handleAddToCart}
-                  disabled={!canAddToCart && attemptedAdd}
+                  disabled={(!canAddToCart && attemptedAdd) || isSoldOut}
                 >
                   <RiShoppingBag2Line size={20} aria-hidden="true" />
-                  Agregar al carrito
+                  {isSoldOut ? "Producto agotado" : "Agregar al carrito"}
                 </button>
                 <button
                   className="flex items-center justify-center rounded-lg border border-gray-200 transition-colors hover:border-primary-400 hover:text-primary-700 dark:border-slate-600 dark:text-slate-200 dark:hover:border-primary-400 dark:hover:text-primary-300"
@@ -402,7 +409,7 @@ function ProductDetails({ product, relatedProducts }: Props) {
                     Disponibilidad
                   </p>
                   <p className="font-semibold text-emerald-700 dark:text-emerald-400">
-                    Disponible
+                    {isSoldOut ? "Agotado" : "Disponible"}
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900">

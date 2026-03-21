@@ -236,6 +236,8 @@ model Product {
 
   isActive    Boolean @default(true) @map("is_active")
   isFeatured  Boolean @default(false) @map("is_featured")
+  trackStock  Boolean @default(false) @map("track_stock")
+  stockQuantity Int   @default(0) @map("stock_quantity")
   prepTimeMin Int?    @map("prep_time_min")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -251,6 +253,7 @@ model Product {
 
   @@unique([slug])
   @@index([isActive])
+  @@index([trackStock, stockQuantity])
   @@index([categoryId])
   @@index([isActive, isFeatured])
   @@map("products")

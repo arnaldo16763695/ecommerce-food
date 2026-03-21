@@ -15,6 +15,8 @@ const createProductSchema = z.object({
   description: z.string().trim().max(3000).optional(),
   basePriceCents: z.number().int().min(0).max(9_999_999),
   prepTimeMin: z.number().int().min(1).max(360).optional(),
+  trackStock: z.boolean().optional(),
+  stockQuantity: z.number().int().min(0).max(999_999).optional(),
   categoryId: z.string().trim().min(1).optional(),
   coverImageUrl: z.string().url().optional(),
   isActive: z.boolean().optional(),
@@ -88,6 +90,8 @@ export async function GET(req: NextRequest) {
         coverImageUrl: true,
         isActive: true,
         isFeatured: true,
+        trackStock: true,
+        stockQuantity: true,
         createdAt: true,
         images: {
           orderBy: { sortOrder: "asc" },
@@ -195,6 +199,8 @@ export async function POST(req: NextRequest) {
         description: payload.description?.trim() || null,
         basePriceCents: payload.basePriceCents,
         prepTimeMin: payload.prepTimeMin ?? null,
+        trackStock: payload.trackStock ?? false,
+        stockQuantity: payload.trackStock ? payload.stockQuantity ?? 0 : 0,
         categoryId: categoryId ?? null,
         coverImageUrl: coverImageUrl ?? null,
         isActive: payload.isActive ?? true,
@@ -234,6 +240,8 @@ export async function POST(req: NextRequest) {
         coverImageUrl: true,
         isActive: true,
         isFeatured: true,
+        trackStock: true,
+        stockQuantity: true,
         createdAt: true,
         images: {
           orderBy: { sortOrder: "asc" },
@@ -264,6 +272,8 @@ export async function POST(req: NextRequest) {
       categoryId: created.category?.id ?? null,
       isActive: created.isActive,
       isFeatured: created.isFeatured,
+      trackStock: created.trackStock,
+      stockQuantity: created.stockQuantity,
     },
   });
 
