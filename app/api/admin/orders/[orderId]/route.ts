@@ -232,6 +232,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       customerName: true,
       customerEmail: true,
       assignedPreparerId: true,
+      items: {
+        select: {
+          productId: true,
+          quantity: true,
+        },
+      },
     },
   });
   if (!existing) {
@@ -738,16 +744,68 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     );
   }
 
-  const updated = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
-      ...(parsed.data.paymentStatus !== undefined
-        ? { paymentStatus: parsed.data.paymentStatus }
-        : {}),
-    },
-    select: orderSummarySelect,
-  });
+  const shouldRestoreStock =
+    parsed.data.status === "CANCELED" && existing.status !== "CANCELED";
+
+  const updated = shouldRestoreStock
+    ? await prisma.$transaction(async (tx) => {
+        const stockItemMap = new Map<string, number>();
+        for (const item of existing.items) {
+          if (!item.productId) continue;
+          stockItemMap.set(
+            item.productId,
+            (stockItemMap.get(item.productId) ?? 0) + item.quantity,
+          );
+        }
+
+        const trackedProducts =
+          stockItemMap.size > 0
+            ? await tx.product.findMany({
+                where: {
+                  id: { in: Array.from(stockItemMap.keys()) },
+                  trackStock: true,
+                },
+                select: {
+                  id: true,
+                },
+              })
+            : [];
+
+        for (const product of trackedProducts) {
+          const quantityToRestore = stockItemMap.get(product.id) ?? 0;
+          if (quantityToRestore <= 0) continue;
+
+          await tx.product.update({
+            where: { id: product.id },
+            data: {
+              stockQuantity: {
+                increment: quantityToRestore,
+              },
+            },
+          });
+        }
+
+        return tx.order.update({
+          where: { id: orderId },
+          data: {
+            ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
+            ...(parsed.data.paymentStatus !== undefined
+              ? { paymentStatus: parsed.data.paymentStatus }
+              : {}),
+          },
+          select: orderSummarySelect,
+        });
+      })
+    : await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
+          ...(parsed.data.paymentStatus !== undefined
+            ? { paymentStatus: parsed.data.paymentStatus }
+            : {}),
+        },
+        select: orderSummarySelect,
+      });
 
   publishKitchenEvent({
     type: "ORDER_STATUS_CHANGED",
@@ -769,6 +827,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       nextStatus: updated.status,
       previousPaymentStatus: existing.paymentStatus,
       nextPaymentStatus: updated.paymentStatus,
+      restoredStock: shouldRestoreStock,
     },
   });
 

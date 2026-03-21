@@ -6,6 +6,8 @@ const orderUpdateMock = vi.fn();
 const orderUpdateManyMock = vi.fn();
 const orderItemCountMock = vi.fn();
 const orderPreparationItemCountMock = vi.fn();
+const txProductFindManyMock = vi.fn();
+const txProductUpdateMock = vi.fn();
 const transactionMock = vi.fn();
 const auditLogCreateMock = vi.fn();
 const publishKitchenEventMock = vi.fn();
@@ -59,9 +61,21 @@ describe("admin orders audit integration", () => {
     canTransitionPaymentStatusMock.mockReturnValue(true);
     sendPaymentApprovedToCustomerMock.mockResolvedValue(undefined);
     sendPaymentRejectedToCustomerMock.mockResolvedValue(undefined);
-    transactionMock.mockImplementation(async (items: Array<Promise<unknown>>) =>
-      Promise.all(items),
-    );
+    transactionMock.mockImplementation(async (input: unknown) => {
+      if (typeof input === "function") {
+        return input({
+          product: {
+            findMany: txProductFindManyMock,
+            update: txProductUpdateMock,
+          },
+          order: {
+            update: orderUpdateMock,
+          },
+        });
+      }
+
+      return Promise.all(input as Array<Promise<unknown>>);
+    });
   });
 
   it("writes an audit log on admin order status and payment update", async () => {
@@ -75,6 +89,7 @@ describe("admin orders audit integration", () => {
       fulfillmentType: "DELIVERY",
       paymentStatus: "UNPAID",
       assignedPreparerId: "prep_1",
+      items: [],
     });
 
     orderUpdateMock.mockResolvedValueOnce({
@@ -136,13 +151,14 @@ describe("admin orders audit integration", () => {
         method: "PATCH",
         ipAddress: "127.0.0.1",
         userAgent: "vitest",
-        metadata: {
+        metadata: expect.objectContaining({
           orderNumber: 42,
           previousStatus: "READY",
           nextStatus: "COMPLETED",
           previousPaymentStatus: "UNPAID",
           nextPaymentStatus: "PAID",
-        },
+          restoredStock: false,
+        }),
       }),
     });
   });
@@ -163,6 +179,7 @@ describe("admin orders audit integration", () => {
       customerName: "Jose",
       customerEmail: "jose@example.com",
       assignedPreparerId: null,
+      items: [],
     });
 
     orderUpdateMock.mockResolvedValueOnce({
@@ -258,6 +275,7 @@ describe("admin orders audit integration", () => {
       customerName: "Maria",
       customerEmail: "maria@example.com",
       assignedPreparerId: null,
+      items: [],
     });
 
     orderUpdateMock.mockResolvedValueOnce({
@@ -354,6 +372,7 @@ describe("admin orders audit integration", () => {
       customerName: "Laura",
       customerEmail: "laura@example.com",
       assignedPreparerId: null,
+      items: [],
     });
 
     orderUpdateMock.mockResolvedValueOnce({
@@ -401,6 +420,95 @@ describe("admin orders audit integration", () => {
       customerName: "Laura",
       customerEmail: "laura@example.com",
       reviewNote: null,
+    });
+  });
+
+  it("restores tracked product stock when an admin cancels an order", async () => {
+    authMock.mockResolvedValueOnce({
+      user: { id: "admin_1", role: "ADMIN" },
+    });
+
+    orderFindUniqueMock.mockResolvedValueOnce({
+      id: "order_5",
+      status: "CONFIRMED",
+      fulfillmentType: "PICKUP",
+      paymentStatus: "PAID",
+      paymentReviewStatus: "APPROVED",
+      paymentMethod: "MOBILE_PAYMENT",
+      paymentReference: "PM-100",
+      paymentProofUrl: "https://example.com/proof.png",
+      customerName: "Pedro",
+      customerEmail: "pedro@example.com",
+      assignedPreparerId: null,
+      items: [
+        { productId: "prod_1", quantity: 2 },
+        { productId: "prod_2", quantity: 1 },
+      ],
+    });
+    txProductFindManyMock.mockResolvedValueOnce([{ id: "prod_1" }]);
+    orderUpdateMock.mockResolvedValueOnce({
+      id: "order_5",
+      orderNumber: 105,
+      status: "CANCELED",
+      paymentStatus: "PAID",
+      paymentReviewStatus: "APPROVED",
+      paymentMethod: "MOBILE_PAYMENT",
+      fulfillmentType: "PICKUP",
+      customerName: "Pedro",
+      totalCents: 5200,
+      createdAt: new Date("2026-03-20T11:00:00.000Z"),
+      assignedPreparer: null,
+      _count: {
+        items: 2,
+      },
+    });
+
+    const mod = await import("../app/api/admin/orders/[orderId]/route");
+    const req = new Request("http://localhost/api/admin/orders/order_5", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "user-agent": "vitest",
+        "x-forwarded-for": "127.0.0.1",
+      },
+      body: JSON.stringify({
+        status: "CANCELED",
+      }),
+    });
+
+    const res = await mod.PATCH(req as never, {
+      params: Promise.resolve({ orderId: "order_5" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.status).toBe("CANCELED");
+    expect(txProductFindManyMock).toHaveBeenCalledWith({
+      where: {
+        id: { in: ["prod_1", "prod_2"] },
+        trackStock: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+    expect(txProductUpdateMock).toHaveBeenCalledWith({
+      where: { id: "prod_1" },
+      data: {
+        stockQuantity: {
+          increment: 2,
+        },
+      },
+    });
+    expect(auditLogCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        entityId: "order_5",
+        metadata: expect.objectContaining({
+          previousStatus: "CONFIRMED",
+          nextStatus: "CANCELED",
+          restoredStock: true,
+        }),
+      }),
     });
   });
 });
