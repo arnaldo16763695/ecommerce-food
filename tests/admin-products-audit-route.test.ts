@@ -6,9 +6,12 @@ const productFindManyMock = vi.fn();
 const categoryFindUniqueMock = vi.fn();
 const optionGroupFindManyMock = vi.fn();
 const productCreateMock = vi.fn();
+const productUpdateMock = vi.fn();
 const productFindUniqueOrThrowMock = vi.fn();
 const productImageCreateManyMock = vi.fn();
+const productImageDeleteManyMock = vi.fn();
 const productOptionGroupCreateManyMock = vi.fn();
+const productOptionGroupDeleteManyMock = vi.fn();
 const auditLogCreateMock = vi.fn();
 const transactionMock = vi.fn();
 
@@ -42,12 +45,15 @@ describe("admin products audit integration", () => {
       callback({
         product: {
           create: productCreateMock,
+          update: productUpdateMock,
           findUniqueOrThrow: productFindUniqueOrThrowMock,
         },
         productImage: {
+          deleteMany: productImageDeleteManyMock,
           createMany: productImageCreateManyMock,
         },
         productOptionGroup: {
+          deleteMany: productOptionGroupDeleteManyMock,
           createMany: productOptionGroupCreateManyMock,
         },
       }),
@@ -187,6 +193,91 @@ describe("admin products audit integration", () => {
         coverImageUrl: null,
       }),
       select: { id: true },
+    });
+  });
+
+  it("writes stock changes to audit metadata when an admin updates a product", async () => {
+    authMock.mockResolvedValueOnce({
+      user: { id: "admin_1", role: "ADMIN" },
+    });
+
+    productFindUniqueMock
+      .mockResolvedValueOnce({
+        id: "prod_1",
+        name: "Burger",
+        slug: "burger",
+        basePriceCents: 2500,
+        trackStock: false,
+        stockQuantity: 0,
+      })
+      .mockResolvedValueOnce(null);
+    productUpdateMock.mockResolvedValueOnce({ id: "prod_1" });
+    productFindUniqueOrThrowMock.mockResolvedValueOnce({
+      id: "prod_1",
+      name: "Burger premium",
+      slug: "burger-premium",
+      basePriceCents: 2700,
+      coverImageUrl: "https://example.com/burger-premium.png",
+      isActive: true,
+      isFeatured: true,
+      trackStock: true,
+      stockQuantity: 8,
+      createdAt: new Date("2026-03-21T11:00:00.000Z"),
+      images: [{ url: "https://example.com/burger-premium.png" }],
+      category: null,
+    });
+    auditLogCreateMock.mockResolvedValueOnce({ id: "log_3" });
+
+    const mod = await import("../app/api/admin/products/[productId]/route");
+    const req = new Request("http://localhost/api/admin/products/prod_1", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "user-agent": "vitest",
+        "x-forwarded-for": "127.0.0.1",
+      },
+      body: JSON.stringify({
+        name: "Burger premium",
+        slug: "burger-premium",
+        basePriceCents: 2700,
+        trackStock: true,
+        stockQuantity: 8,
+        isFeatured: true,
+      }),
+    });
+
+    const res = await mod.PATCH(req as never, {
+      params: Promise.resolve({ productId: "prod_1" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.name).toBe("Burger premium");
+    expect(productUpdateMock).toHaveBeenCalledWith({
+      where: { id: "prod_1" },
+      data: expect.objectContaining({
+        name: "Burger premium",
+        slug: "burger-premium",
+        basePriceCents: 2700,
+        trackStock: true,
+        stockQuantity: 8,
+        isFeatured: true,
+      }),
+    });
+    expect(auditLogCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: "UPDATE",
+        entityType: "PRODUCT",
+        entityId: "prod_1",
+        entityLabel: "Burger premium",
+        summary: "Actualizo el producto Burger premium.",
+        metadata: expect.objectContaining({
+          previousTrackStock: false,
+          nextTrackStock: true,
+          previousStockQuantity: 0,
+          nextStockQuantity: 8,
+        }),
+      }),
     });
   });
 });
