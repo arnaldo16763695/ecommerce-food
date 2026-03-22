@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.fn();
 const cookiesMock = vi.fn();
@@ -73,6 +73,8 @@ vi.mock("@/lib/notifications/order-notifications", () => ({
 describe("checkout route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-23T15:00:00.000Z"));
 
     cookiesMock.mockResolvedValue({
       get: vi.fn().mockReturnValue(undefined),
@@ -113,6 +115,10 @@ describe("checkout route", () => {
       stockQuantity: 0,
     });
     txProductUpdateMock.mockResolvedValue({ id: "prod_1" });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("stores phase 1 payment method data on order creation", async () => {

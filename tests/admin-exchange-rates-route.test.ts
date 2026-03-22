@@ -5,6 +5,7 @@ const findManyMock = vi.fn();
 const updateManyMock = vi.fn();
 const createMock = vi.fn();
 const transactionMock = vi.fn();
+const createAuditLogMock = vi.fn();
 
 vi.mock("@/auth", () => ({
   auth: authMock,
@@ -19,9 +20,14 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+vi.mock("@/lib/audit", () => ({
+  createAuditLog: createAuditLogMock,
+}));
+
 describe("admin exchange-rates route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    createAuditLogMock.mockResolvedValue({ id: "log_1" });
   });
 
   it("returns 401 on GET when user is not authenticated", async () => {
@@ -104,6 +110,7 @@ describe("admin exchange-rates route", () => {
     expect(res.status).toBe(201);
     expect(updateManyMock).toHaveBeenCalledOnce();
     expect(createMock).toHaveBeenCalledOnce();
+    expect(createAuditLogMock).toHaveBeenCalledOnce();
     expect(body.data.rate).toBe(90.12);
   });
 });
