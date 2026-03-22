@@ -1,0 +1,573 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =========================
+// AUTH (NextAuth-style)
+// =========================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+
+  // For Credentials (never store the password in plain text)
+  passwordHash String?   @map("password_hash")
+  role          Roles     @default(CUSTOMER)
+  accounts     Account[]
+  sessions     Session[]
+  cart         Cart[]
+  orders       Order[]
+  assignedOrders Order[] @relation("OrderAssignedPreparer")
+  paymentReviewedOrders Order[] @relation("OrderPaymentReviewedBy")
+  preparedOrderItems OrderPreparationItem[] @relation("OrderPreparationBy")
+  auditLogs     AuditLog[] @relation("AuditLogActor")
+
+  @@map("users")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?  @map("actor_user_id")
+  actorRole   Roles?   @map("actor_role")
+  action      String   @db.VarChar(80)
+  entityType  String   @map("entity_type") @db.VarChar(80)
+  entityId    String?  @map("entity_id")
+  entityLabel String?  @map("entity_label") @db.VarChar(160)
+  summary     String   @db.VarChar(240)
+  routePath   String?  @map("route_path") @db.VarChar(200)
+  method      String?  @db.VarChar(12)
+  ipAddress   String?  @map("ip_address") @db.VarChar(100)
+  userAgent   String?  @map("user_agent") @db.VarChar(500)
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actorUser User? @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([entityType, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// =========================
+// ENUMS
+// =========================
+enum FulfillmentType {
+  PICKUP
+  DELIVERY
+}
+
+enum Roles {
+  CUSTOMER
+  ADMIN
+  PREPARER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum PaymentMethod {
+  MOBILE_PAYMENT
+  BANK_TRANSFER
+  IN_STORE
+}
+
+enum PaymentReviewStatus {
+  NOT_REQUIRED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// =========================
+// Currency / Exchange Rates
+// =========================
+model ExchangeRate {
+  id String @id @default(cuid())
+
+  baseCurrency  String @default("USD") @map("base_currency")
+  quoteCurrency String @default("VES") @map("quote_currency")
+  rate          Decimal @db.Decimal(14, 6)
+  source        String? @db.VarChar(100)
+  isActive      Boolean @default(true) @map("is_active")
+  effectiveAt   DateTime @default(now()) @map("effective_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([baseCurrency, quoteCurrency, isActive])
+  @@index([effectiveAt])
+  @@map("exchange_rates")
+}
+
+model StoreSettings {
+  id String @id @default(cuid())
+  singletonKey String @unique @default("default") @map("singleton_key")
+  deliveryFeeCents Int @default(1000) @map("delivery_fee_cents")
+  freeDeliveryMinCents Int @default(10000) @map("free_delivery_min_cents")
+  isStoreOpen Boolean @default(false) @map("is_store_open")
+  storeStatusMessage String? @map("store_status_message") @db.VarChar(250)
+  storeStatusChangedAt DateTime? @map("store_status_changed_at")
+  paymentMobileBank String? @map("payment_mobile_bank") @db.VarChar(120)
+  paymentMobilePhone String? @map("payment_mobile_phone") @db.VarChar(40)
+  paymentMobileId String? @map("payment_mobile_id") @db.VarChar(40)
+  paymentTransferBank String? @map("payment_transfer_bank") @db.VarChar(120)
+  paymentTransferAccountType String? @map("payment_transfer_account_type") @db.VarChar(40)
+  paymentTransferAccountNumber String? @map("payment_transfer_account_number") @db.VarChar(80)
+  paymentTransferId String? @map("payment_transfer_id") @db.VarChar(40)
+  paymentBeneficiaryName String? @map("payment_beneficiary_name") @db.VarChar(160)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  operatingHours StoreOperatingHour[]
+
+  @@map("store_settings")
+}
+
+model StoreOperatingHour {
+  id String @id @default(cuid())
+  storeSettingsId String @map("store_settings_id")
+  dayOfWeek Int @map("day_of_week")
+  opensAt String @map("opens_at") @db.VarChar(5)
+  closesAt String @map("closes_at") @db.VarChar(5)
+  isEnabled Boolean @default(false) @map("is_enabled")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  storeSettings StoreSettings @relation(fields: [storeSettingsId], references: [id], onDelete: Cascade)
+
+  @@unique([storeSettingsId, dayOfWeek])
+  @@map("store_operating_hours")
+}
+
+// =========================
+// Categories / Products
+// =========================
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  imgUrl    String   @default("/images/category-img.png")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  products Product[]
+
+  @@unique([slug])
+  @@index([sortOrder])
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model Product {
+  id         String  @id @default(cuid())
+  categoryId String? @map("category_id")
+
+  name           String
+  slug           String
+  description    String?
+  basePriceCents Int     @map("base_price_cents")
+
+  // Para evitar que la UI reviente si no hay images[]
+  coverImageUrl String? @map("cover_image_url")
+
+  isActive    Boolean @default(true) @map("is_active")
+  isFeatured  Boolean @default(false) @map("is_featured")
+  trackStock  Boolean @default(false) @map("track_stock")
+  stockQuantity Int   @default(0) @map("stock_quantity")
+  prepTimeMin Int?    @map("prep_time_min")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  images       ProductImage[]
+  variants     ProductVariant[]
+  optionGroups ProductOptionGroup[]
+
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@unique([slug])
+  @@index([isActive])
+  @@index([trackStock, stockQuantity])
+  @@index([categoryId])
+  @@index([isActive, isFeatured])
+  @@map("products")
+}
+
+model ProductVariant {
+  id              String   @id @default(cuid())
+  productId       String   @map("product_id")
+  name            String
+  priceDeltaCents Int      @default(0) @map("price_delta_cents")
+  isActive        Boolean  @default(true) @map("is_active")
+  trackStock      Boolean  @default(false) @map("track_stock")
+  stockQuantity   Int      @default(0) @map("stock_quantity")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@unique([productId, name])
+  @@index([productId, sortOrder])
+  @@index([productId, isActive, sortOrder])
+  @@index([trackStock, stockQuantity])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String  @map("product_id")
+  url       String
+  alt       String?
+  sortOrder Int     @default(0) @map("sort_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, sortOrder])
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+// =========================
+// MODIFIERS (No lettuce, extra cheese, etc.)
+// =========================
+model OptionGroup {
+  id String @id @default(cuid())
+
+  name      String
+  minSelect Int     @default(0) @map("min_select")
+  maxSelect Int     @default(1) @map("max_select")
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  options  Option[]
+  products ProductOptionGroup[]
+
+  @@index([sortOrder])
+  @@index([isActive, sortOrder])
+  @@map("option_groups")
+}
+
+model Option {
+  id      String @id @default(cuid())
+  groupId String @map("group_id")
+
+  name            String
+  priceDeltaCents Int     @default(0) @map("price_delta_cents")
+  isActive        Boolean @default(true) @map("is_active")
+  sortOrder       Int     @default(0) @map("sort_order")
+
+  group OptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  orderItemOptions OrderItemOption[]
+  cartItemOptions  CartItemOption[]
+
+  // Evita repetir la misma opción dentro de un mismo grupo
+  @@unique([groupId, name])
+  @@index([groupId, sortOrder])
+  @@index([groupId, isActive])
+  @@map("options")
+}
+
+// Join table: which option groups apply to each product
+model ProductOptionGroup {
+  id        String @id @default(cuid())
+  productId String @map("product_id")
+  groupId   String @map("group_id")
+  sortOrder Int    @default(0) @map("sort_order")
+
+  product Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  group   OptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, groupId])
+  @@index([productId, sortOrder])
+  @@index([groupId])
+  @@map("product_option_groups")
+}
+
+// =========================
+// Orders
+// =========================
+model Order {
+  id     String  @id @default(cuid())
+  userId String? @map("user_id")
+  assignedPreparerId String? @map("assigned_preparer_id")
+  assignedAt DateTime? @map("assigned_at")
+
+  // Secuencial y único, sin nullable para evitar líos de colisiones
+  orderNumber Int @unique @default(autoincrement()) @map("order_number")
+
+  status          OrderStatus     @default(PENDING)
+  fulfillmentType FulfillmentType @map("fulfillment_type")
+  paymentStatus   PaymentStatus   @default(UNPAID) @map("payment_status")
+  paymentMethod   PaymentMethod?  @map("payment_method")
+  paymentReviewStatus PaymentReviewStatus @default(NOT_REQUIRED) @map("payment_review_status")
+  paymentReference String?        @map("payment_reference") @db.VarChar(120)
+  paymentProofUrl String?         @map("payment_proof_url") @db.VarChar(500)
+  paymentProofPath String?        @map("payment_proof_path") @db.VarChar(500)
+  paymentReviewNotes String?      @map("payment_review_notes") @db.VarChar(1000)
+  paymentReviewedAt DateTime?     @map("payment_reviewed_at")
+  paymentReviewedByUserId String? @map("payment_reviewed_by_user_id")
+
+  customerName  String  @map("customer_name")
+  customerPhone String? @map("customer_phone")
+  customerEmail String? @map("customer_email")
+
+  notes        String?
+  scheduledFor DateTime? @map("scheduled_for")
+
+  subtotalCents    Int @map("subtotal_cents")
+  discountCents    Int @default(0) @map("discount_cents")
+  deliveryFeeCents Int @default(0) @map("delivery_fee_cents")
+  taxCents         Int @default(0) @map("tax_cents")
+  totalCents       Int @map("total_cents")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignedPreparer User? @relation("OrderAssignedPreparer", fields: [assignedPreparerId], references: [id], onDelete: SetNull)
+  paymentReviewedByUser User? @relation("OrderPaymentReviewedBy", fields: [paymentReviewedByUserId], references: [id], onDelete: SetNull)
+
+  address OrderAddress?
+  items   OrderItem[]
+  preparationItems OrderPreparationItem[]
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([assignedPreparerId])
+  @@index([paymentReviewStatus, createdAt])
+  @@index([status, createdAt])
+  @@index([paymentStatus, createdAt])
+  @@map("orders")
+}
+
+model OrderAddress {
+  id      String @id @default(cuid())
+  orderId String @unique @map("order_id")
+
+  address1 String  @map("address_1")
+  address2 String? @map("address_2")
+  city     String?
+  notes    String?
+  lat      Float?
+  lng      Float?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_addresses")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String  @map("order_id")
+  productId String? @map("product_id")
+  productVariantId String? @map("product_variant_id")
+
+  nameSnapshot   String @map("name_snapshot")
+  variantNameSnapshot String? @map("variant_name_snapshot")
+  unitPriceCents Int    @map("unit_price_cents")
+  quantity       Int
+
+  notes String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+
+  options OrderItemOption[]
+  preparationItem OrderPreparationItem?
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([productVariantId])
+  @@map("order_items")
+}
+
+model OrderPreparationItem {
+  id        String   @id @default(cuid())
+  orderId   String   @map("order_id")
+  orderItemId String @unique @map("order_item_id")
+  isPrepared Boolean @default(false) @map("is_prepared")
+  preparedAt DateTime? @map("prepared_at")
+  preparedByUserId String? @map("prepared_by_user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  preparedByUser User? @relation("OrderPreparationBy", fields: [preparedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([preparedByUserId])
+  @@index([isPrepared])
+  @@map("order_preparation_items")
+}
+
+model OrderItemOption {
+  id          String  @id @default(cuid())
+  orderItemId String  @map("order_item_id")
+  optionId    String? @map("option_id")
+
+  groupNameSnapshot  String @map("group_name_snapshot")
+  optionNameSnapshot String @map("option_name_snapshot")
+  priceDeltaCents    Int    @default(0) @map("price_delta_cents")
+  quantity           Int    @default(1)
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  option    Option?   @relation(fields: [optionId], references: [id], onDelete: SetNull)
+
+  // Evita duplicar la misma opción en el mismo item; usa quantity para “2x extra queso”
+  @@unique([orderItemId, optionId])
+  @@index([orderItemId])
+  @@index([optionId])
+  @@map("order_item_options")
+}
+
+// =========================
+// Cart
+// =========================
+
+enum CartStatus {
+  ACTIVE
+  CHECKED_OUT
+  ABANDONED
+}
+
+model Cart {
+  id         String     @id @default(cuid())
+  userId     String?    @map("user_id")
+  guestToken String?    @unique @map("guest_token") // para no logueados
+  status     CartStatus @default(ACTIVE)
+  currency   String     @default("USD")
+  expiresAt  DateTime?  @map("expires_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  user  User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items CartItem[]
+
+  @@index([userId, status])
+  @@index([status, updatedAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id             String   @id @default(cuid())
+  cartId         String   @map("cart_id")
+  productId      String?  @map("product_id")
+  productVariantId String? @map("product_variant_id")
+  lineKey        String   @map("line_key") // hash de producto+opciones para merge
+  quantity       Int      @default(1)
+  unitPriceCents Int      @map("unit_price_cents")
+  nameSnapshot   String   @map("name_snapshot")
+  variantNameSnapshot String? @map("variant_name_snapshot")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  cart    Cart             @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+  options CartItemOption[]
+
+  @@unique([cartId, lineKey])
+  @@index([cartId])
+  @@index([productId])
+  @@index([productVariantId])
+  @@map("cart_items")
+}
+
+model CartItemOption {
+  id                 String  @id @default(cuid())
+  cartItemId         String  @map("cart_item_id")
+  optionId           String? @map("option_id")
+  groupNameSnapshot  String  @map("group_name_snapshot")
+  optionNameSnapshot String  @map("option_name_snapshot")
+  priceDeltaCents    Int     @default(0) @map("price_delta_cents")
+  quantity           Int     @default(1)
+
+  cartItem CartItem @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  option   Option?  @relation(fields: [optionId], references: [id], onDelete: SetNull)
+
+  // Evita duplicar la misma opción en el mismo item; usa quantity para “2x extra queso”
+  @@unique([cartItemId, optionId])
+  @@index([cartItemId])
+  @@index([optionId])
+  @@map("cart_item_options")
+}

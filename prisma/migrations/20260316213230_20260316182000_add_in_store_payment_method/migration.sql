@@ -1,0 +1,1 @@
+ALTER TYPE "PaymentMethod" ADD VALUE 'IN_STORE';

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/theme-provider";
+import NextTopLoader from 'nextjs-toploader';
+import AuthSessionProvider from "@/components/AuthSessionProvider";
+import { auth } from "@/auth";
+import { Toaster } from "@/components/ui/toaster";
 
 const lexend = localFont({
   src: "/fonts/Lexend-Regular.ttf",
@@ -23,25 +25,29 @@ export const metadata: Metadata = {
   description: "E-Commerce Food",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${lexend.className} ${cunia.className} antialiased bg-slate-50 dark:bg-slate-900 text-gray-900 dark:text-slate-200`}
+        className={`${lexend.className} ${cunia.variable}  antialiased bg-slate-50  text-gray-900 dark:bg-slate-900 dark:text-slate-200 `}
       >
+        <NextTopLoader showSpinner={false} color="var(--theme-primary-600)" />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
-          <main className="min-h-svh">{children}</main>
-          <Footer />
+          <AuthSessionProvider session={session}>
+            {children}
+            <Toaster />
+          </AuthSessionProvider>
         </ThemeProvider>
       </body>
     </html>
