@@ -23,6 +23,7 @@ const navMain = [
     items: [
       { title: "Usuarios", url: "/admin/users" },
       { title: "Productos", url: "/admin/products" },
+      { title: "Stock", url: "/admin/stock" },
       { title: "Categorias", url: "/admin/categories" },
       { title: "Grupos de opciones", url: "/admin/option-groups" },
       { title: "Tasa de cambio", url: "/admin/exchange-rates" },

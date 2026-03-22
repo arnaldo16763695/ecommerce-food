@@ -12,6 +12,8 @@ const productImageCreateManyMock = vi.fn();
 const productImageDeleteManyMock = vi.fn();
 const productOptionGroupCreateManyMock = vi.fn();
 const productOptionGroupDeleteManyMock = vi.fn();
+const productVariantFindFirstMock = vi.fn();
+const productVariantUpdateMock = vi.fn();
 const auditLogCreateMock = vi.fn();
 const transactionMock = vi.fn();
 
@@ -30,6 +32,10 @@ vi.mock("@/lib/prisma", () => ({
     },
     optionGroup: {
       findMany: optionGroupFindManyMock,
+    },
+    productVariant: {
+      findFirst: productVariantFindFirstMock,
+      update: productVariantUpdateMock,
     },
     auditLog: {
       create: auditLogCreateMock,
@@ -55,6 +61,10 @@ describe("admin products audit integration", () => {
         productOptionGroup: {
           deleteMany: productOptionGroupDeleteManyMock,
           createMany: productOptionGroupCreateManyMock,
+        },
+        productVariant: {
+          deleteMany: vi.fn(),
+          createMany: vi.fn(),
         },
       }),
     );
@@ -278,6 +288,84 @@ describe("admin products audit integration", () => {
           nextTrackStock: true,
           previousStockQuantity: 0,
           nextStockQuantity: 8,
+        }),
+      }),
+    });
+  });
+
+  it("writes an audit log when an admin updates stock on a variant", async () => {
+    authMock.mockResolvedValueOnce({
+      user: { id: "admin_1", role: "ADMIN" },
+    });
+
+    productVariantFindFirstMock.mockResolvedValueOnce({
+      id: "var_1",
+      name: "Naranja",
+      stockQuantity: 2,
+      trackStock: true,
+      isActive: true,
+      product: {
+        id: "prod_1",
+        name: "Golden 1 litro",
+      },
+    });
+    productVariantUpdateMock.mockResolvedValueOnce({
+      id: "var_1",
+      name: "Naranja",
+      stockQuantity: 6,
+      trackStock: true,
+      isActive: true,
+      productId: "prod_1",
+      product: {
+        id: "prod_1",
+        name: "Golden 1 litro",
+      },
+    });
+    auditLogCreateMock.mockResolvedValueOnce({ id: "log_4" });
+
+    const mod = await import("../app/api/admin/products/[productId]/variants/[variantId]/route");
+    const req = new Request("http://localhost/api/admin/products/prod_1/variants/var_1", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "user-agent": "vitest",
+        "x-forwarded-for": "127.0.0.1",
+      },
+      body: JSON.stringify({
+        trackStock: true,
+        stockQuantity: 6,
+      }),
+    });
+
+    const res = await mod.PATCH(req as never, {
+      params: Promise.resolve({ productId: "prod_1", variantId: "var_1" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.id).toBe("var_1");
+    expect(productVariantUpdateMock).toHaveBeenCalledWith({
+      where: { id: "var_1" },
+      data: expect.objectContaining({
+        trackStock: true,
+        stockQuantity: 6,
+      }),
+      select: expect.any(Object),
+    });
+    expect(auditLogCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: "UPDATE",
+        entityType: "PRODUCT_VARIANT",
+        entityId: "var_1",
+        entityLabel: "Golden 1 litro - Naranja",
+        summary: "Actualizó el stock de la variante Naranja.",
+        metadata: expect.objectContaining({
+          productId: "prod_1",
+          productName: "Golden 1 litro",
+          previousStockQuantity: 2,
+          nextStockQuantity: 6,
+          previousTrackStock: true,
+          nextTrackStock: true,
         }),
       }),
     });
