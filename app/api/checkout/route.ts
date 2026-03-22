@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 import { validateCheckoutCart } from "@/lib/checkout-validation";
 import { publishKitchenEvent } from "@/lib/kitchen-events";
 import { getStoreAvailability, getStoreSettings } from "@/lib/data/store-settings";
-import { getAvailableStock } from "@/lib/product-stock";
+import { getPurchasableStock } from "@/lib/product-variants";
 import {
   sendNewOrderInternalAlert,
   sendOrderConfirmationToCustomer,
@@ -130,9 +130,11 @@ export async function POST(req: Request) {
           select: {
             lineKey: true,
             productId: true,
+            productVariantId: true,
             quantity: true,
             unitPriceCents: true,
             nameSnapshot: true,
+            variantNameSnapshot: true,
             notes: true,
             options: {
               select: {
@@ -168,8 +170,15 @@ export async function POST(req: Request) {
         ),
       ),
     );
+    const variantIds = Array.from(
+      new Set(
+        cart.items
+          .map((item) => item.productVariantId)
+          .filter((variantId): variantId is string => Boolean(variantId)),
+      ),
+    );
 
-    const [products, options, productOptionGroups] = await Promise.all([
+    const [products, variants, options, productOptionGroups] = await Promise.all([
       prisma.product.findMany({
         where: {
           id: { in: productIds },
@@ -180,8 +189,30 @@ export async function POST(req: Request) {
           basePriceCents: true,
           trackStock: true,
           stockQuantity: true,
+          variants: {
+            where: { isActive: true },
+            select: {
+              id: true,
+            },
+          },
         },
       }),
+      variantIds.length > 0
+        ? prisma.productVariant.findMany({
+            where: {
+              id: { in: variantIds },
+              isActive: true,
+            },
+            select: {
+              id: true,
+              productId: true,
+              name: true,
+              priceDeltaCents: true,
+              trackStock: true,
+              stockQuantity: true,
+            },
+          })
+        : Promise.resolve([]),
       optionIds.length > 0
         ? prisma.option.findMany({
             where: {
@@ -223,6 +254,7 @@ export async function POST(req: Request) {
       .map((item) => ({
         lineKey: item.lineKey,
         productId: item.productId,
+        productVariantId: item.productVariantId ?? null,
         unitPriceCents: item.unitPriceCents,
         quantity: item.quantity,
         options: item.options
@@ -263,6 +295,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
 
+    const variantById = new Map(variants.map((variant) => [variant.id, variant]));
+
     for (const item of checkoutItems) {
       const product = products.find((entry) => entry.id === item.productId);
       if (!product) {
@@ -272,7 +306,27 @@ export async function POST(req: Request) {
         );
       }
 
-      const availableStock = getAvailableStock(product);
+      if (product.variants.length > 0 && !item.productVariantId) {
+        return NextResponse.json(
+          { error: "Uno de los productos requiere elegir una variante antes de comprar." },
+          { status: 400 },
+        );
+      }
+
+      const variant = item.productVariantId
+        ? variantById.get(item.productVariantId)
+        : null;
+      if (item.productVariantId && (!variant || variant.productId !== product.id)) {
+        return NextResponse.json(
+          { error: "El carrito contiene una variante invalida o inactiva." },
+          { status: 400 },
+        );
+      }
+
+      const availableStock = getPurchasableStock({
+        product,
+        variant,
+      });
       if (availableStock < item.quantity) {
         return NextResponse.json(
           {
@@ -341,19 +395,47 @@ export async function POST(req: Request) {
           throw new Error("PRODUCT_NOT_FOUND");
         }
 
-        if (product.trackStock) {
-          if (product.stockQuantity < item.quantity) {
+        const variant = item.productVariantId
+          ? await tx.productVariant.findUnique({
+              where: { id: item.productVariantId },
+              select: {
+                id: true,
+                productId: true,
+                trackStock: true,
+                stockQuantity: true,
+              },
+            })
+          : null;
+
+        if (item.productVariantId && (!variant || variant.productId !== product.id)) {
+          throw new Error("PRODUCT_VARIANT_NOT_FOUND");
+        }
+
+        const trackable = variant?.trackStock ? variant : product;
+        if (trackable.trackStock) {
+          if (trackable.stockQuantity < item.quantity) {
             throw new Error("INSUFFICIENT_STOCK");
           }
 
-          await tx.product.update({
-            where: { id: product.id },
-            data: {
-              stockQuantity: {
-                decrement: item.quantity,
+          if (variant?.trackStock) {
+            await tx.productVariant.update({
+              where: { id: variant.id },
+              data: {
+                stockQuantity: {
+                  decrement: item.quantity,
+                },
               },
-            },
-          });
+            });
+          } else {
+            await tx.product.update({
+              where: { id: product.id },
+              data: {
+                stockQuantity: {
+                  decrement: item.quantity,
+                },
+              },
+            });
+          }
         }
       }
 
@@ -379,7 +461,9 @@ export async function POST(req: Request) {
           items: {
             create: cart.items.map((item) => ({
               productId: item.productId,
+              productVariantId: item.productVariantId,
               nameSnapshot: item.nameSnapshot,
+              variantNameSnapshot: item.variantNameSnapshot,
               unitPriceCents: item.unitPriceCents,
               quantity: item.quantity,
               notes: item.notes,
@@ -497,6 +581,13 @@ export async function POST(req: Request) {
       if (error.message === "PRODUCT_NOT_FOUND") {
         return NextResponse.json(
           { error: "Uno de los productos de tu carrito ya no esta disponible." },
+          { status: 400 },
+        );
+      }
+
+      if (error.message === "PRODUCT_VARIANT_NOT_FOUND") {
+        return NextResponse.json(
+          { error: "Una de las variantes seleccionadas ya no esta disponible." },
           { status: 400 },
         );
       }

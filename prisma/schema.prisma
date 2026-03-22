@@ -246,6 +246,7 @@ model Product {
   category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   images       ProductImage[]
+  variants     ProductVariant[]
   optionGroups ProductOptionGroup[]
 
   orderItems OrderItem[]
@@ -257,6 +258,30 @@ model Product {
   @@index([categoryId])
   @@index([isActive, isFeatured])
   @@map("products")
+}
+
+model ProductVariant {
+  id              String   @id @default(cuid())
+  productId       String   @map("product_id")
+  name            String
+  priceDeltaCents Int      @default(0) @map("price_delta_cents")
+  isActive        Boolean  @default(true) @map("is_active")
+  trackStock      Boolean  @default(false) @map("track_stock")
+  stockQuantity   Int      @default(0) @map("stock_quantity")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@unique([productId, name])
+  @@index([productId, sortOrder])
+  @@index([productId, isActive, sortOrder])
+  @@index([trackStock, stockQuantity])
+  @@map("product_variants")
 }
 
 model ProductImage {
@@ -410,8 +435,10 @@ model OrderItem {
   id        String  @id @default(cuid())
   orderId   String  @map("order_id")
   productId String? @map("product_id")
+  productVariantId String? @map("product_variant_id")
 
   nameSnapshot   String @map("name_snapshot")
+  variantNameSnapshot String? @map("variant_name_snapshot")
   unitPriceCents Int    @map("unit_price_cents")
   quantity       Int
 
@@ -421,12 +448,14 @@ model OrderItem {
 
   order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
 
   options OrderItemOption[]
   preparationItem OrderPreparationItem?
 
   @@index([orderId])
   @@index([productId])
+  @@index([productVariantId])
   @@map("order_items")
 }
 
@@ -502,21 +531,25 @@ model CartItem {
   id             String   @id @default(cuid())
   cartId         String   @map("cart_id")
   productId      String?  @map("product_id")
+  productVariantId String? @map("product_variant_id")
   lineKey        String   @map("line_key") // hash de producto+opciones para merge
   quantity       Int      @default(1)
   unitPriceCents Int      @map("unit_price_cents")
   nameSnapshot   String   @map("name_snapshot")
+  variantNameSnapshot String? @map("variant_name_snapshot")
   notes          String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   cart    Cart             @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
   options CartItemOption[]
 
   @@unique([cartId, lineKey])
   @@index([cartId])
   @@index([productId])
+  @@index([productVariantId])
   @@map("cart_items")
 }
 

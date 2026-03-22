@@ -35,6 +35,18 @@ async function EditProductPage({ params }: Props) {
         isFeatured: true,
         trackStock: true,
         stockQuantity: true,
+        variants: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            name: true,
+            priceDeltaCents: true,
+            isActive: true,
+            trackStock: true,
+            stockQuantity: true,
+            sortOrder: true,
+          },
+        },
         optionGroups: {
           orderBy: { sortOrder: "asc" },
           select: {

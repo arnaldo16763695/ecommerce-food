@@ -17,6 +17,20 @@ const updateProductSchema = z
     categoryId: z.string().trim().min(1).nullable().optional(),
     isActive: z.boolean().optional(),
     isFeatured: z.boolean().optional(),
+    variants: z
+      .array(
+        z.object({
+          id: z.string().trim().min(1).optional(),
+          name: z.string().trim().min(1).max(120),
+          priceDeltaCents: z.number().int().min(0).max(9_999_999),
+          isActive: z.boolean().optional(),
+          trackStock: z.boolean().optional(),
+          stockQuantity: z.number().int().min(0).max(999_999).optional(),
+          sortOrder: z.number().int().min(1).max(9999).optional(),
+        }),
+      )
+      .max(50)
+      .optional(),
     imageUrl: z.string().url().optional(),
     coverImageUrl: z.string().url().nullable().optional(),
     images: z
@@ -50,6 +64,7 @@ const updateProductSchema = z
       value.categoryId !== undefined ||
       value.isActive !== undefined ||
       value.isFeatured !== undefined ||
+      value.variants !== undefined ||
       value.imageUrl !== undefined ||
       value.coverImageUrl !== undefined ||
       value.images !== undefined ||
@@ -92,6 +107,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       basePriceCents: true,
       trackStock: true,
       stockQuantity: true,
+      variants: {
+        select: {
+          id: true,
+          name: true,
+          priceDeltaCents: true,
+          isActive: true,
+          trackStock: true,
+          stockQuantity: true,
+          sortOrder: true,
+        },
+      },
     },
   });
 
@@ -124,6 +150,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     });
     if (!category) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+  }
+
+  if (data.variants !== undefined) {
+    const uniqueVariantNames = new Set(
+      data.variants.map((variant) => variant.name.trim().toLowerCase()),
+    );
+    if (uniqueVariantNames.size !== data.variants.length) {
+      return NextResponse.json(
+        { error: "No se permiten nombres de variantes duplicados." },
+        { status: 400 },
+      );
     }
   }
 
@@ -213,6 +251,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       }
     }
 
+    if (data.variants !== undefined) {
+      await tx.productVariant.deleteMany({ where: { productId } });
+      if (data.variants.length > 0) {
+        await tx.productVariant.createMany({
+          data: data.variants.map((variant, idx) => ({
+            productId,
+            name: variant.name.trim(),
+            priceDeltaCents: variant.priceDeltaCents,
+            isActive: variant.isActive ?? true,
+            trackStock: variant.trackStock ?? false,
+            stockQuantity: variant.trackStock ? variant.stockQuantity ?? 0 : 0,
+            sortOrder: variant.sortOrder ?? idx + 1,
+          })),
+        });
+      }
+    }
+
     if (data.optionGroups !== undefined) {
       await tx.productOptionGroup.deleteMany({ where: { productId } });
       if (data.optionGroups.length > 0) {
@@ -238,6 +293,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         isFeatured: true,
         trackStock: true,
         stockQuantity: true,
+        variants: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            name: true,
+            priceDeltaCents: true,
+            isActive: true,
+            trackStock: true,
+            stockQuantity: true,
+            sortOrder: true,
+          },
+        },
         createdAt: true,
         images: {
           orderBy: { sortOrder: "asc" },
@@ -272,6 +339,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       nextTrackStock: updated.trackStock,
       previousStockQuantity: existing.stockQuantity,
       nextStockQuantity: updated.stockQuantity,
+      previousVariants: (existing.variants ?? []).map((variant) => ({
+        id: variant.id,
+        name: variant.name,
+        priceDeltaCents: variant.priceDeltaCents,
+        isActive: variant.isActive,
+        trackStock: variant.trackStock,
+        stockQuantity: variant.stockQuantity,
+      })),
+      nextVariants: (updated.variants ?? []).map((variant) => ({
+        id: variant.id,
+        name: variant.name,
+        priceDeltaCents: variant.priceDeltaCents,
+        isActive: variant.isActive,
+        trackStock: variant.trackStock,
+        stockQuantity: variant.stockQuantity,
+      })),
       categoryId: updated.category?.id ?? null,
       isActive: updated.isActive,
       isFeatured: updated.isFeatured,

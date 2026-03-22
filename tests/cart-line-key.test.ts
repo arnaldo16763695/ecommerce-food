@@ -13,7 +13,7 @@ describe("buildCartLineKey", () => {
       optionIds: ["a", "b"],
     });
 
-    expect(a).toBe("p-1::a|b::no-notes");
+    expect(a).toBe("p-1::base-variant::a|b::no-notes");
     expect(b).toBe(a);
   });
 
@@ -24,6 +24,6 @@ describe("buildCartLineKey", () => {
       notes: "  Sin Cebolla  ",
     });
 
-    expect(key).toBe("p-2::base::sin cebolla");
+    expect(key).toBe("p-2::base-variant::base::sin cebolla");
   });
 });

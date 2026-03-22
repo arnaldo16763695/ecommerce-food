@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { getAvailableStock } from "@/lib/product-stock";
+import {
+  buildProductDisplayName,
+  getPurchasableStock,
+} from "@/lib/product-variants";
 import type { CartItem, CartItemOption } from "@/types/types";
 
 const GUEST_CART_COOKIE = "guest_cart_token";
@@ -17,6 +20,7 @@ type ActiveCart = {
 type NormalizedCartItemInput = {
   lineKey: string;
   productId: string;
+  productVariantId?: string;
   quantity: number;
   notes?: string;
   options: Array<{ optionId: string }>;
@@ -33,6 +37,7 @@ function normalizeIncomingItems(items: unknown): NormalizedCartItemInput[] {
     const maybeId = (rawItem as { id?: unknown }).id;
     const maybeLineKey = (rawItem as { lineKey?: unknown }).lineKey;
     const maybeProductId = (rawItem as { productId?: unknown }).productId;
+    const maybeProductVariantId = (rawItem as { productVariantId?: unknown }).productVariantId;
     const maybeQuantity = (rawItem as { quantity?: unknown }).quantity;
     const maybeNotes = (rawItem as { notes?: unknown }).notes;
     const maybeOptions = (rawItem as { options?: unknown }).options;
@@ -82,6 +87,10 @@ function normalizeIncomingItems(items: unknown): NormalizedCartItemInput[] {
     map.set(lineKey, {
       lineKey,
       productId,
+      productVariantId:
+        typeof maybeProductVariantId === "string" && maybeProductVariantId.length > 0
+          ? maybeProductVariantId
+          : undefined,
       quantity,
       notes:
         typeof maybeNotes === "string" && maybeNotes.trim().length > 0
@@ -181,10 +190,12 @@ async function getOrCreateActiveCart(): Promise<{
           data: {
             cartId: userCart.id,
             productId: guestItem.productId,
+            productVariantId: guestItem.productVariantId,
             lineKey: guestItem.lineKey,
             quantity: guestItem.quantity,
             unitPriceCents: guestItem.unitPriceCents,
             nameSnapshot: guestItem.nameSnapshot,
+            variantNameSnapshot: guestItem.variantNameSnapshot,
             notes: guestItem.notes,
             options: {
               create: guestItem.options.map((option) => ({
@@ -250,7 +261,9 @@ async function readCartItems(cartId: string): Promise<CartItem[]> {
     select: {
       lineKey: true,
       productId: true,
+      productVariantId: true,
       nameSnapshot: true,
+      variantNameSnapshot: true,
       quantity: true,
       unitPriceCents: true,
       notes: true,
@@ -270,6 +283,8 @@ async function readCartItems(cartId: string): Promise<CartItem[]> {
     .map((item) => ({
       id: item.lineKey,
       productId: item.productId as string,
+      productVariantId: item.productVariantId ?? undefined,
+      variantName: item.variantNameSnapshot ?? undefined,
       name: item.nameSnapshot,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
@@ -359,8 +374,15 @@ export async function PUT(req: Request) {
         ),
       ),
     );
+    const variantIds = Array.from(
+      new Set(
+        incomingItems
+          .map((item) => item.productVariantId)
+          .filter((variantId): variantId is string => Boolean(variantId)),
+      ),
+    );
 
-    const [products, options] = await Promise.all([
+    const [products, variants, options] = await Promise.all([
       prisma.product.findMany({
         where: {
           id: { in: productIds },
@@ -372,8 +394,30 @@ export async function PUT(req: Request) {
           basePriceCents: true,
           trackStock: true,
           stockQuantity: true,
+          variants: {
+            where: { isActive: true },
+            select: {
+              id: true,
+            },
+          },
         },
       }),
+      variantIds.length > 0
+        ? prisma.productVariant.findMany({
+            where: {
+              id: { in: variantIds },
+              isActive: true,
+            },
+            select: {
+              id: true,
+              productId: true,
+              name: true,
+              priceDeltaCents: true,
+              trackStock: true,
+              stockQuantity: true,
+            },
+          })
+        : Promise.resolve([]),
       optionIds.length > 0
         ? prisma.option.findMany({
             where: {
@@ -395,6 +439,7 @@ export async function PUT(req: Request) {
     ]);
 
     const productById = new Map(products.map((product) => [product.id, product]));
+    const variantById = new Map(variants.map((variant) => [variant.id, variant]));
     const optionById = new Map(options.map((option) => [option.id, option]));
 
     await prisma.$transaction(async (tx) => {
@@ -405,7 +450,19 @@ export async function PUT(req: Request) {
       for (const incoming of incomingItems) {
         const product = productById.get(incoming.productId);
         if (!product) continue;
-        const maxQuantity = getAvailableStock(product);
+        if (product.variants.length > 0 && !incoming.productVariantId) {
+          continue;
+        }
+        const variant = incoming.productVariantId
+          ? variantById.get(incoming.productVariantId)
+          : null;
+        if (incoming.productVariantId && (!variant || variant.productId !== product.id)) {
+          continue;
+        }
+        const maxQuantity = getPurchasableStock({
+          product,
+          variant,
+        });
         const quantity = Math.min(incoming.quantity, maxQuantity);
         if (quantity <= 0) continue;
 
@@ -422,10 +479,13 @@ export async function PUT(req: Request) {
           data: {
             cartId: cart.id,
             productId: product.id,
+            productVariantId: variant?.id ?? null,
             lineKey: incoming.lineKey,
             quantity,
-            unitPriceCents: product.basePriceCents + optionDelta,
-            nameSnapshot: product.name,
+            unitPriceCents:
+              product.basePriceCents + (variant?.priceDeltaCents ?? 0) + optionDelta,
+            nameSnapshot: buildProductDisplayName(product.name, variant?.name),
+            variantNameSnapshot: variant?.name ?? null,
             notes: incoming.notes,
             options: {
               create: validOptions.map((option) => ({

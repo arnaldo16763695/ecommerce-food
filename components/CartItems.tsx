@@ -43,6 +43,8 @@ type CustomizationGroup = NonNullable<AllProducts["optionGroups"]>[number]["grou
 type DisplayCartItem = {
   lineKey: string;
   productId: string;
+  productVariantId: string | undefined;
+  variantName: string | undefined;
   name: string;
   basePriceCents: number;
   price: number;
@@ -87,7 +89,7 @@ function CartItems({
   }, [hydrateFromServer, isHydratedFromServer]);
 
   const cartItems = useMemo(() => {
-    return items
+    const mappedItems = items
       .map((item) => {
         const productId = item.productId ?? item.id;
         const product = products.find((p) => p.id === productId);
@@ -100,7 +102,9 @@ function CartItems({
         return {
           lineKey: item.id,
           productId,
-          name: product.name,
+          productVariantId: item.productVariantId,
+          variantName: item.variantName,
+          name: item.variantName ? `${product.name} - ${item.variantName}` : product.name,
           basePriceCents: product.basePriceCents,
           price: item.unitPriceCents ?? product.basePriceCents,
           quantity: item.quantity,
@@ -109,8 +113,9 @@ function CartItems({
           image: resolveProductImageSrc(product.images[0]?.url),
           customizationGroups,
         } satisfies DisplayCartItem;
-      })
-      .filter((item): item is DisplayCartItem => item !== null);
+      });
+
+    return mappedItems.filter((item): item is DisplayCartItem => Boolean(item));
   }, [items, products]);
 
   const editingItem = useMemo(
@@ -249,6 +254,7 @@ function CartItems({
     const normalizedNotes = draftNotes.trim();
     const nextLineKey = buildCartLineKey({
       productId: editingItem.productId,
+      variantId: editingItem.productVariantId,
       optionIds: draftOptionSnapshots.map((option) => option.optionId),
       notes: normalizedNotes,
     });
@@ -256,6 +262,8 @@ function CartItems({
     updateItemConfiguration(editingItem.lineKey, {
       lineKey: nextLineKey,
       unitPriceCents: draftUnitPriceCents,
+      productVariantId: editingItem.productVariantId,
+      variantName: editingItem.variantName,
       notes: normalizedNotes || undefined,
       options: draftOptionSnapshots,
     });

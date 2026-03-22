@@ -41,6 +41,8 @@ function normalizeCartItemInput(
   return {
     id: lineKey,
     productId: input.productId,
+    productVariantId: input.productVariantId,
+    variantName: input.variantName,
     name: undefined,
     quantity,
     unitPriceCents: input.unitPriceCents,
@@ -132,6 +134,8 @@ export const useCartStore = create<CartStore>()(
             ...currentItem,
             id: nextLineKey,
             unitPriceCents: input.unitPriceCents,
+            productVariantId: input.productVariantId ?? currentItem.productVariantId,
+            variantName: input.variantName ?? currentItem.variantName,
             notes: input.notes?.trim() || undefined,
             options: input.options,
           };

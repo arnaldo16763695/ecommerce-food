@@ -21,6 +21,20 @@ const createProductSchema = z.object({
   coverImageUrl: z.string().url().nullable().optional(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  variants: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).optional(),
+        name: z.string().trim().min(1).max(120),
+        priceDeltaCents: z.number().int().min(0).max(9_999_999),
+        isActive: z.boolean().optional(),
+        trackStock: z.boolean().optional(),
+        stockQuantity: z.number().int().min(0).max(999_999).optional(),
+        sortOrder: z.number().int().min(1).max(9999).optional(),
+      }),
+    )
+    .max(50)
+    .optional(),
   images: z
     .array(
       z.object({
@@ -92,6 +106,17 @@ export async function GET(req: NextRequest) {
         isFeatured: true,
         trackStock: true,
         stockQuantity: true,
+        variants: {
+          where: { isActive: true },
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            name: true,
+            isActive: true,
+            trackStock: true,
+            stockQuantity: true,
+          },
+        },
         createdAt: true,
         images: {
           orderBy: { sortOrder: "asc" },
@@ -168,6 +193,16 @@ export async function POST(req: NextRequest) {
 
   const imageInputs = (payload.images ?? []).filter((img) => img.url);
   const coverImageUrl = payload.coverImageUrl?.trim() || imageInputs[0]?.url;
+  const variants = payload.variants ?? [];
+  const uniqueVariantNames = new Set(
+    variants.map((variant) => variant.name.trim().toLowerCase()),
+  );
+  if (uniqueVariantNames.size !== variants.length) {
+    return NextResponse.json(
+      { error: "No se permiten nombres de variantes duplicados." },
+      { status: 400 },
+    );
+  }
 
   const optionGroups = payload.optionGroups ?? [];
   const uniqueGroupIds = new Set(optionGroups.map((item) => item.groupId));
@@ -220,6 +255,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (variants.length > 0) {
+      await tx.productVariant.createMany({
+        data: variants.map((variant, idx) => ({
+          productId: product.id,
+          name: variant.name.trim(),
+          priceDeltaCents: variant.priceDeltaCents,
+          isActive: variant.isActive ?? true,
+          trackStock: variant.trackStock ?? false,
+          stockQuantity: variant.trackStock ? variant.stockQuantity ?? 0 : 0,
+          sortOrder: variant.sortOrder ?? idx + 1,
+        })),
+      });
+    }
+
     if (optionGroups.length > 0) {
       await tx.productOptionGroup.createMany({
         data: optionGroups.map((group, idx) => ({
@@ -242,6 +291,18 @@ export async function POST(req: NextRequest) {
         isFeatured: true,
         trackStock: true,
         stockQuantity: true,
+        variants: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            name: true,
+            priceDeltaCents: true,
+            isActive: true,
+            trackStock: true,
+            stockQuantity: true,
+            sortOrder: true,
+          },
+        },
         createdAt: true,
         images: {
           orderBy: { sortOrder: "asc" },
@@ -274,6 +335,14 @@ export async function POST(req: NextRequest) {
       isFeatured: created.isFeatured,
       trackStock: created.trackStock,
       stockQuantity: created.stockQuantity,
+      variants: (created.variants ?? []).map((variant) => ({
+        id: variant.id,
+        name: variant.name,
+        priceDeltaCents: variant.priceDeltaCents,
+        isActive: variant.isActive,
+        trackStock: variant.trackStock,
+        stockQuantity: variant.stockQuantity,
+      })),
     },
   });
 

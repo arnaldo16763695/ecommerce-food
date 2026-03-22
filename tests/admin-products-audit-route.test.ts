@@ -118,6 +118,7 @@ describe("admin products audit integration", () => {
     expect(auditLogCreateMock).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorUserId: "admin_1",
+        actorRole: "ADMIN",
         action: "CREATE",
         entityType: "PRODUCT",
         entityId: "prod_1",
@@ -127,7 +128,7 @@ describe("admin products audit integration", () => {
         method: "POST",
         ipAddress: "127.0.0.1",
         userAgent: "vitest",
-        metadata: {
+        metadata: expect.objectContaining({
           slug: "burger",
           basePriceCents: 2500,
           categoryId: "cat_1",
@@ -135,7 +136,8 @@ describe("admin products audit integration", () => {
           isFeatured: false,
           trackStock: true,
           stockQuantity: 12,
-        },
+          variants: [],
+        }),
       }),
     });
   });

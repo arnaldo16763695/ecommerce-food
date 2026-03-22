@@ -235,6 +235,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       items: {
         select: {
           productId: true,
+          productVariantId: true,
           quantity: true,
         },
       },
@@ -749,20 +750,42 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const updated = shouldRestoreStock
     ? await prisma.$transaction(async (tx) => {
-        const stockItemMap = new Map<string, number>();
+        const productStockMap = new Map<string, number>();
+        const variantStockMap = new Map<string, number>();
         for (const item of existing.items) {
-          if (!item.productId) continue;
-          stockItemMap.set(
-            item.productId,
-            (stockItemMap.get(item.productId) ?? 0) + item.quantity,
-          );
+          if (item.productVariantId) {
+            variantStockMap.set(
+              item.productVariantId,
+              (variantStockMap.get(item.productVariantId) ?? 0) + item.quantity,
+            );
+            continue;
+          }
+
+          if (item.productId) {
+            productStockMap.set(
+              item.productId,
+              (productStockMap.get(item.productId) ?? 0) + item.quantity,
+            );
+          }
         }
 
         const trackedProducts =
-          stockItemMap.size > 0
+          productStockMap.size > 0
             ? await tx.product.findMany({
                 where: {
-                  id: { in: Array.from(stockItemMap.keys()) },
+                  id: { in: Array.from(productStockMap.keys()) },
+                  trackStock: true,
+                },
+                select: {
+                  id: true,
+                },
+              })
+            : [];
+        const trackedVariants =
+          variantStockMap.size > 0
+            ? await tx.productVariant.findMany({
+                where: {
+                  id: { in: Array.from(variantStockMap.keys()) },
                   trackStock: true,
                 },
                 select: {
@@ -772,11 +795,25 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             : [];
 
         for (const product of trackedProducts) {
-          const quantityToRestore = stockItemMap.get(product.id) ?? 0;
+          const quantityToRestore = productStockMap.get(product.id) ?? 0;
           if (quantityToRestore <= 0) continue;
 
           await tx.product.update({
             where: { id: product.id },
+            data: {
+              stockQuantity: {
+                increment: quantityToRestore,
+              },
+            },
+          });
+        }
+
+        for (const variant of trackedVariants) {
+          const quantityToRestore = variantStockMap.get(variant.id) ?? 0;
+          if (quantityToRestore <= 0) continue;
+
+          await tx.productVariant.update({
+            where: { id: variant.id },
             data: {
               stockQuantity: {
                 increment: quantityToRestore,

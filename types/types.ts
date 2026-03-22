@@ -15,6 +15,8 @@ export type CartItem = {
   id: string;
   // Base product id. For legacy local data this may be missing.
   productId?: string;
+  productVariantId?: string;
+  variantName?: string;
   name?: string;
   quantity: number;
   unitPriceCents?: number;
@@ -31,6 +33,8 @@ export type CartItemOption = {
 
 export type AddCartItemInput = {
   productId: string;
+  productVariantId?: string;
+  variantName?: string;
   quantity?: number;
   lineKey?: string;
   unitPriceCents?: number;
@@ -41,6 +45,8 @@ export type AddCartItemInput = {
 export type UpdateCartItemConfigurationInput = {
   lineKey: string;
   unitPriceCents: number;
+  productVariantId?: string;
+  variantName?: string;
   notes?: string;
   options: CartItemOption[];
 };

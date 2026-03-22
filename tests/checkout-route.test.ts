@@ -100,6 +100,10 @@ describe("checkout route", () => {
             findUnique: txProductFindUniqueMock,
             update: txProductUpdateMock,
           },
+          productVariant: {
+            findUnique: vi.fn(),
+            update: vi.fn(),
+          },
           order: {
             create: orderCreateMock,
           },
@@ -148,6 +152,7 @@ describe("checkout route", () => {
         basePriceCents: 2500,
         trackStock: false,
         stockQuantity: 0,
+        variants: [],
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -227,6 +232,7 @@ describe("checkout route", () => {
         basePriceCents: 3000,
         trackStock: false,
         stockQuantity: 0,
+        variants: [],
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -299,6 +305,7 @@ describe("checkout route", () => {
         basePriceCents: 1800,
         trackStock: false,
         stockQuantity: 0,
+        variants: [],
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -427,6 +434,7 @@ describe("checkout route", () => {
         basePriceCents: 2200,
         trackStock: false,
         stockQuantity: 0,
+        variants: [],
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -499,6 +507,7 @@ describe("checkout route", () => {
         basePriceCents: 2200,
         trackStock: false,
         stockQuantity: 0,
+        variants: [],
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);
@@ -553,6 +562,7 @@ describe("checkout route", () => {
         basePriceCents: 2200,
         trackStock: true,
         stockQuantity: 1,
+        variants: [],
       },
     ]);
     optionFindManyMock.mockResolvedValue([]);

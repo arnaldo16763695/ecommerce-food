@@ -40,6 +40,7 @@ const baseProduct = {
   categoryId: "cat_1",
   category: { name: "Hamburguesas" },
   images: [{ url: "/burger.png", alt: "Burger" }],
+  variants: [],
   optionGroups: [],
 };
 

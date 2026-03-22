@@ -72,6 +72,7 @@ describe("cart route", () => {
         basePriceCents: 2500,
         trackStock: true,
         stockQuantity: 2,
+        variants: [],
       },
     ]);
 
@@ -150,6 +151,7 @@ describe("cart route", () => {
         basePriceCents: 1800,
         trackStock: true,
         stockQuantity: 0,
+        variants: [],
       },
     ]);
 

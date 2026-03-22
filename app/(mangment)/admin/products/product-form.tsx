@@ -40,6 +40,15 @@ type ProductFormInitialData = {
   isFeatured: boolean;
   trackStock: boolean;
   stockQuantity: number;
+  variants: Array<{
+    id: string;
+    name: string;
+    priceDeltaCents: number;
+    isActive: boolean;
+    trackStock: boolean;
+    stockQuantity: number;
+    sortOrder: number;
+  }>;
   optionGroups: Array<{
     groupId: string;
     sortOrder: number;
@@ -54,6 +63,16 @@ type Props = {
 
 type SelectedGroupState = {
   groupId: string;
+  sortOrder: string;
+};
+
+type ProductVariantState = {
+  id?: string;
+  name: string;
+  priceDeltaInput: string;
+  isActive: boolean;
+  trackStock: boolean;
+  stockQuantity: string;
   sortOrder: string;
 };
 
@@ -85,6 +104,17 @@ export default function ProductForm({
   );
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [variants, setVariants] = useState<ProductVariantState[]>(
+    (initialData?.variants ?? []).map((variant) => ({
+      id: variant.id,
+      name: variant.name,
+      priceDeltaInput: formatCentsToMajorUnit(variant.priceDeltaCents),
+      isActive: variant.isActive,
+      trackStock: variant.trackStock,
+      stockQuantity: String(variant.stockQuantity),
+      sortOrder: String(variant.sortOrder),
+    })),
+  );
   const [selectedGroups, setSelectedGroups] = useState<SelectedGroupState[]>(
     (initialData?.optionGroups ?? []).map((item) => ({
       groupId: item.groupId,
@@ -119,6 +149,32 @@ export default function ProductForm({
         item.groupId === groupId ? { ...item, sortOrder: value } : item,
       ),
     );
+  }
+
+  function addVariant() {
+    setVariants((prev) => [
+      ...prev,
+      {
+        name: "",
+        priceDeltaInput: "0",
+        isActive: true,
+        trackStock: false,
+        stockQuantity: "0",
+        sortOrder: String(prev.length + 1),
+      },
+    ]);
+  }
+
+  function updateVariant(index: number, patch: Partial<ProductVariantState>) {
+    setVariants((prev) =>
+      prev.map((variant, currentIndex) =>
+        currentIndex === index ? { ...variant, ...patch } : variant,
+      ),
+    );
+  }
+
+  function removeVariant(index: number) {
+    setVariants((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
   }
 
   async function uploadCoverImage(file: File) {
@@ -161,6 +217,46 @@ export default function ProductForm({
         throw new Error("El stock debe ser un numero entero igual o mayor a cero.");
       }
 
+      const normalizedVariants = variants
+        .map((variant, index) => {
+          const parsedVariantPriceDelta = parseMajorUnitToCents(
+            variant.priceDeltaInput,
+          );
+          if (parsedVariantPriceDelta === null) {
+            throw new Error(
+              `El ajuste de precio de la variante ${index + 1} no es valido.`,
+            );
+          }
+
+          const parsedVariantStock = Number.parseInt(
+            variant.stockQuantity.trim() || "0",
+            10,
+          );
+          if (!Number.isFinite(parsedVariantStock) || parsedVariantStock < 0) {
+            throw new Error(
+              `El stock de la variante ${index + 1} debe ser un numero entero igual o mayor a cero.`,
+            );
+          }
+
+          const normalizedName = variant.name.trim();
+          if (!normalizedName) {
+            throw new Error(`La variante ${index + 1} debe tener un nombre.`);
+          }
+
+          return {
+            id: variant.id,
+            name: normalizedName,
+            priceDeltaCents: parsedVariantPriceDelta,
+            isActive: variant.isActive,
+            trackStock: variant.trackStock,
+            stockQuantity: variant.trackStock ? parsedVariantStock : 0,
+            sortOrder: variant.sortOrder.trim()
+              ? Number.parseInt(variant.sortOrder, 10)
+              : index + 1,
+          };
+        })
+        .filter((variant) => variant.name.length > 0);
+
       const payload = {
         name: name.trim(),
         slug: slug.trim() || undefined,
@@ -175,6 +271,7 @@ export default function ProductForm({
         isFeatured,
         trackStock,
         stockQuantity: trackStock ? parsedStockQuantity : 0,
+        variants: normalizedVariants,
         images: coverImageUrl.trim()
           ? [{ url: coverImageUrl.trim(), alt: name.trim() || undefined }]
           : [],
@@ -398,6 +495,109 @@ export default function ProductForm({
             Si el stock llega a 0, el producto se mostrara como agotado y no se podra vender.
           </p>
         </div>
+      </div>
+
+      <div className="space-y-3 rounded-md border p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Variantes del producto</p>
+            <p className="text-xs text-slate-500">
+              Utiliza variantes para sabores o presentaciones, por ejemplo: naranja, uva o cola.
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={addVariant}>
+            Agregar variante
+          </Button>
+        </div>
+
+        {variants.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            Este producto no tiene variantes. Se vendera como un producto simple.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {variants.map((variant, index) => (
+              <div key={variant.id ?? `new-${index}`} className="space-y-3 rounded-md border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium">Variante #{index + 1}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => removeVariant(index)}
+                  >
+                    Quitar
+                  </Button>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Nombre</label>
+                    <Input
+                      value={variant.name}
+                      onChange={(e) => updateVariant(index, { name: e.target.value })}
+                      placeholder="Ejemplo: Naranja"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Ajuste de precio (USD)</label>
+                    <Input
+                      value={variant.priceDeltaInput}
+                      onChange={(e) =>
+                        updateVariant(index, { priceDeltaInput: e.target.value })
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Orden</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={variant.sortOrder}
+                      onChange={(e) => updateVariant(index, { sortOrder: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={variant.isActive}
+                      onChange={(e) =>
+                        updateVariant(index, { isActive: e.target.checked })
+                      }
+                    />
+                    Variante activa
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={variant.trackStock}
+                      onChange={(e) =>
+                        updateVariant(index, { trackStock: e.target.checked })
+                      }
+                    />
+                    Controlar stock por variante
+                  </label>
+                </div>
+
+                <div className="space-y-1.5 md:max-w-xs">
+                  <label className="text-sm font-medium">Stock de la variante</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={variant.stockQuantity}
+                    onChange={(e) =>
+                      updateVariant(index, { stockQuantity: e.target.value })
+                    }
+                    disabled={!variant.trackStock}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="space-y-3 rounded-md border p-4">

@@ -1,6 +1,6 @@
 "use server";
 import prisma from "../prisma";
-import { isProductSoldOut } from "@/lib/product-stock";
+import { isProductSoldOutConsideringVariants } from "@/lib/product-variants";
 
 const productCardSelect = {
   id: true,
@@ -17,6 +17,19 @@ const productCardSelect = {
     orderBy: { sortOrder: "asc" as const },
     take: 1,
     select: { url: true, alt: true },
+  },
+  variants: {
+    where: { isActive: true },
+    orderBy: { sortOrder: "asc" as const },
+    select: {
+      id: true,
+      name: true,
+      priceDeltaCents: true,
+      isActive: true,
+      trackStock: true,
+      stockQuantity: true,
+      sortOrder: true,
+    },
   },
   optionGroups: {
     orderBy: { sortOrder: "asc" as const },
@@ -60,7 +73,7 @@ export async function getAllProducts() {
 
     return products.map((product) => ({
       ...product,
-      isSoldOut: isProductSoldOut(product),
+      isSoldOut: isProductSoldOutConsideringVariants(product),
     }));
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -150,6 +163,19 @@ export async function getProductById(id: string) {
           orderBy: { sortOrder: "asc" },
           select: { url: true, alt: true },
         },
+        variants: {
+          where: { isActive: true },
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            name: true,
+            priceDeltaCents: true,
+            isActive: true,
+            trackStock: true,
+            stockQuantity: true,
+            sortOrder: true,
+          },
+        },
         optionGroups: {
           orderBy: { sortOrder: "asc" },
           select: {
@@ -182,7 +208,7 @@ export async function getProductById(id: string) {
     return product
       ? {
           ...product,
-          isSoldOut: isProductSoldOut(product),
+          isSoldOut: isProductSoldOutConsideringVariants(product),
         }
       : null;
   } catch (error) {
@@ -217,6 +243,19 @@ export async function getAllProductsByCategory(
           take: 1,
           select: { url: true, alt: true },
         },
+        variants: {
+          where: { isActive: true },
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            name: true,
+            priceDeltaCents: true,
+            isActive: true,
+            trackStock: true,
+            stockQuantity: true,
+            sortOrder: true,
+          },
+        },
         category: {
           select: {
             name: true,
@@ -226,7 +265,7 @@ export async function getAllProductsByCategory(
     });
     return productsByCategory.map((product) => ({
       ...product,
-      isSoldOut: isProductSoldOut(product),
+      isSoldOut: isProductSoldOutConsideringVariants(product),
     }));
   } catch (error) {
     console.error("Error fetching products by category:", error);
@@ -264,7 +303,7 @@ export async function getProductsByCategorySlug(slug: string) {
       category,
       products: products.map((product) => ({
         ...product,
-        isSoldOut: isProductSoldOut(product),
+        isSoldOut: isProductSoldOutConsideringVariants(product),
       })),
     };
   } catch (error) {

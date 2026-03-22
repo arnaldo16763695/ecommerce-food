@@ -10,6 +10,7 @@ import { useCartStore } from "@/store/cartStore";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "@/components/ui/use-toast";
 import { resolveProductImageSrc } from "@/lib/product-image";
+import { isVariantSoldOut } from "@/lib/product-variants";
 
 type Props = {
   open: boolean;
@@ -26,8 +27,20 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
 
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
+  const [selectedVariantId, setSelectedVariantId] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [attemptedAdd, setAttemptedAdd] = useState(false);
+  const variants = useMemo(
+    () => (product.variants ?? []).filter((variant) => variant.isActive),
+    [product.variants],
+  );
+  const selectedVariant =
+    variants.find((variant) => variant.id === selectedVariantId) ?? null;
+  const requiresVariant = variants.length > 0;
+  const variantError =
+    attemptedAdd && requiresVariant && !selectedVariant
+      ? "Debes elegir una variante."
+      : null;
 
   const customizationGroups = useMemo(
     () =>
@@ -59,7 +72,8 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
     0,
   );
 
-  const unitPriceCents = product.basePriceCents + optionsDeltaCents;
+  const unitPriceCents =
+    product.basePriceCents + (selectedVariant?.priceDeltaCents ?? 0) + optionsDeltaCents;
   const totalPriceCents = unitPriceCents * quantity;
 
   const groupErrors = customizationGroups.reduce<Record<string, string>>((acc, group) => {
@@ -74,8 +88,10 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
     return acc;
   }, {});
 
-  const canAddToCart = Object.keys(groupErrors).length === 0;
-  const isSoldOut = product.isSoldOut;
+  const canAddToCart = Object.keys(groupErrors).length === 0 && !variantError;
+  const isSoldOut = selectedVariant
+    ? isVariantSoldOut(selectedVariant)
+    : product.isSoldOut;
 
   const handleSelectOption = (groupId: string, optionId: string, maxSelect: number) => {
     setSelectedOptions((prev) => {
@@ -114,12 +130,15 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
     const normalizedNotes = notes.trim();
     const lineKey = buildCartLineKey({
       productId: product.id,
+      variantId: selectedVariant?.id,
       optionIds: selectedOptionSnapshots.map((option) => option.optionId),
       notes: normalizedNotes,
     });
 
     addToCart({
       productId: product.id,
+      productVariantId: selectedVariant?.id,
+      variantName: selectedVariant?.name,
       quantity,
       lineKey,
       unitPriceCents,
@@ -164,6 +183,50 @@ export default function QuickAddProductSheet({ open, onOpenChange, product }: Pr
             </p>
             <p className="mt-2 font-semibold text-primary-600">${formatMoney(unitPriceCents)}</p>
           </div>
+
+          {variants.length > 0 ? (
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100">
+                Elige una variante
+              </h4>
+              <div className="grid gap-2">
+                {variants.map((variant) => {
+                  const soldOut = isVariantSoldOut(variant);
+                  return (
+                    <label
+                      key={variant.id}
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
+                        selectedVariantId === variant.id
+                          ? "border-primary-400 bg-primary-50 dark:border-primary-300 dark:bg-primary-300/10"
+                          : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+                      } ${soldOut ? "opacity-60" : "cursor-pointer"}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name={`variant-${product.id}`}
+                          checked={selectedVariantId === variant.id}
+                          disabled={soldOut}
+                          onChange={() => setSelectedVariantId(variant.id)}
+                        />
+                        <span>{variant.name}</span>
+                      </div>
+                      <span className="font-medium text-primary-700 dark:text-primary-300">
+                        {soldOut
+                          ? "Agotada"
+                          : variant.priceDeltaCents > 0
+                            ? `+$${formatMoney(variant.priceDeltaCents)}`
+                            : "Sin recargo"}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {variantError ? (
+                <p className="text-sm text-red-600 dark:text-red-400">{variantError}</p>
+              ) : null}
+            </div>
+          ) : null}
 
           {customizationGroups.length > 0 ? (
             <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
