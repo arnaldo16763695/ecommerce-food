@@ -113,6 +113,9 @@ Keep business rules in `lib` or server handlers, not buried inside visual compon
 - Keep styling aligned with the semantic color system in `app/globals.css`.
 - For new admin/kitchen UI, follow the current utility-class approach rather than introducing a separate styling pattern.
 - Keep public copy in Spanish unless the surrounding screen is already intentionally English.
+- Maintain correct Spanish grammar and spelling in all user-facing text.
+- Use accents and tildes correctly in labels, buttons, alerts, descriptions, tables, and helper text.
+- If a visible Spanish string appears degraded by encoding (for example `Configuracion`, `resenas`, `mÃ¡x`), fix it before closing the change.
 
 ### When editing API routes
 - Keep authorization checks near the top of the handler.
@@ -176,6 +179,7 @@ Do not hardcode secrets in code or tests.
   - notification payload generation
 - After modifying TypeScript-heavy UI/API code, at least run `npx tsc --noEmit` when possible.
 - For realtime/order changes, validate the affected admin or kitchen screen behavior manually as well.
+- When a change touches visible Spanish copy, also review accents, spelling, grammar, and UTF-8 integrity before closing the task.
 
 ## Repo Conventions
 - Use path aliases like `@/lib/...`, `@/components/...`, `@/auth` where already established.
